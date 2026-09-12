@@ -60,17 +60,6 @@ async function obtenerConexion(): Promise<Conexion | null> {
     await conexion.query("SELECT 1");
     cache = { conexion };
     ultimoError = null;
-    // Las tablas se crean automáticamente si faltan (idempotente, no borra datos).
-    try {
-      for (const sentencia of SENTENCIAS_ESQUEMA) {
-        await conexion.query(sentencia);
-      }
-    } catch (error) {
-      console.error(
-        "No se pudieron crear las tablas automáticamente:",
-        error instanceof Error ? error.message : String(error),
-      );
-    }
     return conexion;
   } catch (error) {
     ultimoError = error instanceof Error ? error.message : String(error);
@@ -108,7 +97,7 @@ export async function ejecutar(
   return { insertId: Number(r.insertId ?? 0), affectedRows: Number(r.affectedRows ?? 0) };
 }
 
-/* --------------------- Creación de tablas (idempotente) ------------------- */
+/* ----------------------- Esquema legado (referencia) ---------------------- */
 
 // Mismas definiciones de db/schema.sql, sin datos iniciales: en producción la
 // empresa y las secuencias NCF se registran desde la propia aplicación.
