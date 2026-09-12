@@ -214,8 +214,8 @@ function NuevaFactura() {
   return (
     <div>
       <PageHeader
-        titulo="Nueva factura"
-        descripcion="El NCF se asigna automáticamente al emitir. Indica moneda y tasa de cambio."
+        titulo="Nuevo pedido"
+        descripcion="Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
