@@ -640,10 +640,27 @@ const SQL_FACTURAS = `
                       >= t.total - 0.01 THEN 'pagada'
              ELSE 'emitida'
            END AS estado,
-           COALESCE(o.notes, '') AS notas
+           COALESCE(o.notes, '') AS notas,
+           o.credit_days AS dias_credito,
+           COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
+           COALESCE(o.currency_rate, 1) AS tasa_cambio,
+           o.salesman_id AS vendedor_id,
+           TRIM(CONCAT(COALESCE(sm.first_name, ''), ' ', COALESCE(sm.last_name, ''))) AS vendedor,
+           o.tech_id AS tecnico_id,
+           o.warehouse_id AS almacen_id, w.name AS almacen,
+           o.branch_id AS sucursal_id, o.department_id AS departamento_id,
+           o.project_id AS proyecto_id, o.quotation_id AS cotizacion_id,
+           COALESCE(o.customer_order, '') AS orden_cliente,
+           COALESCE(o.salesman_order, '') AS orden_vendedor,
+           COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
+           COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           o.efectivo, o.tarjeta, o.cheque, o.transferencia, o.cardnet
     FROM orders o
     LEFT JOIN invoices i ON i.invoice_id = o.invoice_id AND i.branch_id = o.branch_id
     LEFT JOIN customers c ON c.customer_id = o.customer_id
+    LEFT JOIN salesmen sm ON sm.salesman_id = o.salesman_id
+    LEFT JOIN warehouse w ON w.warehouse_id = o.warehouse_id
+
     LEFT JOIN (
       SELECT order_id,
              ROUND(SUM(quantity * price - discount), 2) AS subtotal,
