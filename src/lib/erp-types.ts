@@ -249,8 +249,9 @@ export function calcularTotales(lineas: LineaEntrada[]): {
 } {
   const calculadas = lineas.map(calcularLinea);
   const descuento = round2(
-    lineas.reduce((a, l) => a + l.cantidad * l.precio * ((l.descuento_pct || 0) / 100), 0),
+    calculadas.reduce((a, l) => a + l.cantidad * l.precio * ((l.descuento_pct || 0) / 100), 0),
   );
+
   const subtotal = round2(calculadas.reduce((a, l) => a + l.subtotal, 0));
   const itbis = round2(calculadas.reduce((a, l) => a + l.itbis, 0));
   const mapa = new Map<number, { tasa: number; base: number; itbis: number }>();
@@ -287,6 +288,35 @@ const formateadorDOP = new Intl.NumberFormat("es-DO", {
 export function dop(n: number): string {
   return formateadorDOP.format(n ?? 0);
 }
+
+const cacheFormato = new Map<string, Intl.NumberFormat>();
+
+/** Formatea un importe en la moneda del documento (el sistema es multimoneda). */
+export function money(n: number, monedaId?: string | undefined): string {
+  const codigo = (monedaId || "DOP").toUpperCase();
+  if (!/^[A-Z]{3}$/.test(codigo) || codigo === "000")
+    return (n ?? 0).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let f = cacheFormato.get(codigo);
+  if (!f) {
+    try {
+      f = new Intl.NumberFormat("es-DO", {
+        style: "currency",
+        currency: codigo,
+        minimumFractionDigits: 2,
+      });
+    } catch {
+      f = formateadorDOP;
+    }
+    cacheFormato.set(codigo, f);
+  }
+  return f.format(n ?? 0);
+}
+
+/** Equivalente en pesos usando la tasa registrada en el documento. */
+export function enDOP(n: number, tasa?: number | undefined): number {
+  return round2((n ?? 0) * (tasa && tasa > 0 ? tasa : 1));
+}
+
 
 export function fechaCorta(iso: string): string {
   if (!iso) return "—";
