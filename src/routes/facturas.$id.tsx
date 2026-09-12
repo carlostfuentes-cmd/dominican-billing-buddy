@@ -24,9 +24,8 @@ import {
 import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    imprimir: search["imprimir"] === true || search["imprimir"] === "true" ? true : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
+    search["imprimir"] === true || search["imprimir"] === "true" ? { imprimir: true } : {},
   head: () => ({
     meta: [
       { title: "Detalle de factura — ERP Contable RD" },
