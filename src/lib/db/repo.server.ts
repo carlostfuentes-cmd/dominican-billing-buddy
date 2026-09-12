@@ -30,11 +30,43 @@ export interface FiltroFacturas {
 export interface EstadoConexion {
   modo: "mysql" | "demo";
   error: string | null;
+  // Tablas del esquema (db/schema.sql) que faltan en la base conectada.
+  tablasFaltantes: string[];
 }
+
+export const TABLAS_REQUERIDAS = [
+  "empresa",
+  "clientes",
+  "items",
+  "ncf_secuencias",
+  "facturas",
+  "factura_lineas",
+] as const;
 
 export async function estadoConexion(): Promise<EstadoConexion> {
   const activo = await mysqlActivo();
-  return { modo: activo ? "mysql" : "demo", error: activo ? null : ultimoErrorMysql() };
+  if (!activo) {
+    return { modo: "demo", error: ultimoErrorMysql(), tablasFaltantes: [] };
+  }
+  try {
+    const filas = await sql<{ nombre: string }>(
+      `SELECT TABLE_NAME AS nombre FROM information_schema.TABLES
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (?, ?, ?, ?, ?, ?)`,
+      [...TABLAS_REQUERIDAS],
+    );
+    const existentes = new Set(filas.map((f) => String(f.nombre).toLowerCase()));
+    return {
+      modo: "mysql",
+      error: null,
+      tablasFaltantes: TABLAS_REQUERIDAS.filter((t) => !existentes.has(t)),
+    };
+  } catch (error) {
+    return {
+      modo: "mysql",
+      error: error instanceof Error ? error.message : String(error),
+      tablasFaltantes: [...TABLAS_REQUERIDAS],
+    };
+  }
 }
 
 async function usarMysql(): Promise<boolean> {
@@ -43,12 +75,15 @@ async function usarMysql(): Promise<boolean> {
 
 /* ------------------------------- Empresa -------------------------------- */
 
+const EMPRESA_VACIA: Empresa = { nombre: "", rnc: "", direccion: "", telefono: "", email: "" };
+
 export async function obtenerEmpresa(): Promise<Empresa> {
   if (await usarMysql()) {
+    // En modo MySQL nunca se mezclan datos de ejemplo: si no hay fila, vacío.
     const filas = await sql<Empresa>(
       "SELECT nombre, rnc, direccion, telefono, email FROM empresa WHERE id = 1",
     );
-    if (filas[0]) return filas[0];
+    return filas[0] ?? EMPRESA_VACIA;
   }
   return demo().empresa;
 }
