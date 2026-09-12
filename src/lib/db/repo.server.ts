@@ -750,6 +750,7 @@ interface FilaFactura {
   ncf: string;
   tipo_prefijo: string;
   ncf_id: number | null;
+  invoice_id: number | null;
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
