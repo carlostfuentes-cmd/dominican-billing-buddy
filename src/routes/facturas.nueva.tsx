@@ -514,16 +514,16 @@ function NuevaFactura() {
           </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[1080px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-52">Código / ítem</TableHead>
-                <TableHead className="min-w-52">Producto</TableHead>
-                <TableHead className="w-24">Cant.</TableHead>
-                <TableHead className="w-24">Oferta</TableHead>
-                <TableHead className="w-32">Precio</TableHead>
-                <TableHead className="w-24">Desc. %</TableHead>
-                <TableHead className="w-28">ITBIS</TableHead>
+                <TableHead className="w-52 min-w-52">Código / ítem</TableHead>
+                <TableHead className="w-52 min-w-52">Producto</TableHead>
+                <TableHead className="w-24 min-w-24">Cant.</TableHead>
+                <TableHead className="w-24 min-w-24">Oferta</TableHead>
+                <TableHead className="w-32 min-w-32">Precio</TableHead>
+                <TableHead className="w-24 min-w-24">Desc. %</TableHead>
+                <TableHead className="w-28 min-w-28">ITBIS</TableHead>
                 <TableHead className="text-right">Sub-total</TableHead>
                 <TableHead />
               </TableRow>
