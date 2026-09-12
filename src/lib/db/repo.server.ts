@@ -866,8 +866,23 @@ export interface NuevaFactura {
   fecha: string;
   dias_credito: number;
   notas: string;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
+  vendedor_id?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  sucursal_id?: string | undefined;
+  departamento_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  cotizacion_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  orden_vendedor?: string | undefined;
+  pagos?:
+    | { efectivo?: number; tarjeta?: number; cheque?: number; transferencia?: number; cardnet?: number }
+    | undefined;
   lineas: LineaEntrada[];
 }
+
 
 export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
   const { lineas, totales } = calcularTotales(entrada.lineas);
