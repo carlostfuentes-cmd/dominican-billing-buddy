@@ -84,8 +84,8 @@ function Clientes() {
   });
 
   const enviar = () => {
-    if (form.nombre.trim().length < 2) return toast.error("Escribe el nombre o razón social");
-    if (!rncValido(form.rnc)) return toast.error("RNC (9 dígitos) o Cédula (11 dígitos) inválido");
+    if (form.nombre.trim().length < 2) { toast.error("Escribe el nombre o razón social"); return; }
+    if (!rncValido(form.rnc)) { toast.error("RNC (9 dígitos) o Cédula (11 dígitos) inválido"); return; }
     mutar.mutate({ ...form, rnc: form.rnc.replace(/\D/g, "") });
   };
 

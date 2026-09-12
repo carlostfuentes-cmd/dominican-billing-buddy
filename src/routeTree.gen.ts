@@ -11,7 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
+import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as NcfRouteImport } from './routes/ncf'
+import { Route as ReportesRouteImport } from './routes/reportes'
+import { Route as FacturasIndexRouteImport } from './routes/facturas.index'
+import { Route as FacturasIdRouteImport } from './routes/facturas.$id'
+import { Route as FacturasNuevaRouteImport } from './routes/facturas.nueva'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -23,40 +29,122 @@ const ClientesRoute = ClientesRouteImport.update({
   path: '/clientes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConfiguracionRoute = ConfiguracionRouteImport.update({
+  id: '/configuracion',
+  path: '/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ItemsRoute = ItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NcfRoute = NcfRouteImport.update({
+  id: '/ncf',
+  path: '/ncf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportesRoute = ReportesRouteImport.update({
+  id: '/reportes',
+  path: '/reportes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturasIndexRoute = FacturasIndexRouteImport.update({
+  id: '/facturas/',
+  path: '/facturas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturasIdRoute = FacturasIdRouteImport.update({
+  id: '/facturas/$id',
+  path: '/facturas/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FacturasNuevaRoute = FacturasNuevaRouteImport.update({
+  id: '/facturas/nueva',
+  path: '/facturas/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
+  '/reportes': typeof ReportesRoute
+  '/facturas/$id': typeof FacturasIdRoute
+  '/facturas/nueva': typeof FacturasNuevaRoute
+  '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
+  '/reportes': typeof ReportesRoute
+  '/facturas/$id': typeof FacturasIdRoute
+  '/facturas/nueva': typeof FacturasNuevaRoute
+  '/facturas': typeof FacturasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
+  '/configuracion': typeof ConfiguracionRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
+  '/reportes': typeof ReportesRoute
+  '/facturas/$id': typeof FacturasIdRoute
+  '/facturas/nueva': typeof FacturasNuevaRoute
+  '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/items'
+  fullPaths:
+    | '/'
+    | '/clientes'
+    | '/configuracion'
+    | '/items'
+    | '/ncf'
+    | '/reportes'
+    | '/facturas/$id'
+    | '/facturas/nueva'
+    | '/facturas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/items'
-  id: '__root__' | '/' | '/clientes' | '/items'
+  to:
+    | '/'
+    | '/clientes'
+    | '/configuracion'
+    | '/items'
+    | '/ncf'
+    | '/reportes'
+    | '/facturas/$id'
+    | '/facturas/nueva'
+    | '/facturas'
+  id:
+    | '__root__'
+    | '/'
+    | '/clientes'
+    | '/configuracion'
+    | '/items'
+    | '/ncf'
+    | '/reportes'
+    | '/facturas/$id'
+    | '/facturas/nueva'
+    | '/facturas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
+  ConfiguracionRoute: typeof ConfiguracionRoute
   ItemsRoute: typeof ItemsRoute
+  NcfRoute: typeof NcfRoute
+  ReportesRoute: typeof ReportesRoute
+  FacturasIdRoute: typeof FacturasIdRoute
+  FacturasNuevaRoute: typeof FacturasNuevaRoute
+  FacturasIndexRoute: typeof FacturasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,11 +163,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClientesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/configuracion': {
+      id: '/configuracion'
+      path: '/configuracion'
+      fullPath: '/configuracion'
+      preLoaderRoute: typeof ConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/items': {
       id: '/items'
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof ItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ncf': {
+      id: '/ncf'
+      path: '/ncf'
+      fullPath: '/ncf'
+      preLoaderRoute: typeof NcfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reportes': {
+      id: '/reportes'
+      path: '/reportes'
+      fullPath: '/reportes'
+      preLoaderRoute: typeof ReportesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/facturas/': {
+      id: '/facturas/'
+      path: '/facturas'
+      fullPath: '/facturas/'
+      preLoaderRoute: typeof FacturasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/facturas/$id': {
+      id: '/facturas/$id'
+      path: '/facturas/$id'
+      fullPath: '/facturas/$id'
+      preLoaderRoute: typeof FacturasIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/facturas/nueva': {
+      id: '/facturas/nueva'
+      path: '/facturas/nueva'
+      fullPath: '/facturas/nueva'
+      preLoaderRoute: typeof FacturasNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -88,7 +218,13 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
+  ConfiguracionRoute: ConfiguracionRoute,
   ItemsRoute: ItemsRoute,
+  NcfRoute: NcfRoute,
+  ReportesRoute: ReportesRoute,
+  FacturasIdRoute: FacturasIdRoute,
+  FacturasNuevaRoute: FacturasNuevaRoute,
+  FacturasIndexRoute: FacturasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

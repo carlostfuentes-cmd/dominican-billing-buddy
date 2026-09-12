@@ -87,7 +87,7 @@ export async function listarClientes(busqueda = ""): Promise<Cliente[]> {
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
-export async function guardarCliente(c: Omit<Cliente, "id"> & { id?: number }): Promise<Cliente> {
+export async function guardarCliente(c: Omit<Cliente, "id"> & { id?: number | undefined }): Promise<Cliente> {
   if (await usarMysql()) {
     if (c.id) {
       await ejecutar(
@@ -163,7 +163,7 @@ export async function listarItems(busqueda = ""): Promise<Item[]> {
     .sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
-export async function guardarItem(it: Omit<Item, "id"> & { id?: number }): Promise<Item> {
+export async function guardarItem(it: Omit<Item, "id"> & { id?: number | undefined }): Promise<Item> {
   if (await usarMysql()) {
     if (it.id) {
       await ejecutar(
