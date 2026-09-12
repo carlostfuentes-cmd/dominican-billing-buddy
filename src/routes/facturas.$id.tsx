@@ -104,6 +104,25 @@ function DetalleFactura() {
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
+          {factura.estado === "pedido" && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => facturar.mutate({ imprimir: false })}
+                disabled={facturar.isPending}
+              >
+                <FileText className="size-4" /> Guardar factura
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => facturar.mutate({ imprimir: true })}
+                disabled={facturar.isPending}
+              >
+                <Printer className="size-4" /> Imprimir y guardar factura
+              </Button>
+            </>
+          )}
           {factura.estado === "emitida" && (
             <>
               <Button size="sm" onClick={() => cambiar.mutate("pagada")}>
