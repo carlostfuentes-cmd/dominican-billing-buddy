@@ -39,13 +39,16 @@ import {
 export const Route = createFileRoute("/facturas/")({
   head: () => ({
     meta: [
-      { title: "Facturas emitidas — ERP Contable RD" },
+      { title: "Pedidos y facturas — ERP Contable RD" },
       {
         name: "description",
-        content: "Listado de facturas con NCF, filtros por fecha, cliente, tipo y estado.",
+        content: "Listado de pedidos y facturas con NCF, filtros por fecha, cliente, tipo y estado.",
       },
-      { property: "og:title", content: "Facturas emitidas — ERP Contable RD" },
-      { property: "og:description", content: "Listado y filtros de facturas con NCF e ITBIS." },
+      { property: "og:title", content: "Pedidos y facturas — ERP Contable RD" },
+      {
+        property: "og:description",
+        content: "Listado y filtros de pedidos y facturas con NCF e ITBIS.",
+      },
     ],
   }),
   component: Facturas,
