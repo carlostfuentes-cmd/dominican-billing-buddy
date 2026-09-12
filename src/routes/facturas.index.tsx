@@ -30,6 +30,7 @@ import {
   money,
   fechaCorta,
   hoyISO,
+  ETIQUETA_ESTADO,
   TIPOS_NCF,
   type EstadoFactura,
   type TipoNCF,
@@ -38,13 +39,16 @@ import {
 export const Route = createFileRoute("/facturas/")({
   head: () => ({
     meta: [
-      { title: "Facturas emitidas — ERP Contable RD" },
+      { title: "Pedidos y facturas — ERP Contable RD" },
       {
         name: "description",
-        content: "Listado de facturas con NCF, filtros por fecha, cliente, tipo y estado.",
+        content: "Listado de pedidos y facturas con NCF, filtros por fecha, cliente, tipo y estado.",
       },
-      { property: "og:title", content: "Facturas emitidas — ERP Contable RD" },
-      { property: "og:description", content: "Listado y filtros de facturas con NCF e ITBIS." },
+      { property: "og:title", content: "Pedidos y facturas — ERP Contable RD" },
+      {
+        property: "og:description",
+        content: "Listado y filtros de pedidos y facturas con NCF e ITBIS.",
+      },
     ],
   }),
   component: Facturas,
@@ -85,12 +89,12 @@ function Facturas() {
   return (
     <div>
       <PageHeader
-        titulo="Facturas"
-        descripcion="Comprobantes emitidos con su NCF"
+        titulo="Pedidos y facturas"
+        descripcion="Los pedidos sin NCF están pendientes de facturar"
         acciones={
           <Button asChild>
             <Link to="/facturas/nueva">
-              <Plus className="size-4" /> Nueva factura
+              <Plus className="size-4" /> Nuevo pedido
             </Link>
           </Button>
         }
@@ -146,7 +150,8 @@ function Facturas() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TODOS}>Todos</SelectItem>
-                <SelectItem value="emitida">Emitida</SelectItem>
+                <SelectItem value="pedido">Pedido (sin facturar)</SelectItem>
+                <SelectItem value="emitida">Facturada</SelectItem>
                 <SelectItem value="pagada">Pagada</SelectItem>
                 <SelectItem value="anulada">Anulada</SelectItem>
               </SelectContent>
@@ -160,6 +165,7 @@ function Facturas() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Pedido</TableHead>
                 <TableHead>NCF</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -176,9 +182,10 @@ function Facturas() {
                 <TableRow key={f.id}>
                   <TableCell className="font-mono text-xs">
                     <Link to="/facturas/$id" params={{ id: String(f.id) }} className="underline">
-                      {f.ncf}
+                      {f.id}
                     </Link>
                   </TableCell>
+                  <TableCell className="font-mono text-xs">{f.ncf || "—"}</TableCell>
                   <TableCell className="font-medium">{f.cliente_nombre}</TableCell>
                   <TableCell>{fechaCorta(f.fecha)}</TableCell>
                   <TableCell className="text-xs">{(f.moneda || "DOP").toUpperCase()}</TableCell>
@@ -193,18 +200,20 @@ function Facturas() {
                           ? "default"
                           : f.estado === "anulada"
                             ? "destructive"
-                            : "secondary"
+                            : f.estado === "pedido"
+                              ? "outline"
+                              : "secondary"
                       }
                     >
-                      {f.estado}
+                      {ETIQUETA_ESTADO[f.estado]}
                     </Badge>
                   </TableCell>
                 </TableRow>
               ))}
               {!isLoading && facturas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    No hay facturas en este período.
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    No hay pedidos ni facturas en este período.
                   </TableCell>
                 </TableRow>
               )}

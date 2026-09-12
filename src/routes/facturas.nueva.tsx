@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { FileText, Plus, Printer, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  emitirFactura,
+  guardarPedido,
   obtenerClientes,
   obtenerItems,
   obtenerListasFactura,
@@ -49,15 +49,16 @@ import {
 export const Route = createFileRoute("/facturas/nueva")({
   head: () => ({
     meta: [
-      { title: "Nueva factura — ERP Contable RD" },
+      { title: "Nuevo pedido — ERP Contable RD" },
       {
         name: "description",
-        content: "Emite una factura con NCF automático, ITBIS, moneda y tasa de cambio.",
+        content:
+          "Registra el pedido y conviértelo en factura con NCF automático, ITBIS y multimoneda.",
       },
-      { property: "og:title", content: "Nueva factura — ERP Contable RD" },
+      { property: "og:title", content: "Nuevo pedido — ERP Contable RD" },
       {
         property: "og:description",
-        content: "Emisión de factura con NCF, ITBIS y multimoneda.",
+        content: "Pedido con conversión a factura, NCF, ITBIS y multimoneda.",
       },
     ],
   }),
@@ -131,9 +132,9 @@ function NuevaFactura() {
   const { totales } = useMemo(() => calcularTotales(lineasCalculo), [lineasCalculo]);
   const cobrado = efectivo + tarjeta + cheque + transferencia;
 
-  const emitir = useMutation({
-    mutationFn: () =>
-      emitirFactura({
+  const guardar = useMutation({
+    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) =>
+      guardarPedido({
         data: {
           cliente_id: clienteId,
           tipo_ncf: tipo,
@@ -153,16 +154,23 @@ function NuevaFactura() {
           orden_vendedor: ordenVendedor,
           pagos: { efectivo, tarjeta, cheque, transferencia, cardnet: 0 },
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
+          facturar: opciones.facturar,
         },
       }),
-    onSuccess: (factura) => {
-      toast.success(`Factura ${factura.ncf} emitida`);
+    onSuccess: (doc, opciones) => {
+      toast.success(
+        opciones.facturar ? `Factura ${doc.ncf} guardada` : `Pedido ${doc.id} guardado`,
+      );
       void qc.invalidateQueries({ queryKey: ["facturas"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
-      void navigate({ to: "/facturas/$id", params: { id: String(factura.id) } });
+      void navigate({
+        to: "/facturas/$id",
+        params: { id: String(doc.id) },
+        ...(opciones.imprimir ? { search: { imprimir: true } } : {}),
+      });
     },
-    onError: (e: Error) => toast.error(e.message || "No se pudo emitir la factura"),
+    onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),
   });
 
   const actualizar = (i: number, cambios: Partial<LineaEntrada>) =>
@@ -180,7 +188,7 @@ function NuevaFactura() {
     });
   };
 
-  const enviar = () => {
+  const enviar = (facturar: boolean, imprimir = false) => {
     if (!clienteId) { toast.error("Selecciona un cliente"); return; }
     if (!esDOP && (!tasa || tasa <= 0)) {
       toast.error("Indica la tasa de cambio a aplicar");
@@ -192,12 +200,13 @@ function NuevaFactura() {
       if (l.cantidad <= 0) { toast.error("La cantidad debe ser mayor que cero"); return; }
     }
     if (cobrado > totales.total + 0.01) {
-      toast.error("Los cobros superan el total de la factura");
+      toast.error("Los cobros superan el total del pedido");
       return;
     }
-    if (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta)
+    // El NCF sólo se necesita al convertir el pedido en factura.
+    if (facturar && (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta))
       { toast.error(`No hay NCF ${tipo} disponible. Revisa las secuencias.`); return; }
-    emitir.mutate();
+    guardar.mutate({ facturar, imprimir });
   };
 
   const lista = (opciones: { id: string; nombre: string }[] | undefined) => opciones ?? [];
@@ -205,8 +214,8 @@ function NuevaFactura() {
   return (
     <div>
       <PageHeader
-        titulo="Nueva factura"
-        descripcion="El NCF se asigna automáticamente al emitir. Indica moneda y tasa de cambio."
+        titulo="Nuevo pedido"
+        descripcion="Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -732,9 +741,34 @@ function NuevaFactura() {
                 {money(Math.max(0, totales.total - cobrado), moneda)}
               </span>
             </div>
-            <Button className="mt-4 w-full" onClick={enviar} disabled={emitir.isPending}>
-              {emitir.isPending ? "Emitiendo…" : "Emitir factura"}
-            </Button>
+            <div className="mt-4 space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => enviar(false)}
+                disabled={guardar.isPending}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Guardar pedido
+              </Button>
+              <Button
+                className="w-full"
+                onClick={() => enviar(true)}
+                disabled={guardar.isPending}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Guardar factura
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => enviar(true, true)}
+                disabled={guardar.isPending}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir y guardar factura
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

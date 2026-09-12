@@ -28,7 +28,15 @@ export const TIPOS_NCF: { codigo: TipoNCF; nombre: string }[] = [
 export const TASAS_ITBIS = [18, 16, 0] as const;
 export type TasaItbis = (typeof TASAS_ITBIS)[number];
 
-export type EstadoFactura = "emitida" | "pagada" | "anulada";
+// "pedido" = orden guardada sin número de factura todavía.
+export type EstadoFactura = "pedido" | "emitida" | "pagada" | "anulada";
+
+export const ETIQUETA_ESTADO: Record<EstadoFactura, string> = {
+  pedido: "Pedido",
+  emitida: "Facturada",
+  pagada: "Pagada",
+  anulada: "Anulada",
+};
 
 export interface Empresa {
   nombre: string;
@@ -158,9 +166,13 @@ export interface PagosFactura {
 }
 
 export interface Factura {
+  /** Es el número de pedido (orders.order_id). */
   id: number;
   ncf: string;
   tipo_ncf: TipoNCF;
+  /** true cuando el pedido ya tiene número de factura asignado. */
+  facturado?: boolean | undefined;
+  invoice_id?: number | undefined;
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;

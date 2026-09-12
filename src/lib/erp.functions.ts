@@ -215,11 +215,21 @@ const nuevaFacturaSchema = z.object({
       }),
     )
     .min(1, "Agrega al menos una línea"),
+  facturar: z.boolean().optional(),
 });
 
-export const emitirFactura = createServerFn({ method: "POST" })
+export const guardarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => nuevaFacturaSchema.parse(d))
-  .handler(async ({ data }): Promise<Factura> => (await repo()).crearFactura(data));
+  .handler(async ({ data }): Promise<Factura> => (await repo()).crearPedido(data));
+
+/** Convierte un pedido existente en factura (asigna NCF y número de factura). */
+export const facturarPedido = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.number().int().positive(), tipo_ncf: tipoNCF.optional() }).parse(d),
+  )
+  .handler(async ({ data }): Promise<Factura> =>
+    (await repo()).facturarPedido(data.id, data.tipo_ncf),
+  );
 
 
 export const cambiarEstadoFactura = createServerFn({ method: "POST" })

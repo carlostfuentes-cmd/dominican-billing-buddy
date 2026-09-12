@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, CheckCircle2, Printer } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowLeft, Ban, CheckCircle2, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +15,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cambiarEstadoFactura, obtenerEmpresa, obtenerFactura } from "@/lib/erp.functions";
+import {
+  cambiarEstadoFactura,
+  facturarPedido,
+  obtenerEmpresa,
+  obtenerFactura,
+} from "@/lib/erp.functions";
 import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
+  validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
+    search["imprimir"] === true || search["imprimir"] === "true" ? { imprimir: true } : {},
   head: () => ({
     meta: [
       { title: "Detalle de factura — ERP Contable RD" },
@@ -35,6 +43,7 @@ export const Route = createFileRoute("/facturas/$id")({
 
 function DetalleFactura() {
   const { id } = useParams({ from: "/facturas/$id" });
+  const { imprimir } = useSearch({ from: "/facturas/$id" });
   const qc = useQueryClient();
   const idNum = Number(id);
 
@@ -44,6 +53,15 @@ function DetalleFactura() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+
+  // Impresión automática cuando se llega desde "Imprimir y guardar factura".
+  const yaImprimio = useRef(false);
+  useEffect(() => {
+    if (imprimir && factura && !yaImprimio.current) {
+      yaImprimio.current = true;
+      setTimeout(() => window.print(), 400);
+    }
+  }, [imprimir, factura]);
 
   const cambiar = useMutation({
     mutationFn: (estado: "pagada" | "anulada") =>
@@ -55,6 +73,21 @@ function DetalleFactura() {
       void qc.invalidateQueries({ queryKey: ["resumen"] });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo actualizar la factura"),
+  });
+
+  // Convierte el pedido en factura: asigna NCF y número de factura.
+  const facturar = useMutation({
+    mutationFn: (opciones: { imprimir: boolean }) =>
+      facturarPedido({ data: { id: idNum } }).then((f) => ({ f, ...opciones })),
+    onSuccess: async ({ f, imprimir }) => {
+      toast.success(`Factura ${f.ncf} guardada`);
+      await qc.invalidateQueries({ queryKey: ["factura", idNum] });
+      void qc.invalidateQueries({ queryKey: ["facturas"] });
+      void qc.invalidateQueries({ queryKey: ["secuencias"] });
+      void qc.invalidateQueries({ queryKey: ["resumen"] });
+      if (imprimir) setTimeout(() => window.print(), 300);
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo guardar la factura"),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando factura…</p>;
@@ -89,6 +122,25 @@ function DetalleFactura() {
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
+          {factura.estado === "pedido" && (
+            <>
+              <Button
+                size="sm"
+                onClick={() => facturar.mutate({ imprimir: false })}
+                disabled={facturar.isPending}
+              >
+                <FileText className="size-4" /> Guardar factura
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => facturar.mutate({ imprimir: true })}
+                disabled={facturar.isPending}
+              >
+                <Printer className="size-4" /> Imprimir y guardar factura
+              </Button>
+            </>
+          )}
           {factura.estado === "emitida" && (
             <>
               <Button size="sm" onClick={() => cambiar.mutate("pagada")}>

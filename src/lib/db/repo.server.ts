@@ -40,6 +40,8 @@ export interface FiltroFacturas {
   clienteId?: string;
   tipo?: TipoNCF;
   estado?: EstadoFactura;
+  /** Cuando es true excluye pedidos aún no facturados (reportes fiscales). */
+  facturadas?: boolean;
 }
 
 export interface EstadoConexion {
@@ -702,11 +704,13 @@ const SQL_FACTURAS = `
            COALESCE(t.itbis, 0) AS itbis, COALESCE(t.total, 0) AS total,
            CASE
              WHEN ri.invoice_id IS NOT NULL THEN 'anulada'
+             WHEN o.invoice_id IS NULL THEN 'pedido'
              WHEN COALESCE(t.total, 0) > 0
                   AND (o.efectivo + o.tarjeta + o.cheque + o.transferencia + o.cardnet)
                       >= t.total - 0.01 THEN 'pagada'
              ELSE 'emitida'
            END AS estado,
+           o.invoice_id AS invoice_id,
            COALESCE(o.notes, '') AS notas,
            o.credit_days AS dias_credito,
            COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
@@ -739,7 +743,6 @@ const SQL_FACTURAS = `
     LEFT JOIN (
       SELECT DISTINCT invoice_id FROM reverse_invoices WHERE invoice_id IS NOT NULL
     ) ri ON ri.invoice_id = o.invoice_id
-    WHERE o.invoice_id IS NOT NULL
   ) f`;
 
 interface FilaFactura {
@@ -747,6 +750,7 @@ interface FilaFactura {
   ncf: string;
   tipo_prefijo: string;
   ncf_id: number | null;
+  invoice_id: number | null;
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
@@ -792,6 +796,8 @@ function mapearFactura(f: FilaFactura): Factura {
     id: Number(f.id),
     ncf: f.ncf,
     tipo_ncf: tipo,
+    facturado: f.invoice_id !== null && f.invoice_id !== undefined,
+    invoice_id: f.invoice_id === null || f.invoice_id === undefined ? undefined : Number(f.invoice_id),
     cliente_id: String(f.cliente_id),
     cliente_nombre: f.cliente_nombre,
     cliente_rnc: f.cliente_rnc,
@@ -855,6 +861,7 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
       cond.push("f.estado = ?");
       params.push(filtro.estado);
     }
+    if (filtro.facturadas) cond.push("f.invoice_id IS NOT NULL");
     const filas = await sql<FilaFactura>(
       `${SQL_FACTURAS}
        ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
@@ -871,7 +878,8 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
         (!filtro.hasta || f.fecha <= filtro.hasta) &&
         (!filtro.clienteId || f.cliente_id === filtro.clienteId) &&
         (!filtro.tipo || f.tipo_ncf === filtro.tipo) &&
-        (!filtro.estado || f.estado === filtro.estado),
+        (!filtro.estado || f.estado === filtro.estado) &&
+        (!filtro.facturadas || f.estado !== "pedido"),
     )
     .sort((a, b) => (a.fecha === b.fecha ? b.id - a.id : b.fecha.localeCompare(a.fecha)));
 }
@@ -927,7 +935,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
   return demo().facturas.find((f) => f.id === id) ?? null;
 }
 
-export interface NuevaFactura {
+export interface NuevoPedido {
   cliente_id: string;
   tipo_ncf: TipoNCF;
   fecha: string;
@@ -948,40 +956,45 @@ export interface NuevaFactura {
     | { efectivo?: number; tarjeta?: number; cheque?: number; transferencia?: number; cardnet?: number }
     | undefined;
   lineas: LineaEntrada[];
+  /** Si es true, al guardar el pedido se convierte de inmediato en factura. */
+  facturar?: boolean | undefined;
 }
 
+/** Reserva de forma atómica el siguiente NCF del tipo indicado. */
+async function reservarNCF(tipo: TipoNCF): Promise<string> {
+  const rangos = await sql<{ ID: number; last: number }>(
+    `SELECT ID, last FROM ncf_sequences
+     WHERE prefix = ? AND status = 1 AND last < end
+       AND (vencimiento IS NULL OR vencimiento >= CURDATE())
+     ORDER BY ID LIMIT 1`,
+    [tipo],
+  );
+  const rango = rangos[0];
+  if (!rango) {
+    throw new Error(
+      `La secuencia NCF ${tipo} está agotada, vencida o inactiva. Actualízala en Secuencias NCF.`,
+    );
+  }
+  const upd = await ejecutar(
+    "UPDATE ncf_sequences SET last = last + 1 WHERE ID = ? AND last < end",
+    [rango.ID],
+  );
+  if (upd.affectedRows === 0) {
+    throw new Error(`La secuencia NCF ${tipo} se agotó. Actualízala en Secuencias NCF.`);
+  }
+  return formatearNCF(tipo, Number(rango.last) + 1);
+}
 
-export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
+/**
+ * Guarda el pedido en orders/orders_detail. No asigna número de factura:
+ * eso ocurre al convertirlo en factura (facturarPedido).
+ */
+export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
   const { lineas, totales } = calcularTotales(entrada.lineas);
-  if (!lineas.length) throw new Error("La factura debe tener al menos una línea");
+  if (!lineas.length) throw new Error("El pedido debe tener al menos una línea");
   const vencimiento = sumarDias(entrada.fecha, entrada.dias_credito);
 
   if (await usarMysql()) {
-    // Rango vigente del tipo solicitado.
-    const rangos = await sql<{ ID: number; last: number }>(
-      `SELECT ID, last FROM ncf_sequences
-       WHERE prefix = ? AND status = 1 AND last < end
-         AND (vencimiento IS NULL OR vencimiento >= CURDATE())
-       ORDER BY ID LIMIT 1`,
-      [entrada.tipo_ncf],
-    );
-    const rango = rangos[0];
-    if (!rango) {
-      throw new Error(
-        `La secuencia NCF ${entrada.tipo_ncf} está agotada, vencida o inactiva. Actualízala en Secuencias NCF.`,
-      );
-    }
-    // Asignación atómica: incrementa sólo si queda rango disponible.
-    const upd = await ejecutar(
-      "UPDATE ncf_sequences SET last = last + 1 WHERE ID = ? AND last < end",
-      [rango.ID],
-    );
-    if (upd.affectedRows === 0) {
-      throw new Error(`La secuencia NCF ${entrada.tipo_ncf} se agotó. Actualízala en Secuencias NCF.`);
-    }
-    const numero = Number(rango.last) + 1;
-    const ncf = formatearNCF(entrada.tipo_ncf, numero);
-
     const clientes = await sql<{ name: string; rnc: string | null }>(
       "SELECT name, rnc FROM customers WHERE customer_id = ?",
       [entrada.cliente_id],
@@ -991,13 +1004,6 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
 
     const d = await defectos();
     const sucursal = Number(entrada.sucursal_id ?? 1) || 1;
-
-    // Comprobante en invoices.
-    const inv = await ejecutar(
-      `INSERT INTO invoices (branch_id, date, time, counted, ncf_id, ncf_doc)
-       VALUES (?, ?, CURTIME(), 0, ?, ?)`,
-      [sucursal, entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
-    );
 
     // Multimoneda: se guarda la moneda del documento y la tasa aplicada.
     const moneda = (entrada.moneda || "DOP").toUpperCase();
@@ -1045,7 +1051,6 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
       ],
     );
     const orderId = ord.insertId;
-    await ejecutar("UPDATE orders SET invoice_id = ? WHERE order_id = ?", [inv.insertId, orderId]);
 
     for (const [pos, l] of lineas.entries()) {
       const descuentoMonto = round2(l.cantidad * l.precio * (l.descuento_pct / 100));
@@ -1075,26 +1080,21 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
       );
     }
 
-    const creada = await obtenerFactura(orderId);
-    if (!creada) throw new Error("No se pudo leer la factura creada");
-    return creada;
+    if (entrada.facturar) return facturarPedido(orderId, entrada.tipo_ncf);
+
+    const creado = await obtenerFactura(orderId);
+    if (!creado) throw new Error("No se pudo leer el pedido creado");
+    return creado;
   }
 
   const d = demo();
-  const sec = d.secuencias.find((s) => s.tipo_ncf === entrada.tipo_ncf);
-  if (!sec || !sec.activa || sec.proximo > sec.hasta || sec.vence < hoyISO()) {
-    throw new Error(
-      `La secuencia NCF ${entrada.tipo_ncf} está agotada, vencida o inactiva. Actualízala en Secuencias NCF.`,
-    );
-  }
   const cliente = d.clientes.find((c) => c.id === entrada.cliente_id);
   if (!cliente) throw new Error("Cliente no encontrado");
-  const ncf = formatearNCF(entrada.tipo_ncf, sec.proximo);
-  sec.proximo += 1;
-  const factura: Factura = {
+  const pedido: Factura = {
     id: d.siguienteId.factura++,
-    ncf,
+    ncf: "",
     tipo_ncf: entrada.tipo_ncf,
+    facturado: false,
     cliente_id: cliente.id,
     cliente_nombre: cliente.nombre,
     cliente_rnc: cliente.rnc,
@@ -1107,14 +1107,72 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
     descuento: totales.descuento,
     itbis: totales.itbis,
     total: totales.total,
-    estado: "emitida",
+    estado: "pedido",
     notas: entrada.notas,
     orden_cliente: entrada.orden_cliente ?? "",
     lineas,
-
   };
-  d.facturas.push(factura);
-  return factura;
+  d.facturas.push(pedido);
+  if (entrada.facturar) return facturarPedido(pedido.id, entrada.tipo_ncf);
+  return pedido;
+}
+
+/**
+ * Convierte un pedido en factura: reserva el NCF, crea el comprobante en
+ * invoices y guarda el número de factura en orders.invoice_id.
+ */
+export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factura> {
+  if (await usarMysql()) {
+    const ordenes = await sql<{
+      invoice_id: number | null;
+      branch_id: number;
+      date: string;
+      customer_id: string;
+    }>("SELECT invoice_id, branch_id, DATE_FORMAT(date, '%Y-%m-%d') AS date, customer_id FROM orders WHERE order_id = ?", [id]);
+    const orden = ordenes[0];
+    if (!orden) throw new Error("Pedido no encontrado");
+    if (orden.invoice_id) {
+      const ya = await obtenerFactura(id);
+      if (!ya) throw new Error("Pedido no encontrado");
+      return ya;
+    }
+    let tipoNcf = tipo;
+    if (!tipoNcf) {
+      const cs = await sql<{ ncf_id: number | null }>(
+        "SELECT ncf_id FROM customers WHERE customer_id = ?",
+        [orden.customer_id],
+      );
+      tipoNcf = tipoDesdeNcfId(cs[0]?.ncf_id ?? null);
+    }
+    const ncf = await reservarNCF(tipoNcf);
+    const inv = await ejecutar(
+      `INSERT INTO invoices (branch_id, date, time, counted, ncf_id, ncf_doc)
+       VALUES (?, ?, CURTIME(), 0, ?, ?)`,
+      [orden.branch_id || 1, orden.date, NCF_ID_POR_TIPO[tipoNcf], ncf],
+    );
+    await ejecutar("UPDATE orders SET invoice_id = ? WHERE order_id = ?", [inv.insertId, id]);
+    const facturada = await obtenerFactura(id);
+    if (!facturada) throw new Error("No se pudo leer la factura creada");
+    return facturada;
+  }
+
+  const d = demo();
+  const pedido = d.facturas.find((f) => f.id === id);
+  if (!pedido) throw new Error("Pedido no encontrado");
+  if (pedido.facturado) return pedido;
+  const tipoNcf = tipo ?? pedido.tipo_ncf;
+  const sec = d.secuencias.find((s) => s.tipo_ncf === tipoNcf);
+  if (!sec || !sec.activa || sec.proximo > sec.hasta || sec.vence < hoyISO()) {
+    throw new Error(
+      `La secuencia NCF ${tipoNcf} está agotada, vencida o inactiva. Actualízala en Secuencias NCF.`,
+    );
+  }
+  pedido.ncf = formatearNCF(tipoNcf, sec.proximo);
+  sec.proximo += 1;
+  pedido.tipo_ncf = tipoNcf;
+  pedido.facturado = true;
+  pedido.estado = "emitida";
+  return pedido;
 }
 
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {
@@ -1193,8 +1251,8 @@ export async function resumen(): Promise<Resumen> {
   const hoy = hoyISO();
   const inicioMes = `${hoy.slice(0, 7)}-01`;
   const [delMes, todas, secuencias] = await Promise.all([
-    listarFacturas({ desde: inicioMes, hasta: hoy }),
-    listarFacturas({}),
+    listarFacturas({ desde: inicioMes, hasta: hoy, facturadas: true }),
+    listarFacturas({ facturadas: true }),
     listarSecuencias(),
   ]);
   const validas = delMes.filter((f) => f.estado !== "anulada");
@@ -1234,7 +1292,9 @@ export interface Reporte {
 }
 
 export async function reporte(desde: string, hasta: string): Promise<Reporte> {
-  const facturas = (await listarFacturas({ desde, hasta })).filter((f) => f.estado !== "anulada");
+  const facturas = (await listarFacturas({ desde, hasta, facturadas: true })).filter(
+    (f) => f.estado !== "anulada",
+  );
   const conLineas = await Promise.all(facturas.map((f) => obtenerFactura(f.id)));
   const tasas = new Map<number, { tasa: number; base: number; itbis: number }>();
   for (const f of conLineas) {
