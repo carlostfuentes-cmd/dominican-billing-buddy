@@ -1292,7 +1292,9 @@ export interface Reporte {
 }
 
 export async function reporte(desde: string, hasta: string): Promise<Reporte> {
-  const facturas = (await listarFacturas({ desde, hasta })).filter((f) => f.estado !== "anulada");
+  const facturas = (await listarFacturas({ desde, hasta, facturadas: true })).filter(
+    (f) => f.estado !== "anulada",
+  );
   const conLineas = await Promise.all(facturas.map((f) => obtenerFactura(f.id)));
   const tasas = new Map<number, { tasa: number; base: number; itbis: number }>();
   for (const f of conLineas) {
