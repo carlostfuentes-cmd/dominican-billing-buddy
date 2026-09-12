@@ -32,7 +32,7 @@ export const Route = createFileRoute("/reportes")({
       { property: "og:description", content: "Ventas por período, ITBIS por tasa y export CSV." },
     ],
   }),
-  component: Reportes;
+  component: Reportes,
 });
 
 function Reportes() {
