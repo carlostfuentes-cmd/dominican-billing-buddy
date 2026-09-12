@@ -51,7 +51,7 @@ export const Route = createFileRoute("/clientes")({
   component: Clientes,
 });
 
-const vacio: Omit<Cliente, "id"> & { id?: number } = {
+const vacio: Omit<Cliente, "id"> & { id?: string } = {
   nombre: "",
   rnc: "",
   tipo_ncf: "B02",

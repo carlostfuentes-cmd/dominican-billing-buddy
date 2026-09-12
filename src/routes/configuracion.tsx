@@ -135,27 +135,19 @@ function Configuracion() {
             </p>
             {conexion?.modo === "mysql" ? (
               <>
-                <p>Los clientes, ítems y facturas se guardan en tu servidor de base de datos.</p>
+                <p>
+                  La aplicación usa las tablas ya existentes de tu sistema: clientes, ítems,
+                  facturas y secuencias NCF se leen y guardan directamente en ellas. No se crean
+                  tablas nuevas en tu base de datos.
+                </p>
                 {(conexion.tablasFaltantes?.length ?? 0) > 0 ? (
-                  <div className="space-y-2 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-                    <p>
-                      Faltan tablas en tu base de datos:{" "}
-                      <span className="font-mono">{conexion.tablasFaltantes!.join(", ")}</span>.
-                    </p>
-                    <p>
-                      Puedes crearlas automáticamente (no borra datos existentes) o ejecutar el
-                      archivo <code>db/schema.sql</code> del proyecto en tu servidor.
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => crearTablas.mutate()}
-                      disabled={crearTablas.isPending}
-                    >
-                      {crearTablas.isPending ? "Creando tablas…" : "Crear tablas ahora"}
-                    </Button>
-                  </div>
+                  <p className="rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+                    No se encontraron estas tablas de tu sistema:{" "}
+                    <span className="font-mono">{conexion.tablasFaltantes!.join(", ")}</span>.
+                    Verifica que estás apuntando a la base de datos correcta.
+                  </p>
                 ) : (
-                  <p className="text-xs">Esquema verificado: todas las tablas existen.</p>
+                  <p className="text-xs">Tablas de tu sistema verificadas: todo en orden.</p>
                 )}
               </>
             ) : (
