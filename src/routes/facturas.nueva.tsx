@@ -131,9 +131,9 @@ function NuevaFactura() {
   const { totales } = useMemo(() => calcularTotales(lineasCalculo), [lineasCalculo]);
   const cobrado = efectivo + tarjeta + cheque + transferencia;
 
-  const emitir = useMutation({
-    mutationFn: () =>
-      emitirFactura({
+  const guardar = useMutation({
+    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) =>
+      guardarPedido({
         data: {
           cliente_id: clienteId,
           tipo_ncf: tipo,
@@ -153,16 +153,23 @@ function NuevaFactura() {
           orden_vendedor: ordenVendedor,
           pagos: { efectivo, tarjeta, cheque, transferencia, cardnet: 0 },
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
+          facturar: opciones.facturar,
         },
       }),
-    onSuccess: (factura) => {
-      toast.success(`Factura ${factura.ncf} emitida`);
+    onSuccess: (doc, opciones) => {
+      toast.success(
+        opciones.facturar ? `Factura ${doc.ncf} guardada` : `Pedido ${doc.id} guardado`,
+      );
       void qc.invalidateQueries({ queryKey: ["facturas"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
-      void navigate({ to: "/facturas/$id", params: { id: String(factura.id) } });
+      void navigate({
+        to: "/facturas/$id",
+        params: { id: String(doc.id) },
+        ...(opciones.imprimir ? { search: { imprimir: true } } : {}),
+      });
     },
-    onError: (e: Error) => toast.error(e.message || "No se pudo emitir la factura"),
+    onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),
   });
 
   const actualizar = (i: number, cambios: Partial<LineaEntrada>) =>
