@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  guardarEmpresa,
-  inicializarEsquema,
-  obtenerEmpresa,
-  obtenerEstadoConexion,
-} from "@/lib/erp.functions";
+import { guardarEmpresa, obtenerEmpresa, obtenerEstadoConexion } from "@/lib/erp.functions";
 import { rncValido, type Empresa } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/configuracion")({
@@ -54,19 +49,6 @@ function Configuracion() {
       void qc.invalidateQueries({ queryKey: ["empresa"] });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar"),
-  });
-
-  const crearTablas = useMutation({
-    mutationFn: () => inicializarEsquema({}),
-    onSuccess: (estado) => {
-      if (estado.tablasFaltantes.length === 0) {
-        toast.success("Tablas creadas en tu servidor");
-      } else {
-        toast.error("Aún faltan tablas; revisa los permisos del usuario de la base de datos");
-      }
-      void qc.invalidateQueries({ queryKey: ["estado-conexion"] });
-    },
-    onError: (e: Error) => toast.error(e.message || "No se pudieron crear las tablas"),
   });
 
   const enviar = () => {

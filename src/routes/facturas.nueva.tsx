@@ -98,7 +98,7 @@ function NuevaFactura() {
     mutationFn: () =>
       emitirFactura({
         data: {
-          cliente_id: Number(clienteId),
+          cliente_id: clienteId,
           tipo_ncf: tipo,
           fecha,
           dias_credito: dias,

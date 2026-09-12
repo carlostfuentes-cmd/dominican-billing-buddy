@@ -14,7 +14,10 @@ import type {
 
 const repo = () => import("@/lib/db/repo.server");
 
-const tipoNCF = z.enum(["B01", "B02", "B14", "B15"]);
+const tipoNCF = z.enum([
+  "B01", "B02", "B03", "B04", "B11", "B13", "B14", "B15",
+  "E31", "E32", "E33", "E34", "E41", "E43", "E44", "E45", "E46",
+]);
 const estadoFactura = z.enum(["emitida", "pagada", "anulada"]);
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
 const texto = (max: number) => z.string().trim().max(max);
@@ -23,15 +26,6 @@ const texto = (max: number) => z.string().trim().max(max);
 
 export const obtenerEstadoConexion = createServerFn({ method: "GET" }).handler(
   async (): Promise<EstadoConexion> => (await repo()).estadoConexion(),
-);
-
-// Crea en la base conectada las tablas del módulo de Facturación (idempotente).
-export const inicializarEsquema = createServerFn({ method: "POST" }).handler(
-  async (): Promise<EstadoConexion> => {
-    const { crearTablas } = await import("@/lib/db/mysql.server");
-    await crearTablas();
-    return (await repo()).estadoConexion();
-  },
 );
 
 export const obtenerResumen = createServerFn({ method: "GET" }).handler(
@@ -59,7 +53,7 @@ export const guardarEmpresa = createServerFn({ method: "POST" })
 /* -------------------------------- Clientes ------------------------------- */
 
 const clienteSchema = z.object({
-  id: z.number().int().positive().optional(),
+  id: texto(20).min(1).optional(),
   nombre: texto(160).min(1, "Requerido"),
   rnc: texto(15).min(9, "RNC o Cédula inválido"),
   tipo_ncf: tipoNCF,
@@ -81,7 +75,7 @@ export const guardarCliente = createServerFn({ method: "POST" })
 /* --------------------------------- Ítems --------------------------------- */
 
 const itemSchema = z.object({
-  id: z.number().int().positive().optional(),
+  id: texto(20).min(1).optional(),
   codigo: texto(30).min(1, "Requerido"),
   descripcion: texto(200).min(1, "Requerido"),
   unidad: texto(10).min(1, "Requerido"),
@@ -122,7 +116,7 @@ export const guardarSecuencia = createServerFn({ method: "POST" })
 const filtroSchema = z.object({
   desde: fecha.optional(),
   hasta: fecha.optional(),
-  clienteId: z.number().int().positive().optional(),
+  clienteId: texto(20).optional(),
   tipo: tipoNCF.optional(),
   estado: estadoFactura.optional(),
 });
@@ -138,7 +132,7 @@ export const obtenerFactura = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<Factura | null> => (await repo()).obtenerFactura(data.id));
 
 const nuevaFacturaSchema = z.object({
-  cliente_id: z.number().int().positive(),
+  cliente_id: texto(20).min(1, "Cliente requerido"),
   tipo_ncf: tipoNCF,
   fecha,
   dias_credito: z.number().int().min(0).max(365),
@@ -146,7 +140,7 @@ const nuevaFacturaSchema = z.object({
   lineas: z
     .array(
       z.object({
-        item_id: z.number().int().positive().nullable().optional(),
+        item_id: texto(20).nullable().optional(),
         codigo: texto(30),
         descripcion: texto(200).min(1, "Descripción requerida"),
         cantidad: z.number().positive().max(1_000_000),
