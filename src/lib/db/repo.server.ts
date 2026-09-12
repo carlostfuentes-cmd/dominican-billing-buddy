@@ -317,6 +317,70 @@ export async function listasCliente(): Promise<ListasCliente> {
   return { localidades: map(loc), vendedores: map(ven), clases: map(cla) };
 }
 
+const LISTAS_FACTURA_VACIAS: ListasFactura = {
+  monedas: [{ id: "DOP", nombre: "PESOS DOMINICANOS", simbolo: "RD$" }],
+  vendedores: [],
+  tecnicos: [],
+  almacenes: [],
+  sucursales: [],
+  departamentos: [],
+  proyectos: [],
+};
+
+// Listas auxiliares del pedido/factura tomadas del sistema existente.
+export async function listasFactura(): Promise<ListasFactura> {
+  if (!(await usarMysql())) return LISTAS_FACTURA_VACIAS;
+  const opciones = async (consulta: string): Promise<OpcionId[]> => {
+    try {
+      const filas = await sql<FilaCliente>(consulta);
+      return filas.map((r) => ({
+        id: String(r["id"]),
+        nombre: txt(r["nombre"]) || String(r["id"]),
+      }));
+    } catch {
+      return [];
+    }
+  };
+  const [mon, ven, tec, alm, suc, dep, pro] = await Promise.all([
+    (async () => {
+      try {
+        return await sql<FilaCliente>(
+          `SELECT currency_id AS id, name AS nombre, symbol AS simbolo
+           FROM currencies WHERE currency_id <> '000' ORDER BY is_base DESC, currency_id`,
+        );
+      } catch {
+        return [];
+      }
+    })(),
+    opciones(
+      `SELECT salesman_id AS id, TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS nombre
+       FROM salesmen WHERE status = 'A' ORDER BY nombre LIMIT 300`,
+    ),
+    opciones("SELECT tech_id AS id, name AS nombre FROM technician WHERE status = 'A' ORDER BY name LIMIT 200"),
+    opciones("SELECT warehouse_id AS id, name AS nombre FROM warehouse ORDER BY name LIMIT 100"),
+    opciones("SELECT branch_id AS id, name AS nombre FROM branchs ORDER BY name LIMIT 100"),
+    opciones("SELECT department_id AS id, name AS nombre FROM gl_department ORDER BY name LIMIT 300"),
+    opciones(
+      "SELECT project_id AS id, name AS nombre FROM projects WHERE status = 'ABIERTO' ORDER BY name LIMIT 300",
+    ),
+  ]);
+  const monedas = mon.map((r) => ({
+    id: String(r["id"]),
+    nombre: txt(r["nombre"]) || String(r["id"]),
+    simbolo: txt(r["simbolo"]) || String(r["id"]),
+  }));
+  return {
+    monedas: monedas.length ? monedas : LISTAS_FACTURA_VACIAS.monedas,
+    vendedores: ven,
+    tecnicos: tec,
+    almacenes: alm,
+    sucursales: suc,
+    departamentos: dep,
+    proyectos: pro,
+  };
+}
+
+
 export async function guardarCliente(
   c: Omit<Cliente, "id"> & { id?: string | undefined },
 ): Promise<Cliente> {
