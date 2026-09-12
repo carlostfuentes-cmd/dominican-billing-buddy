@@ -134,7 +134,19 @@ function Configuracion() {
               </span>
             </p>
             {conexion?.modo === "mysql" ? (
-              <p>Los clientes, ítems y facturas se guardan en tu servidor de base de datos.</p>
+              <>
+                <p>Los clientes, ítems y facturas se guardan en tu servidor de base de datos.</p>
+                {(conexion.tablasFaltantes?.length ?? 0) > 0 ? (
+                  <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-400">
+                    Faltan tablas en tu base de datos:{" "}
+                    <span className="font-mono">{conexion.tablasFaltantes!.join(", ")}</span>.
+                    Ejecuta una vez el archivo <code>db/schema.sql</code> del proyecto en tu
+                    servidor para crearlas.
+                  </p>
+                ) : (
+                  <p className="text-xs">Esquema verificado: todas las tablas existen.</p>
+                )}
+              </>
             ) : (
               <>
                 <p>
