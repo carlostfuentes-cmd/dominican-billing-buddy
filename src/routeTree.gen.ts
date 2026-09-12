@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as NcfRouteImport } from './routes/ncf'
+import { Route as FacturasIndexRouteImport } from './routes/facturas.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const NcfRoute = NcfRouteImport.update({
   path: '/ncf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FacturasIndexRoute = FacturasIndexRouteImport.update({
+  id: '/facturas/',
+  path: '/facturas/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/facturas': typeof FacturasIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/items' | '/ncf'
+  fullPaths: '/' | '/clientes' | '/items' | '/ncf' | '/facturas/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/items' | '/ncf'
-  id: '__root__' | '/' | '/clientes' | '/items' | '/ncf'
+  to: '/' | '/clientes' | '/items' | '/ncf' | '/facturas'
+  id: '__root__' | '/' | '/clientes' | '/items' | '/ncf' | '/facturas/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   ClientesRoute: typeof ClientesRoute
   ItemsRoute: typeof ItemsRoute
   NcfRoute: typeof NcfRoute
+  FacturasIndexRoute: typeof FacturasIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NcfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/facturas/': {
+      id: '/facturas/'
+      path: '/facturas'
+      fullPath: '/facturas/'
+      preLoaderRoute: typeof FacturasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientesRoute: ClientesRoute,
   ItemsRoute: ItemsRoute,
   NcfRoute: NcfRoute,
+  FacturasIndexRoute: FacturasIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
