@@ -796,6 +796,8 @@ function mapearFactura(f: FilaFactura): Factura {
     id: Number(f.id),
     ncf: f.ncf,
     tipo_ncf: tipo,
+    facturado: f.invoice_id !== null && f.invoice_id !== undefined,
+    invoice_id: f.invoice_id === null || f.invoice_id === undefined ? undefined : Number(f.invoice_id),
     cliente_id: String(f.cliente_id),
     cliente_nombre: f.cliente_nombre,
     cliente_rnc: f.cliente_rnc,
