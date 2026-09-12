@@ -146,7 +146,8 @@ function Facturas() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={TODOS}>Todos</SelectItem>
-                <SelectItem value="emitida">Emitida</SelectItem>
+                <SelectItem value="pedido">Pedido (sin facturar)</SelectItem>
+                <SelectItem value="emitida">Facturada</SelectItem>
                 <SelectItem value="pagada">Pagada</SelectItem>
                 <SelectItem value="anulada">Anulada</SelectItem>
               </SelectContent>
