@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cambiarEstadoFactura, obtenerEmpresa, obtenerFactura } from "@/lib/erp.functions";
-import { dop, fechaCorta, round2 } from "@/lib/erp-types";
+import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
   head: () => ({
@@ -146,6 +146,12 @@ function DetalleFactura() {
               <p className="text-xs uppercase tracking-wide text-muted-foreground">Cliente</p>
               <p className="font-medium">{factura.cliente_nombre}</p>
               <p className="text-sm text-muted-foreground">RNC/Cédula {factura.cliente_rnc}</p>
+              {factura.cliente_direccion ? (
+                <p className="max-w-xs text-sm text-muted-foreground">{factura.cliente_direccion}</p>
+              ) : null}
+              {factura.cliente_telefono ? (
+                <p className="text-sm text-muted-foreground">Tel. {factura.cliente_telefono}</p>
+              ) : null}
             </div>
             <div className="sm:text-right">
               <p className="text-sm">
@@ -156,6 +162,31 @@ function DetalleFactura() {
                 <span className="text-muted-foreground">Vencimiento: </span>
                 {fechaCorta(factura.vencimiento)}
               </p>
+              <p className="text-sm">
+                <span className="text-muted-foreground">Moneda: </span>
+                {(factura.moneda || "DOP").toUpperCase()}
+                {factura.moneda && factura.moneda.toUpperCase() !== "DOP"
+                  ? ` · tasa ${factura.tasa_cambio ?? 1}`
+                  : ""}
+              </p>
+              {factura.vendedor ? (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Vendedor: </span>
+                  {factura.vendedor}
+                </p>
+              ) : null}
+              {factura.almacen ? (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Almacén: </span>
+                  {factura.almacen}
+                </p>
+              ) : null}
+              {factura.orden_cliente ? (
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Orden cliente: </span>
+                  {factura.orden_cliente}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -176,9 +207,9 @@ function DetalleFactura() {
                   <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
                   <TableCell>{l.descripcion}</TableCell>
                   <TableCell className="tabular text-right">{l.cantidad}</TableCell>
-                  <TableCell className="tabular text-right">{dop(l.precio)}</TableCell>
+                  <TableCell className="tabular text-right">{money(l.precio, factura.moneda)}</TableCell>
                   <TableCell className="tabular text-right">{l.tasa_itbis}%</TableCell>
-                  <TableCell className="tabular text-right">{dop(l.subtotal)}</TableCell>
+                  <TableCell className="tabular text-right">{money(l.subtotal, factura.moneda)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -187,22 +218,68 @@ function DetalleFactura() {
           <div className="mt-6 ml-auto max-w-xs space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
-              <span className="tabular">{dop(factura.subtotal)}</span>
+              <span className="tabular">{money(factura.subtotal, factura.moneda)}</span>
             </div>
             {[...porTasa.entries()]
               .sort((a, b) => b[0] - a[0])
               .map(([tasa, v]) => (
                 <div key={tasa} className="flex justify-between">
                   <span className="text-muted-foreground">
-                    ITBIS {tasa}% sobre {dop(v.base)}
+                    ITBIS {tasa}% sobre {money(v.base, factura.moneda)}
                   </span>
-                  <span className="tabular">{dop(v.itbis)}</span>
+                  <span className="tabular">{money(v.itbis, factura.moneda)}</span>
                 </div>
               ))}
             <div className="flex justify-between border-t pt-2 text-base font-semibold">
               <span>Total</span>
-              <span className="tabular">{dop(factura.total)}</span>
+              <span className="tabular">{money(factura.total, factura.moneda)}</span>
             </div>
+            {factura.moneda && factura.moneda.toUpperCase() !== "DOP" ? (
+              <p className="text-xs text-muted-foreground">
+                Equivale a {dop(enDOP(factura.total, factura.tasa_cambio))} a la tasa{" "}
+                {factura.tasa_cambio ?? 1}
+              </p>
+            ) : null}
+            {factura.pagos &&
+            factura.pagos.efectivo +
+              factura.pagos.tarjeta +
+              factura.pagos.cheque +
+              factura.pagos.transferencia +
+              factura.pagos.cardnet >
+              0 ? (
+              <div className="border-t pt-2 text-xs text-muted-foreground">
+                {factura.pagos.efectivo > 0 && (
+                  <div className="flex justify-between">
+                    <span>Efectivo</span>
+                    <span>{money(factura.pagos.efectivo, factura.moneda)}</span>
+                  </div>
+                )}
+                {factura.pagos.tarjeta > 0 && (
+                  <div className="flex justify-between">
+                    <span>Tarjeta</span>
+                    <span>{money(factura.pagos.tarjeta, factura.moneda)}</span>
+                  </div>
+                )}
+                {factura.pagos.cheque > 0 && (
+                  <div className="flex justify-between">
+                    <span>Cheque</span>
+                    <span>{money(factura.pagos.cheque, factura.moneda)}</span>
+                  </div>
+                )}
+                {factura.pagos.transferencia > 0 && (
+                  <div className="flex justify-between">
+                    <span>Transferencia</span>
+                    <span>{money(factura.pagos.transferencia, factura.moneda)}</span>
+                  </div>
+                )}
+                {factura.pagos.cardnet > 0 && (
+                  <div className="flex justify-between">
+                    <span>Cardnet</span>
+                    <span>{money(factura.pagos.cardnet, factura.moneda)}</span>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {factura.notas ? (
