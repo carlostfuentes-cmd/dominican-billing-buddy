@@ -203,13 +203,20 @@ export interface LineaEntrada {
   codigo: string;
   descripcion: string;
   cantidad: number;
+  /** Unidades bonificadas (oferta): se despachan pero no se cobran. */
+  oferta?: number | undefined;
   precio: number;
   descuento_pct: number;
   tasa_itbis: number;
+  /** Cuando es true, el precio digitado ya incluye el ITBIS. */
+  precio_incluye_itbis?: boolean | undefined;
 }
 
 export function calcularLinea(l: LineaEntrada): LineaFactura {
-  const bruto = l.cantidad * l.precio;
+  const precio = l.precio_incluye_itbis
+    ? round2(l.precio / (1 + (l.tasa_itbis || 0) / 100))
+    : l.precio;
+  const bruto = l.cantidad * precio;
   const subtotal = round2(bruto * (1 - (l.descuento_pct || 0) / 100));
   const itbis = round2((subtotal * l.tasa_itbis) / 100);
   return {
@@ -217,7 +224,8 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
     codigo: l.codigo,
     descripcion: l.descripcion,
     cantidad: l.cantidad,
-    precio: l.precio,
+    oferta: l.oferta ?? 0,
+    precio,
     descuento_pct: l.descuento_pct || 0,
     tasa_itbis: l.tasa_itbis,
     subtotal,
@@ -225,6 +233,7 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
     total: round2(subtotal + itbis),
   };
 }
+
 
 export interface Totales {
   subtotal: number;
