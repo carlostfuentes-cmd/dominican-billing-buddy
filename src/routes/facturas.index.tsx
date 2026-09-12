@@ -208,8 +208,8 @@ function Facturas() {
               ))}
               {!isLoading && facturas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    No hay facturas en este período.
+                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                    No hay pedidos ni facturas en este período.
                   </TableCell>
                 </TableRow>
               )}
