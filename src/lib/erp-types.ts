@@ -89,7 +89,7 @@ export function round2(n: number): number {
 }
 
 export interface LineaEntrada {
-  item_id?: number | null;
+  item_id?: number | null | undefined;
   codigo: string;
   descripcion: string;
   cantidad: number;

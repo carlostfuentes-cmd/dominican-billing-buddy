@@ -52,8 +52,8 @@ function Configuracion() {
   });
 
   const enviar = () => {
-    if (form.nombre.trim().length < 2) return toast.error("Escribe la razón social");
-    if (!rncValido(form.rnc)) return toast.error("RNC inválido (9 dígitos)");
+    if (form.nombre.trim().length < 2) { toast.error("Escribe la razón social"); return; }
+    if (!rncValido(form.rnc)) { toast.error("RNC inválido (9 dígitos)"); return; }
     mutar.mutate({ ...form, rnc: form.rnc.replace(/\D/g, "") });
   };
 

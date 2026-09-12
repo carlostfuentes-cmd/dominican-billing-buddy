@@ -66,9 +66,9 @@ function Secuencias() {
 
   const enviar = () => {
     if (!editando) return;
-    if (editando.hasta < editando.desde) return toast.error("El rango final debe ser mayor");
+    if (editando.hasta < editando.desde) { toast.error("El rango final debe ser mayor"); return; }
     if (editando.proximo < editando.desde || editando.proximo > editando.hasta + 1)
-      return toast.error("El próximo número debe estar dentro del rango");
+      { toast.error("El próximo número debe estar dentro del rango"); return; }
     mutar.mutate(editando);
   };
 

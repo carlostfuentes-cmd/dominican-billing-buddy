@@ -88,9 +88,9 @@ function Items() {
   });
 
   const enviar = () => {
-    if (!form.codigo.trim()) return toast.error("Escribe un código");
-    if (form.descripcion.trim().length < 2) return toast.error("Escribe la descripción");
-    if (form.precio < 0) return toast.error("El precio no puede ser negativo");
+    if (!form.codigo.trim()) { toast.error("Escribe un código"); return; }
+    if (form.descripcion.trim().length < 2) { toast.error("Escribe la descripción"); return; }
+    if (form.precio < 0) { toast.error("El precio no puede ser negativo"); return; }
     mutar.mutate(form);
   };
 

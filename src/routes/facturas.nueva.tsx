@@ -132,14 +132,14 @@ function NuevaFactura() {
   };
 
   const enviar = () => {
-    if (!clienteId) return toast.error("Selecciona un cliente");
-    if (!lineas.length) return toast.error("Agrega al menos una línea");
+    if (!clienteId) { toast.error("Selecciona un cliente"); return; }
+    if (!lineas.length) { toast.error("Agrega al menos una línea"); return; }
     for (const l of lineas) {
-      if (!l.descripcion.trim()) return toast.error("Cada línea necesita una descripción");
-      if (l.cantidad <= 0) return toast.error("La cantidad debe ser mayor que cero");
+      if (!l.descripcion.trim()) { toast.error("Cada línea necesita una descripción"); return; }
+      if (l.cantidad <= 0) { toast.error("La cantidad debe ser mayor que cero"); return; }
     }
     if (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta)
-      return toast.error(`No hay NCF ${tipo} disponible. Revisa las secuencias.`);
+      { toast.error(`No hay NCF ${tipo} disponible. Revisa las secuencias.`); return; }
     emitir.mutate();
   };
 
