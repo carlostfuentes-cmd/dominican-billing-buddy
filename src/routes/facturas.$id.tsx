@@ -15,10 +15,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cambiarEstadoFactura, obtenerEmpresa, obtenerFactura } from "@/lib/erp.functions";
+import {
+  cambiarEstadoFactura,
+  facturarPedido,
+  obtenerEmpresa,
+  obtenerFactura,
+} from "@/lib/erp.functions";
 import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    imprimir: search["imprimir"] === true || search["imprimir"] === "true" ? true : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Detalle de factura — ERP Contable RD" },
@@ -36,6 +44,7 @@ export const Route = createFileRoute("/facturas/$id")({
 
 function DetalleFactura() {
   const { id } = useParams({ from: "/facturas/$id" });
+  const { imprimir } = useSearch({ from: "/facturas/$id" });
   const qc = useQueryClient();
   const idNum = Number(id);
 
@@ -45,6 +54,15 @@ function DetalleFactura() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+
+  // Impresión automática cuando se llega desde "Imprimir y guardar factura".
+  const yaImprimio = useRef(false);
+  useEffect(() => {
+    if (imprimir && factura && !yaImprimio.current) {
+      yaImprimio.current = true;
+      setTimeout(() => window.print(), 400);
+    }
+  }, [imprimir, factura]);
 
   const cambiar = useMutation({
     mutationFn: (estado: "pagada" | "anulada") =>
