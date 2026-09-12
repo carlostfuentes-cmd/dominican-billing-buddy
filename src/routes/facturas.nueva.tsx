@@ -27,7 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  emitirFactura,
+  guardarPedido,
   obtenerClientes,
   obtenerItems,
   obtenerListasFactura,
