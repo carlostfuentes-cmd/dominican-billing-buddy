@@ -50,7 +50,50 @@ export interface Cliente {
   direccion: string;
   dias_credito: number;
   activo: boolean;
+  // Datos generales adicionales
+  nombre_corto?: string;
+  direccion2?: string;
+  ciudad?: string;
+  pais?: string;
+  codigo_postal?: string;
+  telefono2?: string;
+  telefono3?: string;
+  fax?: string;
+  email_alterno?: string;
+  fecha_apertura?: string;
+  localidad_id?: string;
+  sector?: string;
+  // Administración
+  monto_credito?: number;
+  vendedor_id?: number;
+  clase_id?: number;
+  lista_precios?: number;
+  datacredito?: "" | "NORMAL" | "ATRASO" | "LEGAL" | "CASTIGADO" | "SALDADO";
+  cargar_itbis?: boolean;
+  backorder?: boolean;
+  retener_anticipos?: boolean;
+  validar_orden_compra?: boolean;
+  generico?: boolean;
+  bloquear_credito_vencido?: boolean;
+  dias_credito_vencido?: number;
+  certificado_zf?: string;
+  certificado_zf_vence?: string;
+  retencion_itbis?: number;
+  retencion_isr?: number;
+  notas?: string;
 }
+
+export interface OpcionLista {
+  id: string;
+  nombre: string;
+}
+
+export interface ListasCliente {
+  localidades: OpcionLista[];
+  vendedores: OpcionLista[];
+  clases: OpcionLista[];
+}
+
 
 export interface Item {
   id: string;
