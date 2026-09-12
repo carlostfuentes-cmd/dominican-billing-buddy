@@ -25,6 +25,15 @@ export const obtenerEstadoConexion = createServerFn({ method: "GET" }).handler(
   async (): Promise<EstadoConexion> => (await repo()).estadoConexion(),
 );
 
+// Crea en la base conectada las tablas del módulo de Facturación (idempotente).
+export const inicializarEsquema = createServerFn({ method: "POST" }).handler(
+  async (): Promise<EstadoConexion> => {
+    const { crearTablas } = await import("@/lib/db/mysql.server");
+    await crearTablas();
+    return (await repo()).estadoConexion();
+  },
+);
+
 export const obtenerResumen = createServerFn({ method: "GET" }).handler(
   async (): Promise<Resumen> => (await repo()).resumen(),
 );
