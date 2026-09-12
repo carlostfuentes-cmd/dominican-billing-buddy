@@ -216,29 +216,62 @@ export async function guardarEmpresa(e: Empresa): Promise<Empresa> {
 
 /* ------------------------------- Clientes ------------------------------- */
 
-interface FilaCliente {
-  id: string;
-  nombre: string | null;
-  rnc: string | null;
-  ncf_id: number | null;
-  telefono: string | null;
-  email: string | null;
-  direccion: string | null;
-  dias_credito: number | null;
-  activo: number | null;
-}
+type FilaCliente = Record<string, string | number | null>;
+
+const txt = (v: string | number | null | undefined) => (v == null ? "" : String(v));
+const num = (v: string | number | null | undefined) => Number(v ?? 0) || 0;
+const fechaIso = (v: string | number | null | undefined) =>
+  v == null ? "" : String(v).slice(0, 10);
+
+const CAMPOS_CLIENTE = `customer_id AS id, name AS nombre, rnc, ncf_id,
+       phone1 AS telefono, phone2, phone3, fax1, main_email AS email, secondary_email,
+       short_name, address1 AS direccion, address2, address3, address4, zip_code,
+       since, ar_location_id, sector_id, credit_days AS dias_credito, credit_amount,
+       salesman_id, class_id, price_list, datacredito, tax, backorder, advance,
+       purchase_validation, generico, overdue_credit, overdue_credit_days,
+       drug_certificate, certificate_date, tax_retention, isr_retention, notes,
+       status = 'A' AS activo`;
 
 function mapearCliente(f: FilaCliente): Cliente {
   return {
-    id: String(f.id),
-    nombre: f.nombre ?? "",
-    rnc: f.rnc ?? "",
-    tipo_ncf: tipoDesdeNcfId(f.ncf_id),
-    telefono: f.telefono ?? "",
-    email: f.email ?? "",
-    direccion: f.direccion ?? "",
-    dias_credito: Number(f.dias_credito ?? 0),
-    activo: Boolean(f.activo),
+    id: String(f["id"]),
+    nombre: txt(f["nombre"]),
+    rnc: txt(f["rnc"]),
+    tipo_ncf: tipoDesdeNcfId(f["ncf_id"] as number | null),
+    telefono: txt(f["telefono"]),
+    email: txt(f["email"]),
+    direccion: txt(f["direccion"]),
+    dias_credito: num(f["dias_credito"]),
+    activo: Boolean(f["activo"]),
+    nombre_corto: txt(f["short_name"]),
+    direccion2: txt(f["address2"]),
+    ciudad: txt(f["address3"]),
+    pais: txt(f["address4"]),
+    codigo_postal: txt(f["zip_code"]),
+    telefono2: txt(f["phone2"]),
+    telefono3: txt(f["phone3"]),
+    fax: txt(f["fax1"]),
+    email_alterno: txt(f["secondary_email"]),
+    fecha_apertura: fechaIso(f["since"]),
+    localidad_id: txt(f["ar_location_id"]),
+    sector: txt(f["sector_id"]),
+    monto_credito: num(f["credit_amount"]),
+    vendedor_id: num(f["salesman_id"]),
+    clase_id: num(f["class_id"]),
+    lista_precios: num(f["price_list"]) || 1,
+    datacredito: (txt(f["datacredito"]) || "") as Cliente["datacredito"],
+    cargar_itbis: Boolean(num(f["tax"])),
+    backorder: Boolean(num(f["backorder"])),
+    retener_anticipos: Boolean(num(f["advance"])),
+    validar_orden_compra: Boolean(num(f["purchase_validation"])),
+    generico: Boolean(num(f["generico"])),
+    bloquear_credito_vencido: Boolean(num(f["overdue_credit"])),
+    dias_credito_vencido: num(f["overdue_credit_days"]),
+    certificado_zf: txt(f["drug_certificate"]),
+    certificado_zf_vence: fechaIso(f["certificate_date"]),
+    retencion_itbis: num(f["tax_retention"]),
+    retencion_isr: num(f["isr_retention"]),
+    notas: txt(f["notes"]),
   };
 }
 
@@ -246,14 +279,12 @@ export async function listarClientes(busqueda = ""): Promise<Cliente[]> {
   if (await usarMysql()) {
     const like = `%${busqueda}%`;
     const filas = await sql<FilaCliente>(
-      `SELECT customer_id AS id, name AS nombre, rnc, ncf_id,
-              phone1 AS telefono, main_email AS email, address1 AS direccion,
-              credit_days AS dias_credito, status = 'A' AS activo
+      `SELECT ${CAMPOS_CLIENTE}
        FROM customers
-       WHERE (? = '' OR name LIKE ? OR rnc LIKE ?)
+       WHERE (? = '' OR name LIKE ? OR rnc LIKE ? OR customer_id LIKE ?)
        ORDER BY name
        LIMIT 500`,
-      [busqueda, like, like],
+      [busqueda, like, like, like],
     );
     return filas.map(mapearCliente);
   }
@@ -263,56 +294,111 @@ export async function listarClientes(busqueda = ""): Promise<Cliente[]> {
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
+export async function listasCliente(): Promise<ListasCliente> {
+  if (!(await usarMysql())) {
+    return { localidades: [], vendedores: [], clases: [] };
+  }
+  const [loc, ven, cla] = await Promise.all([
+    sql<FilaCliente>(
+      "SELECT ar_location_id AS id, name AS nombre FROM ar_locations ORDER BY name LIMIT 500",
+    ),
+    sql<FilaCliente>(
+      `SELECT salesman_id AS id, TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS nombre
+       FROM salesmen WHERE status = 'A' ORDER BY nombre LIMIT 300`,
+    ),
+    sql<FilaCliente>(
+      "SELECT class_id AS id, name AS nombre FROM ar_classes WHERE kind = 'CLIENTE' ORDER BY name LIMIT 200",
+    ),
+  ]);
+  const map = (f: FilaCliente[]) =>
+    f.map((r) => ({ id: String(r["id"]), nombre: txt(r["nombre"]) || String(r["id"]) }));
+  return { localidades: map(loc), vendedores: map(ven), clases: map(cla) };
+}
+
 export async function guardarCliente(
   c: Omit<Cliente, "id"> & { id?: string | undefined },
 ): Promise<Cliente> {
   if (await usarMysql()) {
+    const d = await defectos();
     const ncfId = NCF_ID_POR_TIPO[c.tipo_ncf];
+    const valores = [
+      c.nombre,
+      c.nombre_corto || null,
+      c.rnc,
+      ncfId,
+      c.telefono || ".",
+      c.telefono2 || null,
+      c.telefono3 || null,
+      c.fax || null,
+      c.email || null,
+      c.email_alterno || null,
+      c.direccion || null,
+      c.direccion2 || null,
+      c.ciudad || null,
+      c.pais || null,
+      c.codigo_postal || null,
+      c.localidad_id || d.ar_location_id,
+      c.sector || null,
+      c.dias_credito,
+      Math.round(c.monto_credito ?? 0),
+      c.vendedor_id ?? d.salesman_id,
+      c.clase_id ?? d.class_id,
+      c.lista_precios ?? 1,
+      c.datacredito ? c.datacredito : null,
+      c.cargar_itbis ? 1 : 0,
+      c.backorder ? 1 : 0,
+      c.retener_anticipos ? 1 : 0,
+      c.validar_orden_compra ? 1 : 0,
+      c.generico ? 1 : 0,
+      c.bloquear_credito_vencido ? 1 : 0,
+      c.dias_credito_vencido ?? 0,
+      c.certificado_zf || null,
+      c.certificado_zf_vence || null,
+      c.retencion_itbis ?? 0,
+      c.retencion_isr ?? 0,
+      c.notas || null,
+      c.activo ? "A" : "I",
+    ];
     if (c.id) {
       await ejecutar(
-        `UPDATE customers SET name = ?, rnc = ?, ncf_id = ?, phone1 = ?, main_email = ?,
-           address1 = ?, credit_days = ?, status = ? WHERE customer_id = ?`,
-        [
-          c.nombre,
-          c.rnc,
-          ncfId,
-          c.telefono || ".",
-          c.email,
-          c.direccion,
-          c.dias_credito,
-          c.activo ? "A" : "I",
-          c.id,
-        ],
+        `UPDATE customers SET name = ?, short_name = ?, rnc = ?, ncf_id = ?, phone1 = ?,
+           phone2 = ?, phone3 = ?, fax1 = ?, main_email = ?, secondary_email = ?,
+           address1 = ?, address2 = ?, address3 = ?, address4 = ?, zip_code = ?,
+           ar_location_id = ?, sector_id = ?, credit_days = ?, credit_amount = ?,
+           salesman_id = ?, class_id = ?, price_list = ?, datacredito = ?, tax = ?,
+           backorder = ?, advance = ?, purchase_validation = ?, generico = ?,
+           overdue_credit = ?, overdue_credit_days = ?, drug_certificate = ?,
+           certificate_date = ?, tax_retention = ?, isr_retention = ?, notes = ?, status = ?
+         WHERE customer_id = ?`,
+        [...valores, c.id],
       );
-      return { ...c, id: c.id } as Cliente;
+      const filas = await sql<FilaCliente>(
+        `SELECT ${CAMPOS_CLIENTE} FROM customers WHERE customer_id = ?`,
+        [c.id],
+      );
+      return filas[0] ? mapearCliente(filas[0]) : ({ ...c, id: c.id } as Cliente);
     }
-    const d = await defectos();
     const sig = await sql<{ id: string | null }>(
       "SELECT LPAD(MAX(CAST(customer_id AS UNSIGNED)) + 1, 5, '0') AS id FROM customers",
     );
     const nuevoId = sig[0]?.id ?? "00001";
     await ejecutar(
       `INSERT INTO customers
-         (customer_id, name, rnc, ncf_id, phone1, main_email, address1, credit_days,
-          since, credit_amount, generico, tax, backorder, tax_deduction, advance,
-          purchase_validation, status, ar_location_id, salesman_id, class_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), 0, 0, 0, 0, 0, 0, 0, ?, ?, ?, ?)`,
-      [
-        nuevoId,
-        c.nombre,
-        c.rnc,
-        ncfId,
-        c.telefono || ".",
-        c.email,
-        c.direccion,
-        c.dias_credito,
-        c.activo ? "A" : "I",
-        d.ar_location_id,
-        d.salesman_id,
-        d.class_id,
-      ],
+         (customer_id, name, short_name, rnc, ncf_id, phone1, phone2, phone3, fax1,
+          main_email, secondary_email, address1, address2, address3, address4, zip_code,
+          ar_location_id, sector_id, credit_days, credit_amount, salesman_id, class_id,
+          price_list, datacredito, tax, backorder, advance, purchase_validation, generico,
+          overdue_credit, overdue_credit_days, drug_certificate, certificate_date,
+          tax_retention, isr_retention, notes, status, since, tax_deduction)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+      [nuevoId, ...valores, c.fecha_apertura || new Date().toISOString().slice(0, 10)],
     );
-    return { ...c, id: nuevoId } as Cliente;
+    const filas = await sql<FilaCliente>(
+      `SELECT ${CAMPOS_CLIENTE} FROM customers WHERE customer_id = ?`,
+      [nuevoId],
+    );
+    return filas[0] ? mapearCliente(filas[0]) : ({ ...c, id: nuevoId } as Cliente);
   }
   const d = demo();
   if (c.id) {
@@ -324,6 +410,7 @@ export async function guardarCliente(
   const nuevo = { ...(c as Cliente), id: String(d.siguienteId.cliente++) };
   d.clientes.push(nuevo);
   return nuevo;
+
 }
 
 /* --------------------------------- Ítems -------------------------------- */
