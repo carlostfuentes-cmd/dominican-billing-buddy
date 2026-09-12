@@ -514,16 +514,16 @@ function NuevaFactura() {
           </Button>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[1080px]">
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-52">Código / ítem</TableHead>
-                <TableHead className="min-w-52">Producto</TableHead>
-                <TableHead className="w-24">Cant.</TableHead>
-                <TableHead className="w-24">Oferta</TableHead>
-                <TableHead className="w-32">Precio</TableHead>
-                <TableHead className="w-24">Desc. %</TableHead>
-                <TableHead className="w-28">ITBIS</TableHead>
+                <TableHead className="w-52 min-w-52">Código / ítem</TableHead>
+                <TableHead className="w-52 min-w-52">Producto</TableHead>
+                <TableHead className="w-24 min-w-24">Cant.</TableHead>
+                <TableHead className="w-24 min-w-24">Oferta</TableHead>
+                <TableHead className="w-32 min-w-32">Precio</TableHead>
+                <TableHead className="w-24 min-w-24">Desc. %</TableHead>
+                <TableHead className="w-28 min-w-28">ITBIS</TableHead>
                 <TableHead className="text-right">Sub-total</TableHead>
                 <TableHead />
               </TableRow>
@@ -567,6 +567,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.cantidad}
                         onChange={(e) => actualizar(i, { cantidad: Number(e.target.value) || 0 })}
                       />
@@ -576,6 +577,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.oferta ?? 0}
                         onChange={(e) => actualizar(i, { oferta: Number(e.target.value) || 0 })}
                       />
@@ -585,6 +587,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.precio}
                         onChange={(e) => actualizar(i, { precio: Number(e.target.value) || 0 })}
                       />
@@ -594,6 +597,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         max={100}
+                        className="px-2 text-right tabular"
                         value={l.descuento_pct}
                         onChange={(e) =>
                           actualizar(i, {
