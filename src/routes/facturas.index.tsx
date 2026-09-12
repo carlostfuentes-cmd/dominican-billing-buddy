@@ -161,6 +161,7 @@ function Facturas() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Pedido</TableHead>
                 <TableHead>NCF</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Fecha</TableHead>
@@ -177,9 +178,10 @@ function Facturas() {
                 <TableRow key={f.id}>
                   <TableCell className="font-mono text-xs">
                     <Link to="/facturas/$id" params={{ id: String(f.id) }} className="underline">
-                      {f.ncf}
+                      {f.id}
                     </Link>
                   </TableCell>
+                  <TableCell className="font-mono text-xs">{f.ncf || "—"}</TableCell>
                   <TableCell className="font-medium">{f.cliente_nombre}</TableCell>
                   <TableCell>{fechaCorta(f.fecha)}</TableCell>
                   <TableCell className="text-xs">{(f.moneda || "DOP").toUpperCase()}</TableCell>
@@ -194,10 +196,12 @@ function Facturas() {
                           ? "default"
                           : f.estado === "anulada"
                             ? "destructive"
-                            : "secondary"
+                            : f.estado === "pedido"
+                              ? "outline"
+                              : "secondary"
                       }
                     >
-                      {f.estado}
+                      {ETIQUETA_ESTADO[f.estado]}
                     </Badge>
                   </TableCell>
                 </TableRow>
