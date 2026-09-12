@@ -691,7 +691,31 @@ interface FilaFactura {
   total: number;
   estado: EstadoFactura;
   notas: string;
+  dias_credito: number | null;
+  moneda: string | null;
+  tasa_cambio: number | null;
+  vendedor_id: number | null;
+  vendedor: string | null;
+  tecnico_id: number | null;
+  almacen_id: number | null;
+  almacen: string | null;
+  sucursal_id: number | null;
+  departamento_id: number | null;
+  proyecto_id: number | null;
+  cotizacion_id: number | null;
+  orden_cliente: string | null;
+  orden_vendedor: string | null;
+  cliente_direccion: string | null;
+  cliente_telefono: string | null;
+  efectivo: number | null;
+  tarjeta: number | null;
+  cheque: number | null;
+  transferencia: number | null;
+  cardnet: number | null;
 }
+
+const idOpc = (v: number | null | undefined): string | undefined =>
+  v === null || v === undefined ? undefined : String(v);
 
 function mapearFactura(f: FilaFactura): Factura {
   const tipo = (f.tipo_prefijo && f.tipo_prefijo in NCF_ID_POR_TIPO
@@ -704,17 +728,41 @@ function mapearFactura(f: FilaFactura): Factura {
     cliente_id: String(f.cliente_id),
     cliente_nombre: f.cliente_nombre,
     cliente_rnc: f.cliente_rnc,
+    cliente_direccion: f.cliente_direccion ?? "",
+    cliente_telefono: f.cliente_telefono ?? "",
     fecha: f.fecha,
     vencimiento: f.vencimiento,
+    dias_credito: Number(f.dias_credito ?? 0),
+    moneda: f.moneda ?? "DOP",
+    tasa_cambio: Number(f.tasa_cambio ?? 1) || 1,
     subtotal: f.subtotal,
     descuento: f.descuento,
     itbis: f.itbis,
     total: f.total,
     estado: f.estado,
     notas: f.notas,
+    vendedor_id: idOpc(f.vendedor_id),
+    vendedor: f.vendedor?.trim() || undefined,
+    tecnico_id: idOpc(f.tecnico_id),
+    almacen_id: idOpc(f.almacen_id),
+    almacen: f.almacen ?? undefined,
+    sucursal_id: idOpc(f.sucursal_id),
+    departamento_id: idOpc(f.departamento_id),
+    proyecto_id: idOpc(f.proyecto_id),
+    cotizacion_id: idOpc(f.cotizacion_id),
+    orden_cliente: f.orden_cliente ?? "",
+    orden_vendedor: f.orden_vendedor ?? "",
+    pagos: {
+      efectivo: Number(f.efectivo ?? 0),
+      tarjeta: Number(f.tarjeta ?? 0),
+      cheque: Number(f.cheque ?? 0),
+      transferencia: Number(f.transferencia ?? 0),
+      cardnet: Number(f.cardnet ?? 0),
+    },
     lineas: [],
   });
 }
+
 
 export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factura[]> {
   if (await usarMysql()) {
