@@ -743,7 +743,6 @@ const SQL_FACTURAS = `
     LEFT JOIN (
       SELECT DISTINCT invoice_id FROM reverse_invoices WHERE invoice_id IS NOT NULL
     ) ri ON ri.invoice_id = o.invoice_id
-    WHERE o.invoice_id IS NOT NULL
   ) f`;
 
 interface FilaFactura {
