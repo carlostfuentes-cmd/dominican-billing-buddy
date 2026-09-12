@@ -40,6 +40,8 @@ export interface FiltroFacturas {
   clienteId?: string;
   tipo?: TipoNCF;
   estado?: EstadoFactura;
+  /** Cuando es true excluye pedidos aún no facturados (reportes fiscales). */
+  facturadas?: boolean;
 }
 
 export interface EstadoConexion {
