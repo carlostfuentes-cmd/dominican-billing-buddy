@@ -162,6 +162,7 @@ function Facturas() {
                 <TableHead>NCF</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Moneda</TableHead>
                 <TableHead>Vence</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
                 <TableHead className="text-right">ITBIS</TableHead>
@@ -179,10 +180,11 @@ function Facturas() {
                   </TableCell>
                   <TableCell className="font-medium">{f.cliente_nombre}</TableCell>
                   <TableCell>{fechaCorta(f.fecha)}</TableCell>
+                  <TableCell className="text-xs">{(f.moneda || "DOP").toUpperCase()}</TableCell>
                   <TableCell>{fechaCorta(f.vencimiento)}</TableCell>
-                  <TableCell className="tabular text-right">{dop(f.subtotal)}</TableCell>
-                  <TableCell className="tabular text-right">{dop(f.itbis)}</TableCell>
-                  <TableCell className="tabular text-right font-medium">{dop(f.total)}</TableCell>
+                  <TableCell className="tabular text-right">{money(f.subtotal, f.moneda)}</TableCell>
+                  <TableCell className="tabular text-right">{money(f.itbis, f.moneda)}</TableCell>
+                  <TableCell className="tabular text-right font-medium">{money(f.total, f.moneda)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={
