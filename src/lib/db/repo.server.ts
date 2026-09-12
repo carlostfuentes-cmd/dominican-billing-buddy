@@ -861,6 +861,7 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
       cond.push("f.estado = ?");
       params.push(filtro.estado);
     }
+    if (filtro.facturadas) cond.push("f.invoice_id IS NOT NULL");
     const filas = await sql<FilaFactura>(
       `${SQL_FACTURAS}
        ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
