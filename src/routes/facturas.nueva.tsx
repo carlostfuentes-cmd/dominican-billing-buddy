@@ -740,9 +740,34 @@ function NuevaFactura() {
                 {money(Math.max(0, totales.total - cobrado), moneda)}
               </span>
             </div>
-            <Button className="mt-4 w-full" onClick={enviar} disabled={emitir.isPending}>
-              {emitir.isPending ? "Emitiendo…" : "Emitir factura"}
-            </Button>
+            <div className="mt-4 space-y-2">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => enviar(false)}
+                disabled={guardar.isPending}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Guardar pedido
+              </Button>
+              <Button
+                className="w-full"
+                onClick={() => enviar(true)}
+                disabled={guardar.isPending}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Guardar factura
+              </Button>
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => enviar(true, true)}
+                disabled={guardar.isPending}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir y guardar factura
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
