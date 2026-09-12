@@ -922,35 +922,59 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
     const cliente = clientes[0];
     if (!cliente) throw new Error("Cliente no encontrado");
 
+    const d = await defectos();
+    const sucursal = Number(entrada.sucursal_id ?? 1) || 1;
+
     // Comprobante en invoices.
     const inv = await ejecutar(
       `INSERT INTO invoices (branch_id, date, time, counted, ncf_id, ncf_doc)
-       VALUES (1, ?, CURTIME(), 0, ?, ?)`,
-      [entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
+       VALUES (?, ?, CURTIME(), 0, ?, ?)`,
+      [sucursal, entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
     );
 
-    const d = await defectos();
-    // Venta de contado: se registra cobrada en efectivo; a crédito queda pendiente.
-    const efectivo = entrada.dias_credito === 0 ? totales.total : 0;
+    // Multimoneda: se guarda la moneda del documento y la tasa aplicada.
+    const moneda = (entrada.moneda || "DOP").toUpperCase();
+    const tasa = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+    const p = entrada.pagos ?? {};
+    const cobrado = round2(
+      (p.efectivo ?? 0) + (p.tarjeta ?? 0) + (p.cheque ?? 0) + (p.transferencia ?? 0) + (p.cardnet ?? 0),
+    );
+    // Si no se indican cobros y la venta es de contado, se registra en efectivo.
+    const efectivo =
+      cobrado > 0 ? (p.efectivo ?? 0) : entrada.dias_credito === 0 ? totales.total : 0;
     const ord = await ejecutar(
       `INSERT INTO orders
          (branch_id, date, time, open, customer_name, credit_days, currency_rate,
           authorized, user_id, ship_id, customer_id, salesman_id, currency_id,
           warehouse_id, bank_id, efectivo, tarjeta, cheque, transferencia, horas,
-          cardnet, ultimo_pago, notes, rnc)
-       VALUES (1, ?, CURTIME(), 1, ?, ?, 1, 0, ?, 1, ?, ?, 'DOP', ?, ?, ?, 0, 0, 0, 0, 0, 0, ?, ?)`,
+          cardnet, ultimo_pago, notes, rnc, tech_id, department_id, project_id,
+          quotation_id, customer_order, salesman_order)
+       VALUES (?, ?, CURTIME(), 1, ?, ?, ?, 0, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        sucursal,
         entrada.fecha,
         cliente.name,
         entrada.dias_credito,
+        tasa,
         d.user_id,
         entrada.cliente_id,
-        d.salesman_id,
-        d.warehouse_id,
+        Number(entrada.vendedor_id ?? d.salesman_id) || d.salesman_id,
+        moneda,
+        Number(entrada.almacen_id ?? d.warehouse_id) || d.warehouse_id,
         d.bank_id,
         efectivo,
+        p.tarjeta ?? 0,
+        p.cheque ?? 0,
+        p.transferencia ?? 0,
+        p.cardnet ?? 0,
         entrada.notas,
         cliente.rnc ?? "",
+        entrada.tecnico_id ? Number(entrada.tecnico_id) : null,
+        entrada.departamento_id ? Number(entrada.departamento_id) : null,
+        entrada.proyecto_id ? Number(entrada.proyecto_id) : null,
+        entrada.cotizacion_id ? Number(entrada.cotizacion_id) : null,
+        entrada.orden_cliente ?? "",
+        entrada.orden_vendedor ?? "",
       ],
     );
     const orderId = ord.insertId;
@@ -962,24 +986,28 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
         `INSERT INTO orders_detail
            (order_id, branch_id, position, product_id, product_name, name,
             quantity, bonus, price, ref_price, tax1, tax2, tax3,
-            discount_rate, discount, cost, cost_ant,
+            discount_rate, discount, cost, cost_ant, currency_rate,
             compound_qtty, compound_bonus, compound_price, compound_discount)
-         VALUES (?, 1, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 0, ?, ?, 0, 0, 0, 0, 0, 0)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, 0, 0, 0, 0)`,
         [
           orderId,
+          sucursal,
           pos + 1,
           l.item_id ?? l.codigo ?? "",
           l.descripcion,
           l.descripcion,
           l.cantidad,
+          l.oferta ?? 0,
           l.precio,
           l.precio,
           l.itbis,
           l.descuento_pct,
           descuentoMonto,
+          tasa,
         ],
       );
     }
+
     const creada = await obtenerFactura(orderId);
     if (!creada) throw new Error("No se pudo leer la factura creada");
     return creada;
