@@ -119,12 +119,42 @@ export interface LineaFactura {
   codigo: string;
   descripcion: string;
   cantidad: number;
+  oferta?: number | undefined;
   precio: number;
   descuento_pct: number;
   tasa_itbis: number;
   subtotal: number;
   itbis: number;
   total: number;
+}
+
+export interface Moneda {
+  id: string;
+  nombre: string;
+  simbolo: string;
+}
+
+export interface OpcionId {
+  id: string;
+  nombre: string;
+}
+
+export interface ListasFactura {
+  monedas: Moneda[];
+  vendedores: OpcionId[];
+  tecnicos: OpcionId[];
+  almacenes: OpcionId[];
+  sucursales: OpcionId[];
+  departamentos: OpcionId[];
+  proyectos: OpcionId[];
+}
+
+export interface PagosFactura {
+  efectivo: number;
+  tarjeta: number;
+  cheque: number;
+  transferencia: number;
+  cardnet: number;
 }
 
 export interface Factura {
@@ -134,16 +164,35 @@ export interface Factura {
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
+  cliente_direccion?: string | undefined;
+  cliente_telefono?: string | undefined;
   fecha: string;
   vencimiento: string;
+  dias_credito?: number | undefined;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
   subtotal: number;
   descuento: number;
   itbis: number;
   total: number;
   estado: EstadoFactura;
   notas: string;
+  // Referencias del pedido en el sistema (equivalen a la pantalla de pedidos).
+  vendedor_id?: string | undefined;
+  vendedor?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  almacen?: string | undefined;
+  sucursal_id?: string | undefined;
+  departamento_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  orden_vendedor?: string | undefined;
+  cotizacion_id?: string | undefined;
+  pagos?: PagosFactura | undefined;
   lineas: LineaFactura[];
 }
+
 
 export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
