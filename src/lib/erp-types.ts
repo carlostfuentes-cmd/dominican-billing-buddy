@@ -51,36 +51,36 @@ export interface Cliente {
   dias_credito: number;
   activo: boolean;
   // Datos generales adicionales
-  nombre_corto?: string;
-  direccion2?: string;
-  ciudad?: string;
-  pais?: string;
-  codigo_postal?: string;
-  telefono2?: string;
-  telefono3?: string;
-  fax?: string;
-  email_alterno?: string;
-  fecha_apertura?: string;
-  localidad_id?: string;
-  sector?: string;
+  nombre_corto?: string | undefined;
+  direccion2?: string | undefined;
+  ciudad?: string | undefined;
+  pais?: string | undefined;
+  codigo_postal?: string | undefined;
+  telefono2?: string | undefined;
+  telefono3?: string | undefined;
+  fax?: string | undefined;
+  email_alterno?: string | undefined;
+  fecha_apertura?: string | undefined;
+  localidad_id?: string | undefined;
+  sector?: string | undefined;
   // Administración
-  monto_credito?: number;
-  vendedor_id?: number;
-  clase_id?: number;
-  lista_precios?: number;
-  datacredito?: "" | "NORMAL" | "ATRASO" | "LEGAL" | "CASTIGADO" | "SALDADO";
-  cargar_itbis?: boolean;
-  backorder?: boolean;
-  retener_anticipos?: boolean;
-  validar_orden_compra?: boolean;
-  generico?: boolean;
-  bloquear_credito_vencido?: boolean;
-  dias_credito_vencido?: number;
-  certificado_zf?: string;
-  certificado_zf_vence?: string;
-  retencion_itbis?: number;
-  retencion_isr?: number;
-  notas?: string;
+  monto_credito?: number | undefined;
+  vendedor_id?: number | undefined;
+  clase_id?: number | undefined;
+  lista_precios?: number | undefined;
+  datacredito?: "" | "NORMAL" | "ATRASO" | "LEGAL" | "CASTIGADO" | "SALDADO" | undefined;
+  cargar_itbis?: boolean | undefined;
+  backorder?: boolean | undefined;
+  retener_anticipos?: boolean | undefined;
+  validar_orden_compra?: boolean | undefined;
+  generico?: boolean | undefined;
+  bloquear_credito_vencido?: boolean | undefined;
+  dias_credito_vencido?: number | undefined;
+  certificado_zf?: string | undefined;
+  certificado_zf_vence?: string | undefined;
+  retencion_itbis?: number | undefined;
+  retencion_isr?: number | undefined;
+  notas?: string | undefined;
 }
 
 export interface OpcionLista {
