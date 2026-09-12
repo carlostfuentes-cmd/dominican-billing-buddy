@@ -215,6 +215,7 @@ const nuevaFacturaSchema = z.object({
       }),
     )
     .min(1, "Agrega al menos una línea"),
+  facturar: z.boolean().optional(),
 });
 
 export const guardarPedido = createServerFn({ method: "POST" })
