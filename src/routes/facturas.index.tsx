@@ -30,6 +30,7 @@ import {
   money,
   fechaCorta,
   hoyISO,
+  ETIQUETA_ESTADO,
   TIPOS_NCF,
   type EstadoFactura,
   type TipoNCF,
