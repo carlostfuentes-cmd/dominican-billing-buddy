@@ -1033,13 +1033,18 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
     cliente_rnc: cliente.rnc,
     fecha: entrada.fecha,
     vencimiento,
+    dias_credito: entrada.dias_credito,
+    moneda: (entrada.moneda || "DOP").toUpperCase(),
+    tasa_cambio: entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1,
     subtotal: totales.subtotal,
     descuento: totales.descuento,
     itbis: totales.itbis,
     total: totales.total,
     estado: "emitida",
     notas: entrada.notas,
+    orden_cliente: entrada.orden_cliente ?? "",
     lineas,
+
   };
   d.facturas.push(factura);
   return factura;
