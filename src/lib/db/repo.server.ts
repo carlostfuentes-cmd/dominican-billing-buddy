@@ -819,6 +819,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       codigo: string;
       descripcion: string;
       cantidad: number;
+      oferta: number;
       precio: number;
       descuento_pct: number;
       tasa_itbis: number;
@@ -828,7 +829,8 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
     }>(
       `SELECT product_id AS item_id, product_id AS codigo,
               COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
-              quantity AS cantidad, price AS precio, discount_rate AS descuento_pct,
+              quantity AS cantidad, bonus AS oferta, price AS precio,
+              discount_rate AS descuento_pct,
               CASE WHEN quantity * price - discount > 0
                    THEN ROUND((tax1 + tax2 + tax3) / (quantity * price - discount) * 100)
                    ELSE 0 END AS tasa_itbis,
@@ -844,6 +846,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       codigo: l.codigo,
       descripcion: l.descripcion,
       cantidad: Number(l.cantidad),
+      oferta: Number(l.oferta ?? 0),
       precio: Number(l.precio),
       descuento_pct: Number(l.descuento_pct),
       tasa_itbis: Number(l.tasa_itbis),
@@ -851,6 +854,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       itbis: Number(l.itbis),
       total: Number(l.total),
     }));
+
     return factura;
   }
   return demo().facturas.find((f) => f.id === id) ?? null;
