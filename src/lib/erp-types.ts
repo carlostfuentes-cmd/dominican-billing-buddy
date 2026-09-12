@@ -166,9 +166,13 @@ export interface PagosFactura {
 }
 
 export interface Factura {
+  /** Es el número de pedido (orders.order_id). */
   id: number;
   ncf: string;
   tipo_ncf: TipoNCF;
+  /** true cuando el pedido ya tiene número de factura asignado. */
+  facturado?: boolean | undefined;
+  invoice_id?: number | undefined;
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
