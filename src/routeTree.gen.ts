@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as NcfRouteImport } from './routes/ncf'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const ItemsRoute = ItemsRouteImport.update({
   path: '/items',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NcfRoute = NcfRouteImport.update({
+  id: '/ncf',
+  path: '/ncf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/items': typeof ItemsRoute
+  '/ncf': typeof NcfRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/clientes' | '/items'
+  fullPaths: '/' | '/clientes' | '/items' | '/ncf'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/clientes' | '/items'
-  id: '__root__' | '/' | '/clientes' | '/items'
+  to: '/' | '/clientes' | '/items' | '/ncf'
+  id: '__root__' | '/' | '/clientes' | '/items' | '/ncf'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
   ItemsRoute: typeof ItemsRoute
+  NcfRoute: typeof NcfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ItemsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ncf': {
+      id: '/ncf'
+      path: '/ncf'
+      fullPath: '/ncf'
+      preLoaderRoute: typeof NcfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
   ItemsRoute: ItemsRoute,
+  NcfRoute: NcfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
