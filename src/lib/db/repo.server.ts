@@ -23,6 +23,9 @@ import {
   type Factura,
   type Item,
   type ListasCliente,
+  type ListasFactura,
+  type OpcionId,
+
 
   type LineaEntrada,
   type SecuenciaNCF,
@@ -316,6 +319,70 @@ export async function listasCliente(): Promise<ListasCliente> {
     f.map((r) => ({ id: String(r["id"]), nombre: txt(r["nombre"]) || String(r["id"]) }));
   return { localidades: map(loc), vendedores: map(ven), clases: map(cla) };
 }
+
+const LISTAS_FACTURA_VACIAS: ListasFactura = {
+  monedas: [{ id: "DOP", nombre: "PESOS DOMINICANOS", simbolo: "RD$" }],
+  vendedores: [],
+  tecnicos: [],
+  almacenes: [],
+  sucursales: [],
+  departamentos: [],
+  proyectos: [],
+};
+
+// Listas auxiliares del pedido/factura tomadas del sistema existente.
+export async function listasFactura(): Promise<ListasFactura> {
+  if (!(await usarMysql())) return LISTAS_FACTURA_VACIAS;
+  const opciones = async (consulta: string): Promise<OpcionId[]> => {
+    try {
+      const filas = await sql<FilaCliente>(consulta);
+      return filas.map((r) => ({
+        id: String(r["id"]),
+        nombre: txt(r["nombre"]) || String(r["id"]),
+      }));
+    } catch {
+      return [];
+    }
+  };
+  const [mon, ven, tec, alm, suc, dep, pro] = await Promise.all([
+    (async () => {
+      try {
+        return await sql<FilaCliente>(
+          `SELECT currency_id AS id, name AS nombre, symbol AS simbolo
+           FROM currencies WHERE currency_id <> '000' ORDER BY is_base DESC, currency_id`,
+        );
+      } catch {
+        return [];
+      }
+    })(),
+    opciones(
+      `SELECT salesman_id AS id, TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) AS nombre
+       FROM salesmen WHERE status = 'A' ORDER BY nombre LIMIT 300`,
+    ),
+    opciones("SELECT tech_id AS id, name AS nombre FROM technician WHERE status = 'A' ORDER BY name LIMIT 200"),
+    opciones("SELECT warehouse_id AS id, name AS nombre FROM warehouse ORDER BY name LIMIT 100"),
+    opciones("SELECT branch_id AS id, name AS nombre FROM branchs ORDER BY name LIMIT 100"),
+    opciones("SELECT department_id AS id, name AS nombre FROM gl_department ORDER BY name LIMIT 300"),
+    opciones(
+      "SELECT project_id AS id, name AS nombre FROM projects WHERE status = 'ABIERTO' ORDER BY name LIMIT 300",
+    ),
+  ]);
+  const monedas = mon.map((r) => ({
+    id: String(r["id"]),
+    nombre: txt(r["nombre"]) || String(r["id"]),
+    simbolo: txt(r["simbolo"]) || String(r["id"]),
+  }));
+  return {
+    monedas: monedas.length ? monedas : LISTAS_FACTURA_VACIAS.monedas,
+    vendedores: ven,
+    tecnicos: tec,
+    almacenes: alm,
+    sucursales: suc,
+    departamentos: dep,
+    proyectos: pro,
+  };
+}
+
 
 export async function guardarCliente(
   c: Omit<Cliente, "id"> & { id?: string | undefined },
@@ -640,10 +707,27 @@ const SQL_FACTURAS = `
                       >= t.total - 0.01 THEN 'pagada'
              ELSE 'emitida'
            END AS estado,
-           COALESCE(o.notes, '') AS notas
+           COALESCE(o.notes, '') AS notas,
+           o.credit_days AS dias_credito,
+           COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
+           COALESCE(o.currency_rate, 1) AS tasa_cambio,
+           o.salesman_id AS vendedor_id,
+           TRIM(CONCAT(COALESCE(sm.first_name, ''), ' ', COALESCE(sm.last_name, ''))) AS vendedor,
+           o.tech_id AS tecnico_id,
+           o.warehouse_id AS almacen_id, w.name AS almacen,
+           o.branch_id AS sucursal_id, o.department_id AS departamento_id,
+           o.project_id AS proyecto_id, o.quotation_id AS cotizacion_id,
+           COALESCE(o.customer_order, '') AS orden_cliente,
+           COALESCE(o.salesman_order, '') AS orden_vendedor,
+           COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
+           COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           o.efectivo, o.tarjeta, o.cheque, o.transferencia, o.cardnet
     FROM orders o
     LEFT JOIN invoices i ON i.invoice_id = o.invoice_id AND i.branch_id = o.branch_id
     LEFT JOIN customers c ON c.customer_id = o.customer_id
+    LEFT JOIN salesmen sm ON sm.salesman_id = o.salesman_id
+    LEFT JOIN warehouse w ON w.warehouse_id = o.warehouse_id
+
     LEFT JOIN (
       SELECT order_id,
              ROUND(SUM(quantity * price - discount), 2) AS subtotal,
@@ -674,7 +758,31 @@ interface FilaFactura {
   total: number;
   estado: EstadoFactura;
   notas: string;
+  dias_credito: number | null;
+  moneda: string | null;
+  tasa_cambio: number | null;
+  vendedor_id: number | null;
+  vendedor: string | null;
+  tecnico_id: number | null;
+  almacen_id: number | null;
+  almacen: string | null;
+  sucursal_id: number | null;
+  departamento_id: number | null;
+  proyecto_id: number | null;
+  cotizacion_id: number | null;
+  orden_cliente: string | null;
+  orden_vendedor: string | null;
+  cliente_direccion: string | null;
+  cliente_telefono: string | null;
+  efectivo: number | null;
+  tarjeta: number | null;
+  cheque: number | null;
+  transferencia: number | null;
+  cardnet: number | null;
 }
+
+const idOpc = (v: number | null | undefined): string | undefined =>
+  v === null || v === undefined ? undefined : String(v);
 
 function mapearFactura(f: FilaFactura): Factura {
   const tipo = (f.tipo_prefijo && f.tipo_prefijo in NCF_ID_POR_TIPO
@@ -687,17 +795,41 @@ function mapearFactura(f: FilaFactura): Factura {
     cliente_id: String(f.cliente_id),
     cliente_nombre: f.cliente_nombre,
     cliente_rnc: f.cliente_rnc,
+    cliente_direccion: f.cliente_direccion ?? "",
+    cliente_telefono: f.cliente_telefono ?? "",
     fecha: f.fecha,
     vencimiento: f.vencimiento,
+    dias_credito: Number(f.dias_credito ?? 0),
+    moneda: f.moneda ?? "DOP",
+    tasa_cambio: Number(f.tasa_cambio ?? 1) || 1,
     subtotal: f.subtotal,
     descuento: f.descuento,
     itbis: f.itbis,
     total: f.total,
     estado: f.estado,
     notas: f.notas,
+    vendedor_id: idOpc(f.vendedor_id),
+    vendedor: f.vendedor?.trim() || undefined,
+    tecnico_id: idOpc(f.tecnico_id),
+    almacen_id: idOpc(f.almacen_id),
+    almacen: f.almacen ?? undefined,
+    sucursal_id: idOpc(f.sucursal_id),
+    departamento_id: idOpc(f.departamento_id),
+    proyecto_id: idOpc(f.proyecto_id),
+    cotizacion_id: idOpc(f.cotizacion_id),
+    orden_cliente: f.orden_cliente ?? "",
+    orden_vendedor: f.orden_vendedor ?? "",
+    pagos: {
+      efectivo: Number(f.efectivo ?? 0),
+      tarjeta: Number(f.tarjeta ?? 0),
+      cheque: Number(f.cheque ?? 0),
+      transferencia: Number(f.transferencia ?? 0),
+      cardnet: Number(f.cardnet ?? 0),
+    },
     lineas: [],
   });
 }
+
 
 export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factura[]> {
   if (await usarMysql()) {
@@ -754,6 +886,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       codigo: string;
       descripcion: string;
       cantidad: number;
+      oferta: number;
       precio: number;
       descuento_pct: number;
       tasa_itbis: number;
@@ -763,7 +896,8 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
     }>(
       `SELECT product_id AS item_id, product_id AS codigo,
               COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
-              quantity AS cantidad, price AS precio, discount_rate AS descuento_pct,
+              quantity AS cantidad, bonus AS oferta, price AS precio,
+              discount_rate AS descuento_pct,
               CASE WHEN quantity * price - discount > 0
                    THEN ROUND((tax1 + tax2 + tax3) / (quantity * price - discount) * 100)
                    ELSE 0 END AS tasa_itbis,
@@ -779,6 +913,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       codigo: l.codigo,
       descripcion: l.descripcion,
       cantidad: Number(l.cantidad),
+      oferta: Number(l.oferta ?? 0),
       precio: Number(l.precio),
       descuento_pct: Number(l.descuento_pct),
       tasa_itbis: Number(l.tasa_itbis),
@@ -786,6 +921,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       itbis: Number(l.itbis),
       total: Number(l.total),
     }));
+
     return factura;
   }
   return demo().facturas.find((f) => f.id === id) ?? null;
@@ -797,8 +933,23 @@ export interface NuevaFactura {
   fecha: string;
   dias_credito: number;
   notas: string;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
+  vendedor_id?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  sucursal_id?: string | undefined;
+  departamento_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  cotizacion_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  orden_vendedor?: string | undefined;
+  pagos?:
+    | { efectivo?: number; tarjeta?: number; cheque?: number; transferencia?: number; cardnet?: number }
+    | undefined;
   lineas: LineaEntrada[];
 }
+
 
 export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
   const { lineas, totales } = calcularTotales(entrada.lineas);
@@ -838,35 +989,59 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
     const cliente = clientes[0];
     if (!cliente) throw new Error("Cliente no encontrado");
 
+    const d = await defectos();
+    const sucursal = Number(entrada.sucursal_id ?? 1) || 1;
+
     // Comprobante en invoices.
     const inv = await ejecutar(
       `INSERT INTO invoices (branch_id, date, time, counted, ncf_id, ncf_doc)
-       VALUES (1, ?, CURTIME(), 0, ?, ?)`,
-      [entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
+       VALUES (?, ?, CURTIME(), 0, ?, ?)`,
+      [sucursal, entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
     );
 
-    const d = await defectos();
-    // Venta de contado: se registra cobrada en efectivo; a crédito queda pendiente.
-    const efectivo = entrada.dias_credito === 0 ? totales.total : 0;
+    // Multimoneda: se guarda la moneda del documento y la tasa aplicada.
+    const moneda = (entrada.moneda || "DOP").toUpperCase();
+    const tasa = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+    const p = entrada.pagos ?? {};
+    const cobrado = round2(
+      (p.efectivo ?? 0) + (p.tarjeta ?? 0) + (p.cheque ?? 0) + (p.transferencia ?? 0) + (p.cardnet ?? 0),
+    );
+    // Si no se indican cobros y la venta es de contado, se registra en efectivo.
+    const efectivo =
+      cobrado > 0 ? (p.efectivo ?? 0) : entrada.dias_credito === 0 ? totales.total : 0;
     const ord = await ejecutar(
       `INSERT INTO orders
          (branch_id, date, time, open, customer_name, credit_days, currency_rate,
           authorized, user_id, ship_id, customer_id, salesman_id, currency_id,
           warehouse_id, bank_id, efectivo, tarjeta, cheque, transferencia, horas,
-          cardnet, ultimo_pago, notes, rnc)
-       VALUES (1, ?, CURTIME(), 1, ?, ?, 1, 0, ?, 1, ?, ?, 'DOP', ?, ?, ?, 0, 0, 0, 0, 0, 0, ?, ?)`,
+          cardnet, ultimo_pago, notes, rnc, tech_id, department_id, project_id,
+          quotation_id, customer_order, salesman_order)
+       VALUES (?, ?, CURTIME(), 1, ?, ?, ?, 0, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
+        sucursal,
         entrada.fecha,
         cliente.name,
         entrada.dias_credito,
+        tasa,
         d.user_id,
         entrada.cliente_id,
-        d.salesman_id,
-        d.warehouse_id,
+        Number(entrada.vendedor_id ?? d.salesman_id) || d.salesman_id,
+        moneda,
+        Number(entrada.almacen_id ?? d.warehouse_id) || d.warehouse_id,
         d.bank_id,
         efectivo,
+        p.tarjeta ?? 0,
+        p.cheque ?? 0,
+        p.transferencia ?? 0,
+        p.cardnet ?? 0,
         entrada.notas,
         cliente.rnc ?? "",
+        entrada.tecnico_id ? Number(entrada.tecnico_id) : null,
+        entrada.departamento_id ? Number(entrada.departamento_id) : null,
+        entrada.proyecto_id ? Number(entrada.proyecto_id) : null,
+        entrada.cotizacion_id ? Number(entrada.cotizacion_id) : null,
+        entrada.orden_cliente ?? "",
+        entrada.orden_vendedor ?? "",
       ],
     );
     const orderId = ord.insertId;
@@ -878,24 +1053,28 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
         `INSERT INTO orders_detail
            (order_id, branch_id, position, product_id, product_name, name,
             quantity, bonus, price, ref_price, tax1, tax2, tax3,
-            discount_rate, discount, cost, cost_ant,
+            discount_rate, discount, cost, cost_ant, currency_rate,
             compound_qtty, compound_bonus, compound_price, compound_discount)
-         VALUES (?, 1, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 0, ?, ?, 0, 0, 0, 0, 0, 0)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, 0, 0, 0, 0)`,
         [
           orderId,
+          sucursal,
           pos + 1,
           l.item_id ?? l.codigo ?? "",
           l.descripcion,
           l.descripcion,
           l.cantidad,
+          l.oferta ?? 0,
           l.precio,
           l.precio,
           l.itbis,
           l.descuento_pct,
           descuentoMonto,
+          tasa,
         ],
       );
     }
+
     const creada = await obtenerFactura(orderId);
     if (!creada) throw new Error("No se pudo leer la factura creada");
     return creada;
@@ -921,13 +1100,18 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
     cliente_rnc: cliente.rnc,
     fecha: entrada.fecha,
     vencimiento,
+    dias_credito: entrada.dias_credito,
+    moneda: (entrada.moneda || "DOP").toUpperCase(),
+    tasa_cambio: entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1,
     subtotal: totales.subtotal,
     descuento: totales.descuento,
     itbis: totales.itbis,
     total: totales.total,
     estado: "emitida",
     notas: entrada.notas,
+    orden_cliente: entrada.orden_cliente ?? "",
     lineas,
+
   };
   d.facturas.push(factura);
   return factura;

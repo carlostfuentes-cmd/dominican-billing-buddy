@@ -119,12 +119,42 @@ export interface LineaFactura {
   codigo: string;
   descripcion: string;
   cantidad: number;
+  oferta?: number | undefined;
   precio: number;
   descuento_pct: number;
   tasa_itbis: number;
   subtotal: number;
   itbis: number;
   total: number;
+}
+
+export interface Moneda {
+  id: string;
+  nombre: string;
+  simbolo: string;
+}
+
+export interface OpcionId {
+  id: string;
+  nombre: string;
+}
+
+export interface ListasFactura {
+  monedas: Moneda[];
+  vendedores: OpcionId[];
+  tecnicos: OpcionId[];
+  almacenes: OpcionId[];
+  sucursales: OpcionId[];
+  departamentos: OpcionId[];
+  proyectos: OpcionId[];
+}
+
+export interface PagosFactura {
+  efectivo: number;
+  tarjeta: number;
+  cheque: number;
+  transferencia: number;
+  cardnet: number;
 }
 
 export interface Factura {
@@ -134,16 +164,35 @@ export interface Factura {
   cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
+  cliente_direccion?: string | undefined;
+  cliente_telefono?: string | undefined;
   fecha: string;
   vencimiento: string;
+  dias_credito?: number | undefined;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
   subtotal: number;
   descuento: number;
   itbis: number;
   total: number;
   estado: EstadoFactura;
   notas: string;
+  // Referencias del pedido en el sistema (equivalen a la pantalla de pedidos).
+  vendedor_id?: string | undefined;
+  vendedor?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  almacen?: string | undefined;
+  sucursal_id?: string | undefined;
+  departamento_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  orden_vendedor?: string | undefined;
+  cotizacion_id?: string | undefined;
+  pagos?: PagosFactura | undefined;
   lineas: LineaFactura[];
 }
+
 
 export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -154,13 +203,20 @@ export interface LineaEntrada {
   codigo: string;
   descripcion: string;
   cantidad: number;
+  /** Unidades bonificadas (oferta): se despachan pero no se cobran. */
+  oferta?: number | undefined;
   precio: number;
   descuento_pct: number;
   tasa_itbis: number;
+  /** Cuando es true, el precio digitado ya incluye el ITBIS. */
+  precio_incluye_itbis?: boolean | undefined;
 }
 
 export function calcularLinea(l: LineaEntrada): LineaFactura {
-  const bruto = l.cantidad * l.precio;
+  const precio = l.precio_incluye_itbis
+    ? round2(l.precio / (1 + (l.tasa_itbis || 0) / 100))
+    : l.precio;
+  const bruto = l.cantidad * precio;
   const subtotal = round2(bruto * (1 - (l.descuento_pct || 0) / 100));
   const itbis = round2((subtotal * l.tasa_itbis) / 100);
   return {
@@ -168,7 +224,8 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
     codigo: l.codigo,
     descripcion: l.descripcion,
     cantidad: l.cantidad,
-    precio: l.precio,
+    oferta: l.oferta ?? 0,
+    precio,
     descuento_pct: l.descuento_pct || 0,
     tasa_itbis: l.tasa_itbis,
     subtotal,
@@ -176,6 +233,7 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
     total: round2(subtotal + itbis),
   };
 }
+
 
 export interface Totales {
   subtotal: number;
@@ -191,8 +249,9 @@ export function calcularTotales(lineas: LineaEntrada[]): {
 } {
   const calculadas = lineas.map(calcularLinea);
   const descuento = round2(
-    lineas.reduce((a, l) => a + l.cantidad * l.precio * ((l.descuento_pct || 0) / 100), 0),
+    calculadas.reduce((a, l) => a + l.cantidad * l.precio * ((l.descuento_pct || 0) / 100), 0),
   );
+
   const subtotal = round2(calculadas.reduce((a, l) => a + l.subtotal, 0));
   const itbis = round2(calculadas.reduce((a, l) => a + l.itbis, 0));
   const mapa = new Map<number, { tasa: number; base: number; itbis: number }>();
@@ -229,6 +288,35 @@ const formateadorDOP = new Intl.NumberFormat("es-DO", {
 export function dop(n: number): string {
   return formateadorDOP.format(n ?? 0);
 }
+
+const cacheFormato = new Map<string, Intl.NumberFormat>();
+
+/** Formatea un importe en la moneda del documento (el sistema es multimoneda). */
+export function money(n: number, monedaId?: string | undefined): string {
+  const codigo = (monedaId || "DOP").toUpperCase();
+  if (!/^[A-Z]{3}$/.test(codigo) || codigo === "000")
+    return (n ?? 0).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  let f = cacheFormato.get(codigo);
+  if (!f) {
+    try {
+      f = new Intl.NumberFormat("es-DO", {
+        style: "currency",
+        currency: codigo,
+        minimumFractionDigits: 2,
+      });
+    } catch {
+      f = formateadorDOP;
+    }
+    cacheFormato.set(codigo, f);
+  }
+  return f.format(n ?? 0);
+}
+
+/** Equivalente en pesos usando la tasa registrada en el documento. */
+export function enDOP(n: number, tasa?: number | undefined): number {
+  return round2((n ?? 0) * (tasa && tasa > 0 ? tasa : 1));
+}
+
 
 export function fechaCorta(iso: string): string {
   if (!iso) return "—";

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,13 +30,16 @@ import {
   emitirFactura,
   obtenerClientes,
   obtenerItems,
+  obtenerListasFactura,
   obtenerSecuencias,
 } from "@/lib/erp.functions";
 import {
   calcularTotales,
   dop,
+  enDOP,
   formatearNCF,
   hoyISO,
+  money,
   sumarDias,
   TIPOS_NCF,
   type LineaEntrada,
@@ -48,20 +52,26 @@ export const Route = createFileRoute("/facturas/nueva")({
       { title: "Nueva factura — ERP Contable RD" },
       {
         name: "description",
-        content: "Emite una factura con NCF automático, cálculo de ITBIS y condición de pago.",
+        content: "Emite una factura con NCF automático, ITBIS, moneda y tasa de cambio.",
       },
       { property: "og:title", content: "Nueva factura — ERP Contable RD" },
-      { property: "og:description", content: "Emisión de factura con NCF e ITBIS automáticos." },
+      {
+        property: "og:description",
+        content: "Emisión de factura con NCF, ITBIS y multimoneda.",
+      },
     ],
   }),
   component: NuevaFactura,
 });
+
+const SIN = "-";
 
 const lineaVacia: LineaEntrada = {
   item_id: null,
   codigo: "",
   descripcion: "",
   cantidad: 1,
+  oferta: 0,
   precio: 0,
   descuento_pct: 0,
   tasa_itbis: 18,
@@ -76,6 +86,22 @@ function NuevaFactura() {
   const [fecha, setFecha] = useState(hoyISO());
   const [dias, setDias] = useState(0);
   const [notas, setNotas] = useState("");
+  const [moneda, setMoneda] = useState("DOP");
+  const [tasa, setTasa] = useState(1);
+  const [incluyeItbis, setIncluyeItbis] = useState(false);
+  const [vendedor, setVendedor] = useState(SIN);
+  const [tecnico, setTecnico] = useState(SIN);
+  const [almacen, setAlmacen] = useState(SIN);
+  const [sucursal, setSucursal] = useState(SIN);
+  const [departamento, setDepartamento] = useState(SIN);
+  const [proyecto, setProyecto] = useState(SIN);
+  const [cotizacion, setCotizacion] = useState("");
+  const [ordenCliente, setOrdenCliente] = useState("");
+  const [ordenVendedor, setOrdenVendedor] = useState("");
+  const [efectivo, setEfectivo] = useState(0);
+  const [tarjeta, setTarjeta] = useState(0);
+  const [cheque, setCheque] = useState(0);
+  const [transferencia, setTransferencia] = useState(0);
   const [lineas, setLineas] = useState<LineaEntrada[]>([{ ...lineaVacia }]);
 
   const { data: clientes = [] } = useQuery({
@@ -90,9 +116,20 @@ function NuevaFactura() {
     queryKey: ["secuencias"],
     queryFn: () => obtenerSecuencias(),
   });
+  const { data: listas } = useQuery({
+    queryKey: ["listas-factura"],
+    queryFn: () => obtenerListasFactura(),
+  });
 
+  const cliente = clientes.find((c) => String(c.id) === clienteId);
   const secuencia = secuencias.find((s) => s.tipo_ncf === tipo);
-  const { totales } = useMemo(() => calcularTotales(lineas), [lineas]);
+  const esDOP = moneda.toUpperCase() === "DOP";
+  const lineasCalculo = useMemo(
+    () => lineas.map((l) => ({ ...l, precio_incluye_itbis: incluyeItbis })),
+    [lineas, incluyeItbis],
+  );
+  const { totales } = useMemo(() => calcularTotales(lineasCalculo), [lineasCalculo]);
+  const cobrado = efectivo + tarjeta + cheque + transferencia;
 
   const emitir = useMutation({
     mutationFn: () =>
@@ -103,7 +140,19 @@ function NuevaFactura() {
           fecha,
           dias_credito: dias,
           notas,
-          lineas: lineas.map((l) => ({ ...l, item_id: l.item_id ?? null })),
+          moneda,
+          tasa_cambio: tasa,
+          ...(vendedor !== SIN ? { vendedor_id: vendedor } : {}),
+          ...(tecnico !== SIN ? { tecnico_id: tecnico } : {}),
+          ...(almacen !== SIN ? { almacen_id: almacen } : {}),
+          ...(sucursal !== SIN ? { sucursal_id: sucursal } : {}),
+          ...(departamento !== SIN ? { departamento_id: departamento } : {}),
+          ...(proyecto !== SIN ? { proyecto_id: proyecto } : {}),
+          ...(cotizacion ? { cotizacion_id: cotizacion } : {}),
+          orden_cliente: ordenCliente,
+          orden_vendedor: ordenVendedor,
+          pagos: { efectivo, tarjeta, cheque, transferencia, cardnet: 0 },
+          lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
         },
       }),
     onSuccess: (factura) => {
@@ -133,27 +182,40 @@ function NuevaFactura() {
 
   const enviar = () => {
     if (!clienteId) { toast.error("Selecciona un cliente"); return; }
+    if (!esDOP && (!tasa || tasa <= 0)) {
+      toast.error("Indica la tasa de cambio a aplicar");
+      return;
+    }
     if (!lineas.length) { toast.error("Agrega al menos una línea"); return; }
     for (const l of lineas) {
       if (!l.descripcion.trim()) { toast.error("Cada línea necesita una descripción"); return; }
       if (l.cantidad <= 0) { toast.error("La cantidad debe ser mayor que cero"); return; }
+    }
+    if (cobrado > totales.total + 0.01) {
+      toast.error("Los cobros superan el total de la factura");
+      return;
     }
     if (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta)
       { toast.error(`No hay NCF ${tipo} disponible. Revisa las secuencias.`); return; }
     emitir.mutate();
   };
 
+  const lista = (opciones: { id: string; nombre: string }[] | undefined) => opciones ?? [];
+
   return (
     <div>
-      <PageHeader titulo="Nueva factura" descripcion="El NCF se asigna automáticamente al emitir" />
+      <PageHeader
+        titulo="Nueva factura"
+        descripcion="El NCF se asigna automáticamente al emitir. Indica moneda y tasa de cambio."
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Datos del comprobante</CardTitle>
+            <CardTitle className="text-base">Datos del cliente</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
+          <CardContent className="grid gap-4">
+            <div>
               <Label>Cliente</Label>
               <Select
                 value={clienteId}
@@ -163,6 +225,7 @@ function NuevaFactura() {
                   if (c) {
                     setTipo(c.tipo_ncf);
                     setDias(c.dias_credito);
+                    if (c.vendedor_id) setVendedor(String(c.vendedor_id));
                   }
                 }}
               >
@@ -174,9 +237,121 @@ function NuevaFactura() {
                     .filter((c) => c.activo)
                     .map((c) => (
                       <SelectItem key={c.id} value={String(c.id)}>
-                        {c.nombre} — {c.rnc}
+                        {c.id} — {c.nombre}
                       </SelectItem>
                     ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1 text-sm">
+              <p>
+                <span className="text-muted-foreground">RNC/Cédula: </span>
+                {cliente?.rnc || "—"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Dirección: </span>
+                {cliente?.direccion || "—"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Teléfono: </span>
+                {cliente?.telefono || "—"}
+              </p>
+              <p>
+                <span className="text-muted-foreground">Crédito disponible: </span>
+                {cliente?.monto_credito ? dop(cliente.monto_credito) : "—"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Datos del pedido</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="fecha">Emisión</Label>
+              <Input
+                id="fecha"
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="dias">Condiciones (días)</Label>
+              <Input
+                id="dias"
+                type="number"
+                min={0}
+                max={365}
+                value={dias}
+                onChange={(e) => setDias(Math.max(0, Number(e.target.value) || 0))}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">Vence el {sumarDias(fecha, dias)}</p>
+            </div>
+            <div>
+              <Label>Moneda</Label>
+              <Select
+                value={moneda}
+                onValueChange={(v) => {
+                  setMoneda(v);
+                  if (v.toUpperCase() === "DOP") setTasa(1);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {lista(listas?.monedas).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.id} — {m.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="tasa">Tasa de cambio a aplicar</Label>
+              <Input
+                id="tasa"
+                type="number"
+                min={0}
+                step="0.0001"
+                value={tasa}
+                disabled={esDOP}
+                onChange={(e) => setTasa(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label>Vendedor</Label>
+              <Select value={vendedor} onValueChange={setVendedor}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin vendedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SIN}>Sin especificar</SelectItem>
+                  {lista(listas?.vendedores).map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Técnico</Label>
+              <Select value={tecnico} onValueChange={setTecnico}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin técnico" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SIN}>Sin especificar</SelectItem>
+                  {lista(listas?.tecnicos).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.nombre}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -203,79 +378,124 @@ function NuevaFactura() {
                   : "Sin secuencia configurada"}
               </p>
             </div>
-            <div>
-              <Label htmlFor="fecha">Fecha de emisión</Label>
-              <Input
-                id="fecha"
-                type="date"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+            <div className="flex items-end gap-2 pb-2">
+              <Checkbox
+                id="incluye"
+                checked={incluyeItbis}
+                onCheckedChange={(v) => setIncluyeItbis(v === true)}
               />
-            </div>
-            <div>
-              <Label htmlFor="dias">Días de crédito</Label>
-              <Input
-                id="dias"
-                type="number"
-                min={0}
-                max={365}
-                value={dias}
-                onChange={(e) => setDias(Math.max(0, Number(e.target.value) || 0))}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Vence el {sumarDias(fecha, dias)}
-              </p>
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="notas">Notas</Label>
-              <Textarea
-                id="notas"
-                value={notas}
-                maxLength={300}
-                onChange={(e) => setNotas(e.target.value)}
-                placeholder="Orden de compra, referencia, condiciones…"
-              />
+              <Label htmlFor="incluye" className="text-sm font-normal">
+                El precio incluye ITBIS
+              </Label>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Totales</CardTitle>
+            <CardTitle className="text-base">Referencias</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="tabular">{dop(totales.subtotal)}</span>
+          <CardContent className="grid gap-3">
+            <div>
+              <Label htmlFor="cot">Cotización</Label>
+              <Input
+                id="cot"
+                value={cotizacion}
+                maxLength={10}
+                onChange={(e) => setCotizacion(e.target.value.replace(/\D/g, ""))}
+              />
             </div>
-            {totales.descuento > 0 && (
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Descuentos</span>
-                <span className="tabular">-{dop(totales.descuento)}</span>
+            <div>
+              <Label htmlFor="oc">Orden cliente</Label>
+              <Input
+                id="oc"
+                value={ordenCliente}
+                maxLength={10}
+                onChange={(e) => setOrdenCliente(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="ov">Orden servicio / vendedor</Label>
+              <Input
+                id="ov"
+                value={ordenVendedor}
+                maxLength={10}
+                onChange={(e) => setOrdenVendedor(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Almacén</Label>
+              <Select value={almacen} onValueChange={setAlmacen}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Predeterminado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SIN}>Predeterminado</SelectItem>
+                  {lista(listas?.almacenes).map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Sucursal</Label>
+              <Select value={sucursal} onValueChange={setSucursal}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Predeterminada" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SIN}>Predeterminada</SelectItem>
+                  {lista(listas?.sucursales).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Departamento</Label>
+              <Select value={departamento} onValueChange={setDepartamento}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sin departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SIN}>Sin especificar</SelectItem>
+                  {lista(listas?.departamentos).map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {lista(listas?.proyectos).length > 0 && (
+              <div>
+                <Label>Proyecto</Label>
+                <Select value={proyecto} onValueChange={setProyecto}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sin proyecto" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SIN}>Sin especificar</SelectItem>
+                    {lista(listas?.proyectos).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             )}
-            {totales.itbisPorTasa.map((t) => (
-              <div key={t.tasa} className="flex justify-between">
-                <span className="text-muted-foreground">
-                  ITBIS {t.tasa}% sobre {dop(t.base)}
-                </span>
-                <span className="tabular">{dop(t.itbis)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Total</span>
-              <span className="tabular">{dop(totales.total)}</span>
-            </div>
-            <Button className="mt-4 w-full" onClick={enviar} disabled={emitir.isPending}>
-              {emitir.isPending ? "Emitiendo…" : "Emitir factura"}
-            </Button>
           </CardContent>
         </Card>
       </div>
 
       <Card className="mt-4">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Detalle</CardTitle>
+          <CardTitle className="text-base">Detalle del producto o servicio</CardTitle>
           <Button
             variant="outline"
             size="sm"
@@ -288,19 +508,23 @@ function NuevaFactura() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="min-w-52">Ítem</TableHead>
-                <TableHead className="min-w-52">Descripción</TableHead>
+                <TableHead className="min-w-52">Código / ítem</TableHead>
+                <TableHead className="min-w-52">Producto</TableHead>
                 <TableHead className="w-24">Cant.</TableHead>
+                <TableHead className="w-24">Oferta</TableHead>
                 <TableHead className="w-32">Precio</TableHead>
                 <TableHead className="w-24">Desc. %</TableHead>
                 <TableHead className="w-28">ITBIS</TableHead>
-                <TableHead className="text-right">Importe</TableHead>
+                <TableHead className="text-right">Sub-total</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {lineas.map((l, i) => {
-                const importe = l.cantidad * l.precio * (1 - l.descuento_pct / 100);
+                const precioNeto = incluyeItbis
+                  ? l.precio / (1 + (l.tasa_itbis || 0) / 100)
+                  : l.precio;
+                const importe = l.cantidad * precioNeto * (1 - l.descuento_pct / 100);
                 return (
                   <TableRow key={i}>
                     <TableCell>
@@ -343,6 +567,15 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        value={l.oferta ?? 0}
+                        onChange={(e) => actualizar(i, { oferta: Number(e.target.value) || 0 })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        min={0}
+                        step="0.01"
                         value={l.precio}
                         onChange={(e) => actualizar(i, { precio: Number(e.target.value) || 0 })}
                       />
@@ -375,7 +608,7 @@ function NuevaFactura() {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="tabular text-right">{dop(importe)}</TableCell>
+                    <TableCell className="tabular text-right">{money(importe, moneda)}</TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
@@ -393,6 +626,118 @@ function NuevaFactura() {
           </Table>
         </CardContent>
       </Card>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Forma de pago y observaciones</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="efec">Efectivo</Label>
+              <Input
+                id="efec"
+                type="number"
+                min={0}
+                step="0.01"
+                value={efectivo}
+                onChange={(e) => setEfectivo(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tarj">Tarjeta / Transferencia</Label>
+              <Input
+                id="tarj"
+                type="number"
+                min={0}
+                step="0.01"
+                value={tarjeta}
+                onChange={(e) => setTarjeta(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="cheq">Cheque</Label>
+              <Input
+                id="cheq"
+                type="number"
+                min={0}
+                step="0.01"
+                value={cheque}
+                onChange={(e) => setCheque(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tran">Transferencia bancaria</Label>
+              <Input
+                id="tran"
+                type="number"
+                min={0}
+                step="0.01"
+                value={transferencia}
+                onChange={(e) => setTransferencia(Number(e.target.value) || 0)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <Label htmlFor="notas">Observaciones generales</Label>
+              <Textarea
+                id="notas"
+                value={notas}
+                maxLength={300}
+                onChange={(e) => setNotas(e.target.value)}
+                placeholder="Referencias, condiciones, instrucciones de entrega…"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Totales</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Sub-total</span>
+              <span className="tabular">{money(totales.subtotal, moneda)}</span>
+            </div>
+            {totales.descuento > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Descuentos</span>
+                <span className="tabular">-{money(totales.descuento, moneda)}</span>
+              </div>
+            )}
+            {totales.itbisPorTasa.map((t) => (
+              <div key={t.tasa} className="flex justify-between">
+                <span className="text-muted-foreground">
+                  ITBIS {t.tasa}% sobre {money(t.base, moneda)}
+                </span>
+                <span className="tabular">{money(t.itbis, moneda)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between border-t pt-2 text-base font-semibold">
+              <span>Total</span>
+              <span className="tabular">{money(totales.total, moneda)}</span>
+            </div>
+            {!esDOP && (
+              <p className="text-xs text-muted-foreground">
+                Equivale a {dop(enDOP(totales.total, tasa))} a la tasa {tasa || 0}
+              </p>
+            )}
+            <div className="flex justify-between pt-2">
+              <span className="text-muted-foreground">Cobrado</span>
+              <span className="tabular">{money(cobrado, moneda)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pendiente</span>
+              <span className="tabular">
+                {money(Math.max(0, totales.total - cobrado), moneda)}
+              </span>
+            </div>
+            <Button className="mt-4 w-full" onClick={enviar} disabled={emitir.isPending}>
+              {emitir.isPending ? "Emitiendo…" : "Emitir factura"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
