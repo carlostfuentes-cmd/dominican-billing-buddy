@@ -49,15 +49,16 @@ import {
 export const Route = createFileRoute("/facturas/nueva")({
   head: () => ({
     meta: [
-      { title: "Nueva factura — ERP Contable RD" },
+      { title: "Nuevo pedido — ERP Contable RD" },
       {
         name: "description",
-        content: "Emite una factura con NCF automático, ITBIS, moneda y tasa de cambio.",
+        content:
+          "Registra el pedido y conviértelo en factura con NCF automático, ITBIS y multimoneda.",
       },
-      { property: "og:title", content: "Nueva factura — ERP Contable RD" },
+      { property: "og:title", content: "Nuevo pedido — ERP Contable RD" },
       {
         property: "og:description",
-        content: "Emisión de factura con NCF, ITBIS y multimoneda.",
+        content: "Pedido con conversión a factura, NCF, ITBIS y multimoneda.",
       },
     ],
   }),
