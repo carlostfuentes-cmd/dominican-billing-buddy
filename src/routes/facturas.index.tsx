@@ -89,12 +89,12 @@ function Facturas() {
   return (
     <div>
       <PageHeader
-        titulo="Facturas"
-        descripcion="Comprobantes emitidos con su NCF"
+        titulo="Pedidos y facturas"
+        descripcion="Los pedidos sin NCF están pendientes de facturar"
         acciones={
           <Button asChild>
             <Link to="/facturas/nueva">
-              <Plus className="size-4" /> Nueva factura
+              <Plus className="size-4" /> Nuevo pedido
             </Link>
           </Button>
         }
