@@ -23,6 +23,9 @@ import {
   type Factura,
   type Item,
   type ListasCliente,
+  type ListasFactura,
+  type OpcionId,
+
 
   type LineaEntrada,
   type SecuenciaNCF,

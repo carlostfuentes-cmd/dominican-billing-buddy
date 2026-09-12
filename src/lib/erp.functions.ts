@@ -9,8 +9,9 @@ import type {
   Factura,
   Item,
   ListasCliente,
-
+  ListasFactura,
   SecuenciaNCF,
+
   TipoNCF,
 } from "@/lib/erp-types";
 
