@@ -8,6 +8,8 @@ import type {
   EstadoFactura,
   Factura,
   Item,
+  ListasCliente,
+
   SecuenciaNCF,
   TipoNCF,
 } from "@/lib/erp-types";
@@ -62,15 +64,51 @@ const clienteSchema = z.object({
   direccion: texto(240),
   dias_credito: z.number().int().min(0).max(365),
   activo: z.boolean(),
+  nombre_corto: texto(10).optional(),
+  direccion2: texto(100).optional(),
+  ciudad: texto(100).optional(),
+  pais: texto(40).optional(),
+  codigo_postal: texto(10).optional(),
+  telefono2: texto(20).optional(),
+  telefono3: texto(20).optional(),
+  fax: texto(20).optional(),
+  email_alterno: z.string().trim().max(160).email("Correo alterno inválido").or(z.literal("")).optional(),
+  fecha_apertura: fecha.or(z.literal("")).optional(),
+  localidad_id: texto(15).optional(),
+  sector: texto(4).optional(),
+  monto_credito: z.number().min(0).optional(),
+  vendedor_id: z.number().int().min(0).optional(),
+  clase_id: z.number().int().min(0).optional(),
+  lista_precios: z.number().int().min(1).max(9).optional(),
+  datacredito: z
+    .enum(["", "NORMAL", "ATRASO", "LEGAL", "CASTIGADO", "SALDADO"])
+    .optional(),
+  cargar_itbis: z.boolean().optional(),
+  backorder: z.boolean().optional(),
+  retener_anticipos: z.boolean().optional(),
+  validar_orden_compra: z.boolean().optional(),
+  generico: z.boolean().optional(),
+  bloquear_credito_vencido: z.boolean().optional(),
+  dias_credito_vencido: z.number().int().min(0).max(999).optional(),
+  certificado_zf: texto(10).optional(),
+  certificado_zf_vence: fecha.or(z.literal("")).optional(),
+  retencion_itbis: z.number().min(0).max(100).optional(),
+  retencion_isr: z.number().min(0).max(100).optional(),
+  notas: texto(2000).optional(),
 });
 
 export const obtenerClientes = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ busqueda: texto(80).default("") }).parse(d ?? {}))
   .handler(async ({ data }): Promise<Cliente[]> => (await repo()).listarClientes(data.busqueda));
 
+export const obtenerListasCliente = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ListasCliente> => (await repo()).listasCliente(),
+);
+
 export const guardarCliente = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => clienteSchema.parse(d))
   .handler(async ({ data }): Promise<Cliente> => (await repo()).guardarCliente(data));
+
 
 /* --------------------------------- Ítems --------------------------------- */
 
