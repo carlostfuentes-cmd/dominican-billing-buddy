@@ -170,12 +170,36 @@ export const obtenerFactura = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
   .handler(async ({ data }): Promise<Factura | null> => (await repo()).obtenerFactura(data.id));
 
+export const obtenerListasFactura = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ListasFactura> => (await repo()).listasFactura(),
+);
+
 const nuevaFacturaSchema = z.object({
   cliente_id: texto(20).min(1, "Cliente requerido"),
   tipo_ncf: tipoNCF,
   fecha,
   dias_credito: z.number().int().min(0).max(365),
   notas: texto(300),
+  moneda: z.string().trim().max(3).optional(),
+  tasa_cambio: z.number().min(0).max(100_000).optional(),
+  vendedor_id: texto(10).optional(),
+  tecnico_id: texto(10).optional(),
+  almacen_id: texto(10).optional(),
+  sucursal_id: texto(10).optional(),
+  departamento_id: texto(10).optional(),
+  proyecto_id: texto(10).optional(),
+  cotizacion_id: texto(10).optional(),
+  orden_cliente: texto(10).optional(),
+  orden_vendedor: texto(10).optional(),
+  pagos: z
+    .object({
+      efectivo: z.number().min(0).default(0),
+      tarjeta: z.number().min(0).default(0),
+      cheque: z.number().min(0).default(0),
+      transferencia: z.number().min(0).default(0),
+      cardnet: z.number().min(0).default(0),
+    })
+    .optional(),
   lineas: z
     .array(
       z.object({
@@ -183,9 +207,11 @@ const nuevaFacturaSchema = z.object({
         codigo: texto(30),
         descripcion: texto(200).min(1, "Descripción requerida"),
         cantidad: z.number().positive().max(1_000_000),
+        oferta: z.number().min(0).max(1_000_000).optional(),
         precio: z.number().min(0).max(99_999_999),
         descuento_pct: z.number().min(0).max(100),
         tasa_itbis: z.number().refine((v) => [0, 16, 18].includes(v), "Tasa inválida"),
+        precio_incluye_itbis: z.boolean().optional(),
       }),
     )
     .min(1, "Agrega al menos una línea"),
@@ -194,6 +220,7 @@ const nuevaFacturaSchema = z.object({
 export const emitirFactura = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => nuevaFacturaSchema.parse(d))
   .handler(async ({ data }): Promise<Factura> => (await repo()).crearFactura(data));
+
 
 export const cambiarEstadoFactura = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
