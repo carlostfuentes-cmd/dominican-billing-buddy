@@ -187,7 +187,7 @@ function NuevaFactura() {
     });
   };
 
-  const enviar = () => {
+  const enviar = (facturar: boolean, imprimir = false) => {
     if (!clienteId) { toast.error("Selecciona un cliente"); return; }
     if (!esDOP && (!tasa || tasa <= 0)) {
       toast.error("Indica la tasa de cambio a aplicar");
@@ -199,12 +199,13 @@ function NuevaFactura() {
       if (l.cantidad <= 0) { toast.error("La cantidad debe ser mayor que cero"); return; }
     }
     if (cobrado > totales.total + 0.01) {
-      toast.error("Los cobros superan el total de la factura");
+      toast.error("Los cobros superan el total del pedido");
       return;
     }
-    if (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta)
+    // El NCF sólo se necesita al convertir el pedido en factura.
+    if (facturar && (!secuencia || !secuencia.activa || secuencia.proximo > secuencia.hasta))
       { toast.error(`No hay NCF ${tipo} disponible. Revisa las secuencias.`); return; }
-    emitir.mutate();
+    guardar.mutate({ facturar, imprimir });
   };
 
   const lista = (opciones: { id: string; nombre: string }[] | undefined) => opciones ?? [];
