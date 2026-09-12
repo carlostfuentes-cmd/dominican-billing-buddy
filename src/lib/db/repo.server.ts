@@ -456,7 +456,7 @@ export async function listarSecuencias(): Promise<SecuenciaNCF[]> {
     const hoy = hoyISO();
     const porTipo = new Map<string, FilaSecuencia>();
     for (const f of filas) {
-      if (!TIPO_POR_NCF_ID.size || !(f.prefix in NCF_ID_POR_TIPO)) continue;
+      if (!(f.prefix in NCF_ID_POR_TIPO)) continue;
       const vigente =
         Number(f.status) === 1 &&
         Number(f.last) < Number(f.end) &&

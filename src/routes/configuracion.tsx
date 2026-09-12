@@ -165,8 +165,8 @@ function Configuracion() {
                   <li>MYSQL_SSL</li>
                 </ul>
                 <p>
-                  Antes de conectar, ejecuta una vez el archivo <code>db/schema.sql</code> incluido
-                  en el proyecto para crear las tablas.
+                  Al conectar, la aplicación trabajará sobre las tablas que ya existen en tu
+                  sistema (clientes, ítems, facturas, secuencias NCF); no crea tablas nuevas.
                 </p>
               </>
             )}
