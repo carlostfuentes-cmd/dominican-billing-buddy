@@ -51,7 +51,7 @@ export const Route = createFileRoute("/items")({
   component: Items,
 });
 
-const vacio: Omit<Item, "id"> & { id?: number } = {
+const vacio: Omit<Item, "id"> & { id?: string } = {
   codigo: "",
   descripcion: "",
   unidad: "UND",

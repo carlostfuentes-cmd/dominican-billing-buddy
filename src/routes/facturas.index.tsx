@@ -67,7 +67,7 @@ function Facturas() {
   const filtro = {
     desde,
     hasta,
-    ...(cliente !== TODOS ? { clienteId: Number(cliente) } : {}),
+    ...(cliente !== TODOS ? { clienteId: cliente } : {}),
     ...(tipo !== TODOS ? { tipo: tipo as TipoNCF } : {}),
     ...(estado !== TODOS ? { estado: estado as EstadoFactura } : {}),
   };

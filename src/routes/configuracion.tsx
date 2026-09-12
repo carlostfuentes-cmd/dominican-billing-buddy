@@ -8,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  guardarEmpresa,
-  inicializarEsquema,
-  obtenerEmpresa,
-  obtenerEstadoConexion,
-} from "@/lib/erp.functions";
+import { guardarEmpresa, obtenerEmpresa, obtenerEstadoConexion } from "@/lib/erp.functions";
 import { rncValido, type Empresa } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/configuracion")({
@@ -54,19 +49,6 @@ function Configuracion() {
       void qc.invalidateQueries({ queryKey: ["empresa"] });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar"),
-  });
-
-  const crearTablas = useMutation({
-    mutationFn: () => inicializarEsquema({}),
-    onSuccess: (estado) => {
-      if (estado.tablasFaltantes.length === 0) {
-        toast.success("Tablas creadas en tu servidor");
-      } else {
-        toast.error("Aún faltan tablas; revisa los permisos del usuario de la base de datos");
-      }
-      void qc.invalidateQueries({ queryKey: ["estado-conexion"] });
-    },
-    onError: (e: Error) => toast.error(e.message || "No se pudieron crear las tablas"),
   });
 
   const enviar = () => {
@@ -153,27 +135,19 @@ function Configuracion() {
             </p>
             {conexion?.modo === "mysql" ? (
               <>
-                <p>Los clientes, ítems y facturas se guardan en tu servidor de base de datos.</p>
+                <p>
+                  La aplicación usa las tablas ya existentes de tu sistema: clientes, ítems,
+                  facturas y secuencias NCF se leen y guardan directamente en ellas. No se crean
+                  tablas nuevas en tu base de datos.
+                </p>
                 {(conexion.tablasFaltantes?.length ?? 0) > 0 ? (
-                  <div className="space-y-2 rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
-                    <p>
-                      Faltan tablas en tu base de datos:{" "}
-                      <span className="font-mono">{conexion.tablasFaltantes!.join(", ")}</span>.
-                    </p>
-                    <p>
-                      Puedes crearlas automáticamente (no borra datos existentes) o ejecutar el
-                      archivo <code>db/schema.sql</code> del proyecto en tu servidor.
-                    </p>
-                    <Button
-                      size="sm"
-                      onClick={() => crearTablas.mutate()}
-                      disabled={crearTablas.isPending}
-                    >
-                      {crearTablas.isPending ? "Creando tablas…" : "Crear tablas ahora"}
-                    </Button>
-                  </div>
+                  <p className="rounded-md bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-400">
+                    No se encontraron estas tablas de tu sistema:{" "}
+                    <span className="font-mono">{conexion.tablasFaltantes!.join(", ")}</span>.
+                    Verifica que estás apuntando a la base de datos correcta.
+                  </p>
                 ) : (
-                  <p className="text-xs">Esquema verificado: todas las tablas existen.</p>
+                  <p className="text-xs">Tablas de tu sistema verificadas: todo en orden.</p>
                 )}
               </>
             ) : (
@@ -191,8 +165,8 @@ function Configuracion() {
                   <li>MYSQL_SSL</li>
                 </ul>
                 <p>
-                  Antes de conectar, ejecuta una vez el archivo <code>db/schema.sql</code> incluido
-                  en el proyecto para crear las tablas.
+                  Al conectar, la aplicación trabajará sobre las tablas que ya existen en tu
+                  sistema (clientes, ítems, facturas, secuencias NCF); no crea tablas nuevas.
                 </p>
               </>
             )}

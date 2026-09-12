@@ -32,7 +32,7 @@ function crearEstado(): EstadoDemo {
 
   const clientes: Cliente[] = [
     {
-      id: 1,
+      id: "1",
       nombre: "Ferretería El Progreso SRL",
       rnc: "131234567",
       tipo_ncf: "B01",
@@ -43,7 +43,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 2,
+      id: "2",
       nombre: "María Altagracia Peña",
       rnc: "00112345678",
       tipo_ncf: "B02",
@@ -54,7 +54,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 3,
+      id: "3",
       nombre: "Ministerio de Educación",
       rnc: "401007551",
       tipo_ncf: "B15",
@@ -65,7 +65,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 4,
+      id: "4",
       nombre: "Zona Franca Textil Caribe",
       rnc: "130998877",
       tipo_ncf: "B14",
@@ -79,7 +79,7 @@ function crearEstado(): EstadoDemo {
 
   const items: Item[] = [
     {
-      id: 1,
+      id: "1",
       codigo: "SERV-001",
       descripcion: "Servicio de consultoría contable (hora)",
       unidad: "HORA",
@@ -88,7 +88,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 2,
+      id: "2",
       codigo: "SERV-002",
       descripcion: "Preparación de declaración IT-1",
       unidad: "UND",
@@ -97,7 +97,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 3,
+      id: "3",
       codigo: "PROD-010",
       descripcion: "Licencia software contable (anual)",
       unidad: "UND",
@@ -106,7 +106,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 4,
+      id: "4",
       codigo: "PROD-020",
       descripcion: "Café molido premium 1 lb",
       unidad: "LB",
@@ -115,7 +115,7 @@ function crearEstado(): EstadoDemo {
       activo: true,
     },
     {
-      id: 5,
+      id: "5",
       codigo: "PROD-030",
       descripcion: "Cuaderno escolar (exento)",
       unidad: "UND",
@@ -139,7 +139,7 @@ function crearEstado(): EstadoDemo {
       id: 1,
       ncf: "B0100000001",
       tipo_ncf: "B01",
-      cliente_id: 1,
+      cliente_id: "1",
       cliente_nombre: clientes[0]!.nombre,
       cliente_rnc: clientes[0]!.rnc,
       fecha: menos(12),
@@ -152,7 +152,7 @@ function crearEstado(): EstadoDemo {
       notas: "",
       lineas: [
         {
-          item_id: 1,
+          item_id: "1",
           codigo: "SERV-001",
           descripcion: "Servicio de consultoría contable (hora)",
           cantidad: 6,
@@ -169,7 +169,7 @@ function crearEstado(): EstadoDemo {
       id: 2,
       ncf: "B0200000001",
       tipo_ncf: "B02",
-      cliente_id: 2,
+      cliente_id: "2",
       cliente_nombre: clientes[1]!.nombre,
       cliente_rnc: clientes[1]!.rnc,
       fecha: menos(6),
@@ -182,7 +182,7 @@ function crearEstado(): EstadoDemo {
       notas: "Pago en efectivo",
       lineas: [
         {
-          item_id: 4,
+          item_id: "4",
           codigo: "PROD-020",
           descripcion: "Café molido premium 1 lb",
           cantidad: 5,
@@ -199,7 +199,7 @@ function crearEstado(): EstadoDemo {
       id: 3,
       ncf: "B1500000001",
       tipo_ncf: "B15",
-      cliente_id: 3,
+      cliente_id: "3",
       cliente_nombre: clientes[2]!.nombre,
       cliente_rnc: clientes[2]!.rnc,
       fecha: menos(3),
@@ -212,7 +212,7 @@ function crearEstado(): EstadoDemo {
       notas: "Orden de compra 2026-4471",
       lineas: [
         {
-          item_id: 3,
+          item_id: "3",
           codigo: "PROD-010",
           descripcion: "Licencia software contable (anual)",
           cantidad: 1,
@@ -229,7 +229,7 @@ function crearEstado(): EstadoDemo {
       id: 4,
       ncf: "B0100000002",
       tipo_ncf: "B01",
-      cliente_id: 1,
+      cliente_id: "1",
       cliente_nombre: clientes[0]!.nombre,
       cliente_rnc: clientes[0]!.rnc,
       fecha: menos(1),
@@ -242,7 +242,7 @@ function crearEstado(): EstadoDemo {
       notas: "",
       lineas: [
         {
-          item_id: 2,
+          item_id: "2",
           codigo: "SERV-002",
           descripcion: "Preparación de declaración IT-1",
           cantidad: 1,
@@ -259,7 +259,7 @@ function crearEstado(): EstadoDemo {
       id: 5,
       ncf: "B0100000003",
       tipo_ncf: "B01",
-      cliente_id: 4,
+      cliente_id: "4",
       cliente_nombre: clientes[3]!.nombre,
       cliente_rnc: clientes[3]!.rnc,
       fecha: menos(20),
@@ -272,7 +272,7 @@ function crearEstado(): EstadoDemo {
       notas: "Anulada por error en cliente",
       lineas: [
         {
-          item_id: 1,
+          item_id: "1",
           codigo: "SERV-001",
           descripcion: "Servicio de consultoría contable (hora)",
           cantidad: 2,

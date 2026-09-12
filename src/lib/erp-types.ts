@@ -1,12 +1,28 @@
 // Tipos y cálculos fiscales compartidos entre cliente y servidor.
 
-export type TipoNCF = "B01" | "B02" | "B14" | "B15";
+// Comprobantes fiscales DGII: serie B (impresos) y serie E (electrónicos e-CF).
+export type TipoNCF =
+  | "B01" | "B02" | "B03" | "B04" | "B11" | "B13" | "B14" | "B15"
+  | "E31" | "E32" | "E33" | "E34" | "E41" | "E43" | "E44" | "E45" | "E46";
 
 export const TIPOS_NCF: { codigo: TipoNCF; nombre: string }[] = [
   { codigo: "B01", nombre: "B01 — Crédito Fiscal" },
   { codigo: "B02", nombre: "B02 — Consumo" },
+  { codigo: "B03", nombre: "B03 — Nota de Débito" },
+  { codigo: "B04", nombre: "B04 — Nota de Crédito" },
+  { codigo: "B11", nombre: "B11 — Proveedor Informal" },
+  { codigo: "B13", nombre: "B13 — Gastos Menores" },
   { codigo: "B14", nombre: "B14 — Régimen Especial" },
   { codigo: "B15", nombre: "B15 — Gubernamental" },
+  { codigo: "E31", nombre: "E31 — e-CF Crédito Fiscal" },
+  { codigo: "E32", nombre: "E32 — e-CF Consumo" },
+  { codigo: "E33", nombre: "E33 — e-CF Nota de Débito" },
+  { codigo: "E34", nombre: "E34 — e-CF Nota de Crédito" },
+  { codigo: "E41", nombre: "E41 — e-CF Compras" },
+  { codigo: "E43", nombre: "E43 — e-CF Gastos Menores" },
+  { codigo: "E44", nombre: "E44 — e-CF Regímenes Especiales" },
+  { codigo: "E45", nombre: "E45 — e-CF Gubernamental" },
+  { codigo: "E46", nombre: "E46 — e-CF Exportaciones" },
 ];
 
 export const TASAS_ITBIS = [18, 16, 0] as const;
@@ -22,8 +38,10 @@ export interface Empresa {
   email: string;
 }
 
+// Los identificadores son texto: provienen de las tablas existentes
+// (customers.customer_id, products.product_id).
 export interface Cliente {
-  id: number;
+  id: string;
   nombre: string;
   rnc: string;
   tipo_ncf: TipoNCF;
@@ -35,7 +53,7 @@ export interface Cliente {
 }
 
 export interface Item {
-  id: number;
+  id: string;
   codigo: string;
   descripcion: string;
   unidad: string;
@@ -54,7 +72,7 @@ export interface SecuenciaNCF {
 }
 
 export interface LineaFactura {
-  item_id: number | null;
+  item_id: string | null;
   codigo: string;
   descripcion: string;
   cantidad: number;
@@ -70,7 +88,7 @@ export interface Factura {
   id: number;
   ncf: string;
   tipo_ncf: TipoNCF;
-  cliente_id: number;
+  cliente_id: string;
   cliente_nombre: string;
   cliente_rnc: string;
   fecha: string;
@@ -89,7 +107,7 @@ export function round2(n: number): number {
 }
 
 export interface LineaEntrada {
-  item_id?: number | null | undefined;
+  item_id?: string | null | undefined;
   codigo: string;
   descripcion: string;
   cantidad: number;
@@ -153,8 +171,10 @@ export function calcularTotales(lineas: LineaEntrada[]): {
   };
 }
 
+// Serie B: 8 dígitos (B0100000001). Serie E (e-CF): 10 dígitos (E310000000001).
 export function formatearNCF(tipo: TipoNCF, numero: number): string {
-  return `${tipo}${String(numero).padStart(8, "0")}`;
+  const digitos = tipo.startsWith("E") ? 10 : 8;
+  return `${tipo}${String(numero).padStart(digitos, "0")}`;
 }
 
 const formateadorDOP = new Intl.NumberFormat("es-DO", {

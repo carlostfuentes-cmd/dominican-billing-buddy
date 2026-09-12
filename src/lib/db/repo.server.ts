@@ -1,5 +1,15 @@
 // Repositorio: una sola API para la aplicación, con dos implementaciones
-// (MySQL externo o modo demostración en memoria).
+// (MySQL externo sobre las tablas existentes del sistema, o modo
+// demostración en memoria).
+//
+// Mapeo sobre el esquema existente del usuario:
+//   empresa      -> companies
+//   clientes     -> customers  (tipo NCF vía customers.ncf_id / ncf_kinds)
+//   ítems        -> products   (unidad vía measures)
+//   facturas     -> orders + invoices (NCF real en invoices.ncf_doc)
+//   líneas       -> orders_detail
+//   secuencias   -> ncf_sequences (prefix = tipo de comprobante)
+//   anulaciones  -> reverse_invoices
 
 import {
   calcularTotales,
@@ -22,7 +32,7 @@ import { ejecutar, mysqlActivo, sql, ultimoErrorMysql } from "./mysql.server";
 export interface FiltroFacturas {
   desde?: string;
   hasta?: string;
-  clienteId?: number;
+  clienteId?: string;
   tipo?: TipoNCF;
   estado?: EstadoFactura;
 }
@@ -30,17 +40,19 @@ export interface FiltroFacturas {
 export interface EstadoConexion {
   modo: "mysql" | "demo";
   error: string | null;
-  // Tablas del esquema (db/schema.sql) que faltan en la base conectada.
+  // Tablas del sistema existente que faltan en la base conectada.
   tablasFaltantes: string[];
 }
 
 export const TABLAS_REQUERIDAS = [
-  "empresa",
-  "clientes",
-  "items",
-  "ncf_secuencias",
-  "facturas",
-  "factura_lineas",
+  "companies",
+  "customers",
+  "products",
+  "orders",
+  "orders_detail",
+  "invoices",
+  "ncf_sequences",
+  "ncf_kinds",
 ] as const;
 
 export async function estadoConexion(): Promise<EstadoConexion> {
@@ -51,7 +63,7 @@ export async function estadoConexion(): Promise<EstadoConexion> {
   try {
     const filas = await sql<{ nombre: string }>(
       `SELECT TABLE_NAME AS nombre FROM information_schema.TABLES
-       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (?, ?, ?, ?, ?, ?)`,
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (?, ?, ?, ?, ?, ?, ?, ?)`,
       [...TABLAS_REQUERIDAS],
     );
     const existentes = new Set(filas.map((f) => String(f.nombre).toLowerCase()));
@@ -73,6 +85,84 @@ async function usarMysql(): Promise<boolean> {
   return mysqlActivo();
 }
 
+/* --------------------- Correspondencia de comprobantes -------------------- */
+
+// Tipo de comprobante (prefijo) <-> ncf_id de la tabla ncf_kinds del sistema.
+const NCF_ID_POR_TIPO: Record<TipoNCF, number> = {
+  B01: 1, B02: 2, B03: 3, B04: 4, B11: 5, B13: 7, B14: 8, B15: 9,
+  E31: 31, E32: 32, E33: 33, E34: 34, E41: 41, E43: 43, E44: 44, E45: 45, E46: 46,
+};
+
+const TIPO_POR_NCF_ID = new Map<number, TipoNCF>(
+  Object.entries(NCF_ID_POR_TIPO).map(([tipo, id]) => [id, tipo as TipoNCF]),
+);
+
+function tipoDesdeNcfId(ncfId: number | null | undefined): TipoNCF {
+  return TIPO_POR_NCF_ID.get(Number(ncfId)) ?? "B02";
+}
+
+/* --------- Valores por defecto para campos obligatorios del sistema ------- */
+
+interface Defectos {
+  user_id: number;
+  salesman_id: number;
+  warehouse_id: number;
+  bank_id: number;
+  ar_location_id: string;
+  class_id: number;
+  supplier_id: number;
+  brand_id: string;
+  color_id: string;
+  packaging_id: string;
+  source_id: number;
+  inventory_group_id: string;
+  product_family_id: number;
+  product_kind_id: string;
+}
+
+let cacheDefectos: Defectos | null = null;
+
+// Toma el primer registro de cada tabla relacionada para rellenar los campos
+// obligatorios que el módulo de facturación no maneja (almacén, vendedor…).
+async function defectos(): Promise<Defectos> {
+  if (cacheDefectos) return cacheDefectos;
+  const filas = await sql<Record<string, string | number | null>>(
+    `SELECT
+       (SELECT MIN(user_id) FROM users) AS user_id,
+       (SELECT MIN(salesman_id) FROM salesmen) AS salesman_id,
+       (SELECT MIN(warehouse_id) FROM warehouse) AS warehouse_id,
+       (SELECT MIN(bank_id) FROM banks) AS bank_id,
+       (SELECT MIN(ar_location_id) FROM ar_locations) AS ar_location_id,
+       (SELECT MIN(class_id) FROM ar_classes) AS class_id,
+       (SELECT MIN(supplier_id) FROM suppliers) AS supplier_id,
+       (SELECT MIN(brand_id) FROM brands) AS brand_id,
+       (SELECT MIN(color_id) FROM colors) AS color_id,
+       (SELECT MIN(packaging_id) FROM packaging) AS packaging_id,
+       (SELECT MIN(source_id) FROM sources) AS source_id,
+       (SELECT MIN(inventory_group_id) FROM inventory_groups) AS inventory_group_id,
+       (SELECT MIN(product_family_id) FROM products_family) AS product_family_id,
+       (SELECT MIN(product_kind_id) FROM products_kinds) AS product_kind_id`,
+  );
+  const r = filas[0] ?? {};
+  cacheDefectos = {
+    user_id: Number(r["user_id"] ?? 1),
+    salesman_id: Number(r["salesman_id"] ?? 1),
+    warehouse_id: Number(r["warehouse_id"] ?? 1),
+    bank_id: Number(r["bank_id"] ?? 1),
+    ar_location_id: String(r["ar_location_id"] ?? "1"),
+    class_id: Number(r["class_id"] ?? 1),
+    supplier_id: Number(r["supplier_id"] ?? 1),
+    brand_id: String(r["brand_id"] ?? "0"),
+    color_id: String(r["color_id"] ?? "0"),
+    packaging_id: String(r["packaging_id"] ?? "0"),
+    source_id: Number(r["source_id"] ?? 0),
+    inventory_group_id: String(r["inventory_group_id"] ?? "0"),
+    product_family_id: Number(r["product_family_id"] ?? 1),
+    product_kind_id: String(r["product_kind_id"] ?? "0"),
+  };
+  return cacheDefectos;
+}
+
 /* ------------------------------- Empresa -------------------------------- */
 
 const EMPRESA_VACIA: Empresa = { nombre: "", rnc: "", direccion: "", telefono: "", email: "" };
@@ -80,22 +170,43 @@ const EMPRESA_VACIA: Empresa = { nombre: "", rnc: "", direccion: "", telefono: "
 export async function obtenerEmpresa(): Promise<Empresa> {
   if (await usarMysql()) {
     // En modo MySQL nunca se mezclan datos de ejemplo: si no hay fila, vacío.
-    const filas = await sql<Empresa>(
-      "SELECT nombre, rnc, direccion, telefono, email FROM empresa WHERE id = 1",
+    const filas = await sql<{
+      nombre: string | null;
+      rnc: string | null;
+      direccion: string | null;
+      telefono: string | null;
+      email: string | null;
+    }>(
+      `SELECT name AS nombre, rnc,
+              TRIM(CONCAT_WS(', ', NULLIF(address1, ''), NULLIF(address2, ''),
+                             NULLIF(address3, ''), NULLIF(address4, ''))) AS direccion,
+              phone AS telefono, email
+       FROM companies ORDER BY company_id LIMIT 1`,
     );
-    return filas[0] ?? EMPRESA_VACIA;
+    const f = filas[0];
+    if (!f) return EMPRESA_VACIA;
+    return {
+      nombre: f.nombre ?? "",
+      rnc: f.rnc ?? "",
+      direccion: f.direccion ?? "",
+      telefono: f.telefono ?? "",
+      email: f.email ?? "",
+    };
   }
   return demo().empresa;
 }
 
 export async function guardarEmpresa(e: Empresa): Promise<Empresa> {
   if (await usarMysql()) {
+    const filas = await sql<{ company_id: number }>(
+      "SELECT company_id FROM companies ORDER BY company_id LIMIT 1",
+    );
+    const id = filas[0]?.company_id;
+    if (id === undefined) throw new Error("No hay empresa registrada en la tabla companies");
     await ejecutar(
-      `INSERT INTO empresa (id, nombre, rnc, direccion, telefono, email)
-       VALUES (1, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE nombre=VALUES(nombre), rnc=VALUES(rnc),
-         direccion=VALUES(direccion), telefono=VALUES(telefono), email=VALUES(email)`,
-      [e.nombre, e.rnc, e.direccion, e.telefono, e.email],
+      `UPDATE companies SET name = ?, billing_name = ?, rnc = ?, address1 = ?, phone = ?, email = ?
+       WHERE company_id = ?`,
+      [e.nombre, e.nombre, e.rnc, e.direccion, e.telefono, e.email, id],
     );
     return e;
   }
@@ -105,16 +216,46 @@ export async function guardarEmpresa(e: Empresa): Promise<Empresa> {
 
 /* ------------------------------- Clientes ------------------------------- */
 
+interface FilaCliente {
+  id: string;
+  nombre: string | null;
+  rnc: string | null;
+  ncf_id: number | null;
+  telefono: string | null;
+  email: string | null;
+  direccion: string | null;
+  dias_credito: number | null;
+  activo: number | null;
+}
+
+function mapearCliente(f: FilaCliente): Cliente {
+  return {
+    id: String(f.id),
+    nombre: f.nombre ?? "",
+    rnc: f.rnc ?? "",
+    tipo_ncf: tipoDesdeNcfId(f.ncf_id),
+    telefono: f.telefono ?? "",
+    email: f.email ?? "",
+    direccion: f.direccion ?? "",
+    dias_credito: Number(f.dias_credito ?? 0),
+    activo: Boolean(f.activo),
+  };
+}
+
 export async function listarClientes(busqueda = ""): Promise<Cliente[]> {
   if (await usarMysql()) {
     const like = `%${busqueda}%`;
-    return sql<Cliente>(
-      `SELECT id, nombre, rnc, tipo_ncf, telefono, email, direccion, dias_credito, activo
-       FROM clientes
-       WHERE (? = '' OR nombre LIKE ? OR rnc LIKE ?)
-       ORDER BY nombre`,
+    const filas = await sql<FilaCliente>(
+      `SELECT customer_id AS id, name AS nombre, rnc, ncf_id,
+              phone1 AS telefono, main_email AS email, address1 AS direccion,
+              credit_days AS dias_credito, status = 'A' AS activo
+       FROM customers
+       WHERE (? = '' OR name LIKE ? OR rnc LIKE ?)
+       ORDER BY name
+       LIMIT 500`,
       [busqueda, like, like],
-    ).then((f) => f.map((c) => ({ ...c, activo: Boolean(c.activo) })));
+    );
+    return filas.map(mapearCliente);
   }
   const t = busqueda.toLowerCase();
   return demo()
@@ -122,41 +263,56 @@ export async function listarClientes(busqueda = ""): Promise<Cliente[]> {
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
 
-export async function guardarCliente(c: Omit<Cliente, "id"> & { id?: number | undefined }): Promise<Cliente> {
+export async function guardarCliente(
+  c: Omit<Cliente, "id"> & { id?: string | undefined },
+): Promise<Cliente> {
   if (await usarMysql()) {
+    const ncfId = NCF_ID_POR_TIPO[c.tipo_ncf];
     if (c.id) {
       await ejecutar(
-        `UPDATE clientes SET nombre=?, rnc=?, tipo_ncf=?, telefono=?, email=?, direccion=?,
-           dias_credito=?, activo=? WHERE id=?`,
+        `UPDATE customers SET name = ?, rnc = ?, ncf_id = ?, phone1 = ?, main_email = ?,
+           address1 = ?, credit_days = ?, status = ? WHERE customer_id = ?`,
         [
           c.nombre,
           c.rnc,
-          c.tipo_ncf,
-          c.telefono,
+          ncfId,
+          c.telefono || ".",
           c.email,
           c.direccion,
           c.dias_credito,
-          c.activo ? 1 : 0,
+          c.activo ? "A" : "I",
           c.id,
         ],
       );
       return { ...c, id: c.id } as Cliente;
     }
-    const r = await ejecutar(
-      `INSERT INTO clientes (nombre, rnc, tipo_ncf, telefono, email, direccion, dias_credito, activo)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    const d = await defectos();
+    const sig = await sql<{ id: string | null }>(
+      "SELECT LPAD(MAX(CAST(customer_id AS UNSIGNED)) + 1, 5, '0') AS id FROM customers",
+    );
+    const nuevoId = sig[0]?.id ?? "00001";
+    await ejecutar(
+      `INSERT INTO customers
+         (customer_id, name, rnc, ncf_id, phone1, main_email, address1, credit_days,
+          since, credit_amount, generico, tax, backorder, tax_deduction, advance,
+          purchase_validation, status, ar_location_id, salesman_id, class_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURDATE(), 0, 0, 0, 0, 0, 0, 0, ?, ?, ?, ?)`,
       [
+        nuevoId,
         c.nombre,
         c.rnc,
-        c.tipo_ncf,
-        c.telefono,
+        ncfId,
+        c.telefono || ".",
         c.email,
         c.direccion,
         c.dias_credito,
-        c.activo ? 1 : 0,
+        c.activo ? "A" : "I",
+        d.ar_location_id,
+        d.salesman_id,
+        d.class_id,
       ],
     );
-    return { ...c, id: r.insertId } as Cliente;
+    return { ...c, id: nuevoId } as Cliente;
   }
   const d = demo();
   if (c.id) {
@@ -165,30 +321,51 @@ export async function guardarCliente(c: Omit<Cliente, "id"> & { id?: number | un
     d.clientes[i] = { ...(c as Cliente), id: c.id };
     return d.clientes[i]!;
   }
-  const nuevo = { ...(c as Cliente), id: d.siguienteId.cliente++ };
+  const nuevo = { ...(c as Cliente), id: String(d.siguienteId.cliente++) };
   d.clientes.push(nuevo);
   return nuevo;
 }
 
 /* --------------------------------- Ítems -------------------------------- */
 
+interface FilaItem {
+  id: string;
+  codigo: string;
+  descripcion: string | null;
+  unidad: string | null;
+  precio: number | null;
+  tasa_itbis: number | null;
+  activo: number | null;
+}
+
+function mapearItem(f: FilaItem): Item {
+  return {
+    id: String(f.id),
+    codigo: f.codigo,
+    descripcion: f.descripcion ?? "",
+    unidad: f.unidad ?? "UND",
+    precio: Number(f.precio ?? 0),
+    tasa_itbis: Number(f.tasa_itbis ?? 0),
+    activo: Boolean(f.activo),
+  };
+}
+
 export async function listarItems(busqueda = ""): Promise<Item[]> {
   if (await usarMysql()) {
     const like = `%${busqueda}%`;
-    return sql<Item>(
-      `SELECT id, codigo, descripcion, unidad, precio, tasa_itbis, activo
-       FROM items
-       WHERE (? = '' OR codigo LIKE ? OR descripcion LIKE ?)
-       ORDER BY codigo`,
+    const filas = await sql<FilaItem>(
+      `SELECT p.product_id AS id, p.product_id AS codigo, p.name AS descripcion,
+              COALESCE(m.abreviature, 'UND') AS unidad, p.price1 AS precio,
+              CASE WHEN p.tax = 1 THEN COALESCE(p.tax_rate, 18) ELSE 0 END AS tasa_itbis,
+              p.status = 'A' AS activo
+       FROM products p
+       LEFT JOIN measures m ON m.measure_id = p.measure_id
+       WHERE (? = '' OR p.product_id LIKE ? OR p.name LIKE ?)
+       ORDER BY p.product_id
+       LIMIT 500`,
       [busqueda, like, like],
-    ).then((f) =>
-      f.map((i) => ({
-        ...i,
-        precio: Number(i.precio),
-        tasa_itbis: Number(i.tasa_itbis),
-        activo: Boolean(i.activo),
-      })),
     );
+    return filas.map(mapearItem);
   }
   const t = busqueda.toLowerCase();
   return demo()
@@ -198,29 +375,50 @@ export async function listarItems(busqueda = ""): Promise<Item[]> {
     .sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
-export async function guardarItem(it: Omit<Item, "id"> & { id?: number | undefined }): Promise<Item> {
+export async function guardarItem(
+  it: Omit<Item, "id"> & { id?: string | undefined },
+): Promise<Item> {
   if (await usarMysql()) {
     if (it.id) {
       await ejecutar(
-        `UPDATE items SET codigo=?, descripcion=?, unidad=?, precio=?, tasa_itbis=?, activo=? WHERE id=?`,
-        [
-          it.codigo,
-          it.descripcion,
-          it.unidad,
-          it.precio,
-          it.tasa_itbis,
-          it.activo ? 1 : 0,
-          it.id,
-        ],
+        `UPDATE products SET name = ?, price1 = ?, tax = ?, tax_rate = ?, status = ?
+         WHERE product_id = ?`,
+        [it.descripcion, it.precio, it.tasa_itbis > 0 ? 1 : 0, it.tasa_itbis, it.activo ? "A" : "I", it.id],
       );
       return { ...it, id: it.id } as Item;
     }
-    const r = await ejecutar(
-      `INSERT INTO items (codigo, descripcion, unidad, precio, tasa_itbis, activo)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [it.codigo, it.descripcion, it.unidad, it.precio, it.tasa_itbis, it.activo ? 1 : 0],
+    const d = await defectos();
+    await ejecutar(
+      `INSERT INTO products
+         (product_id, name, status, tax, tax_rate, price1, cost,
+          is_compound, is_service, stock_validate, is_drug, is_comisionable, no_gravamen,
+          price_edition, rotation, life, serial_require,
+          weight_measure_id, measure_id, volume_measure_id, supplier_id, color_id,
+          packaging_id, source_id, currency_id, inventory_group_id, brand_id,
+          product_family_id, product_kind_id)
+       VALUES (?, ?, ?, ?, ?, ?, 0, 0, 1, 0, 0, 0, ?, 0, 0, 0, 0,
+               '0', COALESCE((SELECT measure_id FROM (SELECT measure_id FROM measures WHERE abreviature = ? LIMIT 1) mm), '0'),
+               '0', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?)`,
+      [
+        it.codigo,
+        it.descripcion,
+        it.activo ? "A" : "I",
+        it.tasa_itbis > 0 ? 1 : 0,
+        it.tasa_itbis,
+        it.precio,
+        it.tasa_itbis > 0 ? 0 : 1,
+        it.unidad,
+        d.supplier_id,
+        d.color_id,
+        d.packaging_id,
+        d.source_id,
+        d.inventory_group_id,
+        d.brand_id,
+        d.product_family_id,
+        d.product_kind_id,
+      ],
     );
-    return { ...it, id: r.insertId } as Item;
+    return { ...it, id: it.codigo } as Item;
   }
   const d = demo();
   if (it.id) {
@@ -229,39 +427,84 @@ export async function guardarItem(it: Omit<Item, "id"> & { id?: number | undefin
     d.items[i] = { ...(it as Item), id: it.id };
     return d.items[i]!;
   }
-  const nuevo = { ...(it as Item), id: d.siguienteId.item++ };
+  const nuevo = { ...(it as Item), id: String(d.siguienteId.item++) };
   d.items.push(nuevo);
   return nuevo;
 }
 
 /* ------------------------------ Secuencias ------------------------------ */
 
+interface FilaSecuencia {
+  ID: number;
+  prefix: string;
+  start: number;
+  end: number;
+  last: number;
+  status: number;
+  vencimiento: string | null;
+}
+
 export async function listarSecuencias(): Promise<SecuenciaNCF[]> {
   if (await usarMysql()) {
-    return sql<SecuenciaNCF>(
-      `SELECT tipo_ncf, desde, hasta, proximo, DATE_FORMAT(vence, '%Y-%m-%d') AS vence, activa
-       FROM ncf_secuencias ORDER BY tipo_ncf`,
-    ).then((f) =>
-      f.map((s) => ({
-        ...s,
-        desde: Number(s.desde),
-        hasta: Number(s.hasta),
-        proximo: Number(s.proximo),
-        activa: Boolean(s.activa),
-      })),
+    const filas = await sql<FilaSecuencia>(
+      `SELECT ID, prefix, start, end, last, status,
+              DATE_FORMAT(vencimiento, '%Y-%m-%d') AS vencimiento
+       FROM ncf_sequences ORDER BY prefix, ID`,
     );
+    // Varias filas pueden compartir prefijo (rangos sucesivos): se muestra la
+    // vigente (activa, con saldo y no vencida) o, en su defecto, la más reciente.
+    const hoy = hoyISO();
+    const porTipo = new Map<string, FilaSecuencia>();
+    for (const f of filas) {
+      if (!(f.prefix in NCF_ID_POR_TIPO)) continue;
+      const vigente =
+        Number(f.status) === 1 &&
+        Number(f.last) < Number(f.end) &&
+        (!f.vencimiento || f.vencimiento >= hoy);
+      const actual = porTipo.get(f.prefix);
+      if (!actual) {
+        porTipo.set(f.prefix, f);
+      } else {
+        const actualVigente =
+          Number(actual.status) === 1 &&
+          Number(actual.last) < Number(actual.end) &&
+          (!actual.vencimiento || actual.vencimiento >= hoy);
+        if ((vigente && !actualVigente) || (vigente === actualVigente && f.ID > actual.ID)) {
+          porTipo.set(f.prefix, f);
+        }
+      }
+    }
+    return [...porTipo.values()]
+      .map((f) => ({
+        tipo_ncf: f.prefix as TipoNCF,
+        desde: Number(f.start),
+        hasta: Number(f.end),
+        proximo: Number(f.last) + 1,
+        vence: f.vencimiento ?? "",
+        activa: Number(f.status) === 1,
+      }))
+      .sort((a, b) => a.tipo_ncf.localeCompare(b.tipo_ncf));
   }
   return [...demo().secuencias].sort((a, b) => a.tipo_ncf.localeCompare(b.tipo_ncf));
 }
 
 export async function guardarSecuencia(s: SecuenciaNCF): Promise<SecuenciaNCF> {
   if (await usarMysql()) {
+    // Se desactivan los rangos anteriores del mismo tipo y se registra el nuevo.
+    await ejecutar("UPDATE ncf_sequences SET status = 0 WHERE prefix = ?", [s.tipo_ncf]);
     await ejecutar(
-      `INSERT INTO ncf_secuencias (tipo_ncf, desde, hasta, proximo, vence, activa)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE desde=VALUES(desde), hasta=VALUES(hasta),
-         proximo=VALUES(proximo), vence=VALUES(vence), activa=VALUES(activa)`,
-      [s.tipo_ncf, s.desde, s.hasta, s.proximo, s.vence, s.activa ? 1 : 0],
+      `INSERT INTO ncf_sequences
+         (start, end, last, alert, status, ncf_id, branch_id, sb_id, caja_id, prefix, autorizacion, vencimiento)
+       VALUES (?, ?, ?, 5, ?, ?, 1, 1, 1, ?, '', ?)`,
+      [
+        s.desde,
+        s.hasta,
+        s.proximo - 1,
+        s.activa ? 1 : 0,
+        NCF_ID_POR_TIPO[s.tipo_ncf],
+        s.tipo_ncf,
+        s.vence || null,
+      ],
     );
     return s;
   }
@@ -287,9 +530,89 @@ function normalizarFactura(f: Factura): Factura {
   };
 }
 
+// Consulta base: cada factura es una orden con su comprobante (invoices) y los
+// totales calculados desde orders_detail. El estado se deriva: anulada si tiene
+// reverso, pagada si los cobros cubren el total, si no, emitida.
+const SQL_FACTURAS = `
+  SELECT * FROM (
+    SELECT o.order_id AS id, COALESCE(i.ncf_doc, '') AS ncf,
+           COALESCE(LEFT(i.ncf_doc, 3), '') AS tipo_prefijo, i.ncf_id AS ncf_id,
+           o.customer_id AS cliente_id,
+           COALESCE(NULLIF(c.name, ''), o.customer_name, '') AS cliente_nombre,
+           COALESCE(NULLIF(c.rnc, ''), NULLIF(o.rnc, ''), '') AS cliente_rnc,
+           DATE_FORMAT(o.date, '%Y-%m-%d') AS fecha,
+           DATE_FORMAT(DATE_ADD(o.date, INTERVAL o.credit_days DAY), '%Y-%m-%d') AS vencimiento,
+           COALESCE(t.subtotal, 0) AS subtotal, COALESCE(t.descuento, 0) AS descuento,
+           COALESCE(t.itbis, 0) AS itbis, COALESCE(t.total, 0) AS total,
+           CASE
+             WHEN ri.invoice_id IS NOT NULL THEN 'anulada'
+             WHEN COALESCE(t.total, 0) > 0
+                  AND (o.efectivo + o.tarjeta + o.cheque + o.transferencia + o.cardnet)
+                      >= t.total - 0.01 THEN 'pagada'
+             ELSE 'emitida'
+           END AS estado,
+           COALESCE(o.notes, '') AS notas
+    FROM orders o
+    LEFT JOIN invoices i ON i.invoice_id = o.invoice_id AND i.branch_id = o.branch_id
+    LEFT JOIN customers c ON c.customer_id = o.customer_id
+    LEFT JOIN (
+      SELECT order_id,
+             ROUND(SUM(quantity * price - discount), 2) AS subtotal,
+             ROUND(SUM(discount), 2) AS descuento,
+             ROUND(SUM(tax1 + tax2 + tax3), 2) AS itbis,
+             ROUND(SUM(quantity * price - discount + tax1 + tax2 + tax3), 2) AS total
+      FROM orders_detail GROUP BY order_id
+    ) t ON t.order_id = o.order_id
+    LEFT JOIN (
+      SELECT DISTINCT invoice_id FROM reverse_invoices WHERE invoice_id IS NOT NULL
+    ) ri ON ri.invoice_id = o.invoice_id
+    WHERE o.invoice_id IS NOT NULL
+  ) f`;
+
+interface FilaFactura {
+  id: number;
+  ncf: string;
+  tipo_prefijo: string;
+  ncf_id: number | null;
+  cliente_id: string;
+  cliente_nombre: string;
+  cliente_rnc: string;
+  fecha: string;
+  vencimiento: string;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  estado: EstadoFactura;
+  notas: string;
+}
+
+function mapearFactura(f: FilaFactura): Factura {
+  const tipo = (f.tipo_prefijo && f.tipo_prefijo in NCF_ID_POR_TIPO
+    ? f.tipo_prefijo
+    : tipoDesdeNcfId(f.ncf_id)) as TipoNCF;
+  return normalizarFactura({
+    id: Number(f.id),
+    ncf: f.ncf,
+    tipo_ncf: tipo,
+    cliente_id: String(f.cliente_id),
+    cliente_nombre: f.cliente_nombre,
+    cliente_rnc: f.cliente_rnc,
+    fecha: f.fecha,
+    vencimiento: f.vencimiento,
+    subtotal: f.subtotal,
+    descuento: f.descuento,
+    itbis: f.itbis,
+    total: f.total,
+    estado: f.estado,
+    notas: f.notas,
+    lineas: [],
+  });
+}
+
 export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factura[]> {
   if (await usarMysql()) {
-    const cond: string[] = ["1=1"];
+    const cond: string[] = [];
     const params: unknown[] = [];
     if (filtro.desde) {
       cond.push("f.fecha >= ?");
@@ -304,24 +627,21 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
       params.push(filtro.clienteId);
     }
     if (filtro.tipo) {
-      cond.push("f.tipo_ncf = ?");
-      params.push(filtro.tipo);
+      cond.push("(f.tipo_prefijo = ? OR (f.tipo_prefijo = '' AND f.ncf_id = ?))");
+      params.push(filtro.tipo, NCF_ID_POR_TIPO[filtro.tipo]);
     }
     if (filtro.estado) {
       cond.push("f.estado = ?");
       params.push(filtro.estado);
     }
-    const filas = await sql<Factura>(
-      `SELECT f.id, f.ncf, f.tipo_ncf, f.cliente_id, c.nombre AS cliente_nombre, c.rnc AS cliente_rnc,
-              DATE_FORMAT(f.fecha,'%Y-%m-%d') AS fecha, DATE_FORMAT(f.vencimiento,'%Y-%m-%d') AS vencimiento,
-              f.subtotal, f.descuento, f.itbis, f.total, f.estado, f.notas
-       FROM facturas f JOIN clientes c ON c.id = f.cliente_id
-       WHERE ${cond.join(" AND ")}
+    const filas = await sql<FilaFactura>(
+      `${SQL_FACTURAS}
+       ${cond.length ? `WHERE ${cond.join(" AND ")}` : ""}
        ORDER BY f.fecha DESC, f.id DESC
        LIMIT 500`,
       params,
     );
-    return filas.map((f) => normalizarFactura({ ...f, lineas: [] }));
+    return filas.map(mapearFactura);
   }
   return demo()
     .facturas.filter(
@@ -337,40 +657,53 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
 
 export async function obtenerFactura(id: number): Promise<Factura | null> {
   if (await usarMysql()) {
-    const filas = await sql<Factura>(
-      `SELECT f.id, f.ncf, f.tipo_ncf, f.cliente_id, c.nombre AS cliente_nombre, c.rnc AS cliente_rnc,
-              DATE_FORMAT(f.fecha,'%Y-%m-%d') AS fecha, DATE_FORMAT(f.vencimiento,'%Y-%m-%d') AS vencimiento,
-              f.subtotal, f.descuento, f.itbis, f.total, f.estado, f.notas
-       FROM facturas f JOIN clientes c ON c.id = f.cliente_id WHERE f.id = ?`,
-      [id],
-    );
+    const filas = await sql<FilaFactura>(`${SQL_FACTURAS} WHERE f.id = ?`, [id]);
     const f = filas[0];
     if (!f) return null;
-    const lineas = await sql<Factura["lineas"][number]>(
-      `SELECT item_id, codigo, descripcion, cantidad, precio, descuento_pct, tasa_itbis,
-              subtotal, itbis, total
-       FROM factura_lineas WHERE factura_id = ? ORDER BY id`,
+    const lineas = await sql<{
+      item_id: string | null;
+      codigo: string;
+      descripcion: string;
+      cantidad: number;
+      precio: number;
+      descuento_pct: number;
+      tasa_itbis: number;
+      subtotal: number;
+      itbis: number;
+      total: number;
+    }>(
+      `SELECT product_id AS item_id, product_id AS codigo,
+              COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
+              quantity AS cantidad, price AS precio, discount_rate AS descuento_pct,
+              CASE WHEN quantity * price - discount > 0
+                   THEN ROUND((tax1 + tax2 + tax3) / (quantity * price - discount) * 100)
+                   ELSE 0 END AS tasa_itbis,
+              ROUND(quantity * price - discount, 2) AS subtotal,
+              ROUND(tax1 + tax2 + tax3, 2) AS itbis,
+              ROUND(quantity * price - discount + tax1 + tax2 + tax3, 2) AS total
+       FROM orders_detail WHERE order_id = ? ORDER BY orders_detail_id`,
       [id],
     );
-    return normalizarFactura({
-      ...f,
-      lineas: lineas.map((l) => ({
-        ...l,
-        cantidad: Number(l.cantidad),
-        precio: Number(l.precio),
-        descuento_pct: Number(l.descuento_pct),
-        tasa_itbis: Number(l.tasa_itbis),
-        subtotal: Number(l.subtotal),
-        itbis: Number(l.itbis),
-        total: Number(l.total),
-      })),
-    });
+    const factura = mapearFactura(f);
+    factura.lineas = lineas.map((l) => ({
+      item_id: l.item_id,
+      codigo: l.codigo,
+      descripcion: l.descripcion,
+      cantidad: Number(l.cantidad),
+      precio: Number(l.precio),
+      descuento_pct: Number(l.descuento_pct),
+      tasa_itbis: Number(l.tasa_itbis),
+      subtotal: Number(l.subtotal),
+      itbis: Number(l.itbis),
+      total: Number(l.total),
+    }));
+    return factura;
   }
   return demo().facturas.find((f) => f.id === id) ?? null;
 }
 
 export interface NuevaFactura {
-  cliente_id: number;
+  cliente_id: string;
   tipo_ncf: TipoNCF;
   fecha: string;
   dias_credito: number;
@@ -384,61 +717,97 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
   const vencimiento = sumarDias(entrada.fecha, entrada.dias_credito);
 
   if (await usarMysql()) {
-    // Asignación atómica del NCF: incrementa sólo si queda rango disponible.
-    const upd = await ejecutar(
-      `UPDATE ncf_secuencias SET proximo = proximo + 1
-       WHERE tipo_ncf = ? AND activa = 1 AND proximo <= hasta AND vence >= CURDATE()`,
+    // Rango vigente del tipo solicitado.
+    const rangos = await sql<{ ID: number; last: number }>(
+      `SELECT ID, last FROM ncf_sequences
+       WHERE prefix = ? AND status = 1 AND last < end
+         AND (vencimiento IS NULL OR vencimiento >= CURDATE())
+       ORDER BY ID LIMIT 1`,
       [entrada.tipo_ncf],
     );
-    if (upd.affectedRows === 0) {
+    const rango = rangos[0];
+    if (!rango) {
       throw new Error(
         `La secuencia NCF ${entrada.tipo_ncf} está agotada, vencida o inactiva. Actualízala en Secuencias NCF.`,
       );
     }
-    const filas = await sql<{ proximo: number }>(
-      "SELECT proximo FROM ncf_secuencias WHERE tipo_ncf = ?",
-      [entrada.tipo_ncf],
+    // Asignación atómica: incrementa sólo si queda rango disponible.
+    const upd = await ejecutar(
+      "UPDATE ncf_sequences SET last = last + 1 WHERE ID = ? AND last < end",
+      [rango.ID],
     );
-    const numero = Number(filas[0]?.proximo ?? 1) - 1;
+    if (upd.affectedRows === 0) {
+      throw new Error(`La secuencia NCF ${entrada.tipo_ncf} se agotó. Actualízala en Secuencias NCF.`);
+    }
+    const numero = Number(rango.last) + 1;
     const ncf = formatearNCF(entrada.tipo_ncf, numero);
-    const r = await ejecutar(
-      `INSERT INTO facturas (ncf, tipo_ncf, cliente_id, fecha, vencimiento, subtotal, descuento,
-         itbis, total, estado, notas)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'emitida', ?)`,
+
+    const clientes = await sql<{ name: string; rnc: string | null }>(
+      "SELECT name, rnc FROM customers WHERE customer_id = ?",
+      [entrada.cliente_id],
+    );
+    const cliente = clientes[0];
+    if (!cliente) throw new Error("Cliente no encontrado");
+
+    // Comprobante en invoices.
+    const inv = await ejecutar(
+      `INSERT INTO invoices (branch_id, date, time, counted, ncf_id, ncf_doc)
+       VALUES (1, ?, CURTIME(), 0, ?, ?)`,
+      [entrada.fecha, NCF_ID_POR_TIPO[entrada.tipo_ncf], ncf],
+    );
+
+    const d = await defectos();
+    // Venta de contado: se registra cobrada en efectivo; a crédito queda pendiente.
+    const efectivo = entrada.dias_credito === 0 ? totales.total : 0;
+    const ord = await ejecutar(
+      `INSERT INTO orders
+         (branch_id, date, time, open, customer_name, credit_days, currency_rate,
+          authorized, user_id, ship_id, customer_id, salesman_id, currency_id,
+          warehouse_id, bank_id, efectivo, tarjeta, cheque, transferencia, horas,
+          cardnet, ultimo_pago, notes, rnc)
+       VALUES (1, ?, CURTIME(), 1, ?, ?, 1, 0, ?, 1, ?, ?, 'DOP', ?, ?, ?, 0, 0, 0, 0, 0, 0, ?, ?)`,
       [
-        ncf,
-        entrada.tipo_ncf,
-        entrada.cliente_id,
         entrada.fecha,
-        vencimiento,
-        totales.subtotal,
-        totales.descuento,
-        totales.itbis,
-        totales.total,
+        cliente.name,
+        entrada.dias_credito,
+        d.user_id,
+        entrada.cliente_id,
+        d.salesman_id,
+        d.warehouse_id,
+        d.bank_id,
+        efectivo,
         entrada.notas,
+        cliente.rnc ?? "",
       ],
     );
-    for (const l of lineas) {
+    const orderId = ord.insertId;
+    await ejecutar("UPDATE orders SET invoice_id = ? WHERE order_id = ?", [inv.insertId, orderId]);
+
+    for (const [pos, l] of lineas.entries()) {
+      const descuentoMonto = round2(l.cantidad * l.precio * (l.descuento_pct / 100));
       await ejecutar(
-        `INSERT INTO factura_lineas (factura_id, item_id, codigo, descripcion, cantidad, precio,
-           descuento_pct, tasa_itbis, subtotal, itbis, total)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO orders_detail
+           (order_id, branch_id, position, product_id, product_name, name,
+            quantity, bonus, price, ref_price, tax1, tax2, tax3,
+            discount_rate, discount, cost, cost_ant,
+            compound_qtty, compound_bonus, compound_price, compound_discount)
+         VALUES (?, 1, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 0, ?, ?, 0, 0, 0, 0, 0, 0)`,
         [
-          r.insertId,
-          l.item_id,
-          l.codigo,
+          orderId,
+          pos + 1,
+          l.item_id ?? l.codigo ?? "",
+          l.descripcion,
           l.descripcion,
           l.cantidad,
           l.precio,
-          l.descuento_pct,
-          l.tasa_itbis,
-          l.subtotal,
+          l.precio,
           l.itbis,
-          l.total,
+          l.descuento_pct,
+          descuentoMonto,
         ],
       );
     }
-    const creada = await obtenerFactura(r.insertId);
+    const creada = await obtenerFactura(orderId);
     if (!creada) throw new Error("No se pudo leer la factura creada");
     return creada;
   }
@@ -477,7 +846,57 @@ export async function crearFactura(entrada: NuevaFactura): Promise<Factura> {
 
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {
   if (await usarMysql()) {
-    await ejecutar("UPDATE facturas SET estado = ? WHERE id = ?", [estado, id]);
+    if (estado === "pagada") {
+      // Registra el cobro en efectivo por la diferencia pendiente.
+      await ejecutar(
+        `UPDATE orders o
+         JOIN (SELECT order_id, ROUND(SUM(quantity * price - discount + tax1 + tax2 + tax3), 2) AS t
+               FROM orders_detail WHERE order_id = ? GROUP BY order_id) d
+           ON d.order_id = o.order_id
+         SET o.efectivo = GREATEST(0, d.t - o.tarjeta - o.cheque - o.transferencia - o.cardnet)
+         WHERE o.order_id = ?`,
+        [id, id],
+      );
+      return;
+    }
+    if (estado === "emitida") {
+      await ejecutar(
+        "UPDATE orders SET efectivo = 0, tarjeta = 0, cheque = 0, transferencia = 0, cardnet = 0 WHERE order_id = ?",
+        [id],
+      );
+      return;
+    }
+    // Anulada: se registra un reverso sobre la factura (como hace el sistema).
+    const filas = await sql<FilaFactura>(`${SQL_FACTURAS} WHERE f.id = ?`, [id]);
+    const f = filas[0];
+    if (!f) throw new Error("Factura no encontrada");
+    if (f.estado === "anulada") return;
+    const inv = await sql<{ invoice_id: number; branch_id: number }>(
+      "SELECT invoice_id, branch_id FROM orders WHERE order_id = ?",
+      [id],
+    );
+    if (!inv[0]) throw new Error("Factura no encontrada");
+    const d = await defectos();
+    const ncfId = f.ncf_id ?? NCF_ID_POR_TIPO[mapearFactura(f).tipo_ncf];
+    await ejecutar(
+      `INSERT INTO reverse_invoices
+         (branch_id, posted, number, date, time, customer_name, currency_rate,
+          authorized, invoice_id, ncf_id, ncf_doc, user_id, customer_id,
+          salesman_id, currency_id, warehouse_id, notes)
+       VALUES (?, 0, 0, CURDATE(), CURTIME(), ?, 1, 0, ?, ?, ?, ?, ?, ?, 'DOP', ?, ?)`,
+      [
+        inv[0].branch_id,
+        f.cliente_nombre,
+        inv[0].invoice_id,
+        ncfId,
+        f.ncf,
+        d.user_id,
+        f.cliente_id,
+        d.salesman_id,
+        d.warehouse_id,
+        "Anulada desde el módulo de facturación web",
+      ],
+    );
     return;
   }
   const f = demo().facturas.find((x) => x.id === id);
