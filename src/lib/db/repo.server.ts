@@ -22,6 +22,8 @@ import {
   type EstadoFactura,
   type Factura,
   type Item,
+  type ListasCliente,
+
   type LineaEntrada,
   type SecuenciaNCF,
   type TipoNCF,
