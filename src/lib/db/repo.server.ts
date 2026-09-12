@@ -704,11 +704,13 @@ const SQL_FACTURAS = `
            COALESCE(t.itbis, 0) AS itbis, COALESCE(t.total, 0) AS total,
            CASE
              WHEN ri.invoice_id IS NOT NULL THEN 'anulada'
+             WHEN o.invoice_id IS NULL THEN 'pedido'
              WHEN COALESCE(t.total, 0) > 0
                   AND (o.efectivo + o.tarjeta + o.cheque + o.transferencia + o.cardnet)
                       >= t.total - 0.01 THEN 'pagada'
              ELSE 'emitida'
            END AS estado,
+           o.invoice_id AS invoice_id,
            COALESCE(o.notes, '') AS notas,
            o.credit_days AS dias_credito,
            COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
