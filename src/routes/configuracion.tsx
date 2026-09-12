@@ -56,6 +56,19 @@ function Configuracion() {
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar"),
   });
 
+  const crearTablas = useMutation({
+    mutationFn: () => inicializarEsquema({}),
+    onSuccess: (estado) => {
+      if (estado.tablasFaltantes.length === 0) {
+        toast.success("Tablas creadas en tu servidor");
+      } else {
+        toast.error("Aún faltan tablas; revisa los permisos del usuario de la base de datos");
+      }
+      void qc.invalidateQueries({ queryKey: ["estado-conexion"] });
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudieron crear las tablas"),
+  });
+
   const enviar = () => {
     if (form.nombre.trim().length < 2) { toast.error("Escribe la razón social"); return; }
     if (!rncValido(form.rnc)) { toast.error("RNC inválido (9 dígitos)"); return; }
