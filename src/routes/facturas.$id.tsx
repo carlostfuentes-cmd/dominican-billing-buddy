@@ -57,6 +57,21 @@ function DetalleFactura() {
     onError: (e: Error) => toast.error(e.message || "No se pudo actualizar la factura"),
   });
 
+  // Convierte el pedido en factura: asigna NCF y número de factura.
+  const facturar = useMutation({
+    mutationFn: (opciones: { imprimir: boolean }) =>
+      facturarPedido({ data: { id: idNum } }).then((f) => ({ f, ...opciones })),
+    onSuccess: async ({ f, imprimir }) => {
+      toast.success(`Factura ${f.ncf} guardada`);
+      await qc.invalidateQueries({ queryKey: ["factura", idNum] });
+      void qc.invalidateQueries({ queryKey: ["facturas"] });
+      void qc.invalidateQueries({ queryKey: ["secuencias"] });
+      void qc.invalidateQueries({ queryKey: ["resumen"] });
+      if (imprimir) setTimeout(() => window.print(), 300);
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo guardar la factura"),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando factura…</p>;
   if (!factura)
     return (
