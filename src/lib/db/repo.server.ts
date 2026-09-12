@@ -878,7 +878,8 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
         (!filtro.hasta || f.fecha <= filtro.hasta) &&
         (!filtro.clienteId || f.cliente_id === filtro.clienteId) &&
         (!filtro.tipo || f.tipo_ncf === filtro.tipo) &&
-        (!filtro.estado || f.estado === filtro.estado),
+        (!filtro.estado || f.estado === filtro.estado) &&
+        (!filtro.facturadas || f.estado !== "pedido"),
     )
     .sort((a, b) => (a.fecha === b.fecha ? b.id - a.id : b.fecha.localeCompare(a.fecha)));
 }
