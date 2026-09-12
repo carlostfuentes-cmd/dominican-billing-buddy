@@ -567,6 +567,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.cantidad}
                         onChange={(e) => actualizar(i, { cantidad: Number(e.target.value) || 0 })}
                       />
@@ -576,6 +577,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.oferta ?? 0}
                         onChange={(e) => actualizar(i, { oferta: Number(e.target.value) || 0 })}
                       />
@@ -585,6 +587,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         step="0.01"
+                        className="px-2 text-right tabular"
                         value={l.precio}
                         onChange={(e) => actualizar(i, { precio: Number(e.target.value) || 0 })}
                       />
@@ -594,6 +597,7 @@ function NuevaFactura() {
                         type="number"
                         min={0}
                         max={100}
+                        className="px-2 text-right tabular"
                         value={l.descuento_pct}
                         onChange={(e) =>
                           actualizar(i, {
