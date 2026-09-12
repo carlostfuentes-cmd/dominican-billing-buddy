@@ -60,6 +60,17 @@ async function obtenerConexion(): Promise<Conexion | null> {
     await conexion.query("SELECT 1");
     cache = { conexion };
     ultimoError = null;
+    // Las tablas se crean automáticamente si faltan (idempotente, no borra datos).
+    try {
+      for (const sentencia of SENTENCIAS_ESQUEMA) {
+        await conexion.query(sentencia);
+      }
+    } catch (error) {
+      console.error(
+        "No se pudieron crear las tablas automáticamente:",
+        error instanceof Error ? error.message : String(error),
+      );
+    }
     return conexion;
   } catch (error) {
     ultimoError = error instanceof Error ? error.message : String(error);
