@@ -145,20 +145,20 @@ async function defectos(): Promise<Defectos> {
   );
   const r = filas[0] ?? {};
   cacheDefectos = {
-    user_id: Number(r.user_id ?? 1),
-    salesman_id: Number(r.salesman_id ?? 1),
-    warehouse_id: Number(r.warehouse_id ?? 1),
-    bank_id: Number(r.bank_id ?? 1),
-    ar_location_id: String(r.ar_location_id ?? "1"),
-    class_id: Number(r.class_id ?? 1),
-    supplier_id: Number(r.supplier_id ?? 1),
-    brand_id: String(r.brand_id ?? "0"),
-    color_id: String(r.color_id ?? "0"),
-    packaging_id: String(r.packaging_id ?? "0"),
-    source_id: Number(r.source_id ?? 0),
-    inventory_group_id: String(r.inventory_group_id ?? "0"),
-    product_family_id: Number(r.product_family_id ?? 1),
-    product_kind_id: String(r.product_kind_id ?? "0"),
+    user_id: Number(r["user_id"] ?? 1),
+    salesman_id: Number(r["salesman_id"] ?? 1),
+    warehouse_id: Number(r["warehouse_id"] ?? 1),
+    bank_id: Number(r["bank_id"] ?? 1),
+    ar_location_id: String(r["ar_location_id"] ?? "1"),
+    class_id: Number(r["class_id"] ?? 1),
+    supplier_id: Number(r["supplier_id"] ?? 1),
+    brand_id: String(r["brand_id"] ?? "0"),
+    color_id: String(r["color_id"] ?? "0"),
+    packaging_id: String(r["packaging_id"] ?? "0"),
+    source_id: Number(r["source_id"] ?? 0),
+    inventory_group_id: String(r["inventory_group_id"] ?? "0"),
+    product_family_id: Number(r["product_family_id"] ?? 1),
+    product_kind_id: String(r["product_kind_id"] ?? "0"),
   };
   return cacheDefectos;
 }
@@ -877,6 +877,7 @@ export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): P
     );
     if (!inv[0]) throw new Error("Factura no encontrada");
     const d = await defectos();
+    const ncfId = f.ncf_id ?? NCF_ID_POR_TIPO[mapearFactura(f).tipo_ncf];
     await ejecutar(
       `INSERT INTO reverse_invoices
          (branch_id, posted, number, date, time, customer_name, currency_rate,
@@ -887,7 +888,7 @@ export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): P
         inv[0].branch_id,
         f.cliente_nombre,
         inv[0].invoice_id,
-        f.ncf_id ?? NCF_ID_POR_TIPO[f.tipo_ncf ?? "B02"],
+        ncfId,
         f.ncf,
         d.user_id,
         f.cliente_id,
