@@ -1251,8 +1251,8 @@ export async function resumen(): Promise<Resumen> {
   const hoy = hoyISO();
   const inicioMes = `${hoy.slice(0, 7)}-01`;
   const [delMes, todas, secuencias] = await Promise.all([
-    listarFacturas({ desde: inicioMes, hasta: hoy }),
-    listarFacturas({}),
+    listarFacturas({ desde: inicioMes, hasta: hoy, facturadas: true }),
+    listarFacturas({ facturadas: true }),
     listarSecuencias(),
   ]);
   const validas = delMes.filter((f) => f.estado !== "anulada");
