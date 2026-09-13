@@ -20,8 +20,16 @@ import {
   facturarPedido,
   obtenerEmpresa,
   obtenerFactura,
+  obtenerFormatoImpresion,
 } from "@/lib/erp.functions";
-import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
+import {
+  dop,
+  enDOP,
+  fechaCorta,
+  money,
+  papelCss,
+  round2,
+} from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
   validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
@@ -53,6 +61,12 @@ function DetalleFactura() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+  // Formato de impresión del cliente (o el general si no tiene uno propio).
+  const { data: formato } = useQuery({
+    queryKey: ["formato", factura?.cliente_id ?? "*"],
+    queryFn: () => obtenerFormatoImpresion({ data: { clienteId: factura?.cliente_id ?? "*" } }),
+    enabled: Boolean(factura),
+  });
 
   // Impresión automática cuando se llega desde "Imprimir y guardar factura".
   const yaImprimio = useRef(false);

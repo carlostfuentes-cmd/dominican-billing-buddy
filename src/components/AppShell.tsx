@@ -6,6 +6,7 @@ import {
   Hash,
   LayoutDashboard,
   Package,
+  Printer,
   Settings,
   Users,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const NAV = [
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/items", label: "Ítems", icon: Package },
   { to: "/ncf", label: "Secuencias NCF", icon: Hash },
+  { to: "/formatos", label: "Formatos de impresión", icon: Printer },
   { to: "/reportes", label: "Reportes", icon: BarChart3 },
   { to: "/configuracion", label: "Configuración", icon: Settings },
 ] as const;
