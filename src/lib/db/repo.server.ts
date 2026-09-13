@@ -1347,3 +1347,146 @@ export async function reporte(desde: string, hasta: string): Promise<Reporte> {
     })),
   };
 }
+
+/* ------------------- Formatos de impresión (tabla propia) ----------------- */
+// Única tabla nueva del módulo: guarda el formato de impresión de cada cliente.
+// No modifica ninguna tabla del sistema existente.
+
+const SQL_TABLA_FORMATOS = `CREATE TABLE IF NOT EXISTS print_formats (
+  customer_id   VARCHAR(20)  NOT NULL PRIMARY KEY,
+  name          VARCHAR(60)  NOT NULL DEFAULT '',
+  paper         VARCHAR(10)  NOT NULL DEFAULT 'carta',
+  preprinted    TINYINT(1)   NOT NULL DEFAULT 0,
+  margin_top    SMALLINT     NOT NULL DEFAULT 12,
+  margin_bottom SMALLINT     NOT NULL DEFAULT 12,
+  margin_left   SMALLINT     NOT NULL DEFAULT 12,
+  margin_right  SMALLINT     NOT NULL DEFAULT 12,
+  show_logo     TINYINT(1)   NOT NULL DEFAULT 1,
+  show_code     TINYINT(1)   NOT NULL DEFAULT 1,
+  show_line_tax TINYINT(1)   NOT NULL DEFAULT 1,
+  show_discount TINYINT(1)   NOT NULL DEFAULT 1,
+  show_dop      TINYINT(1)   NOT NULL DEFAULT 1,
+  copies        TINYINT       NOT NULL DEFAULT 1,
+  title         VARCHAR(80)  NOT NULL DEFAULT '',
+  footer        VARCHAR(300) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`;
+
+let tablaFormatosLista = false;
+
+async function asegurarTablaFormatos(): Promise<void> {
+  if (tablaFormatosLista) return;
+  await ejecutar(SQL_TABLA_FORMATOS);
+  tablaFormatosLista = true;
+}
+
+const formatosDemo = new Map<string, FormatoImpresion>();
+
+function mapearFormato(f: Record<string, unknown>): FormatoImpresion {
+  return {
+    cliente_id: String(f["customer_id"]),
+    nombre: txt(f["name"]),
+    papel: (txt(f["paper"]) || "carta") as PapelImpresion,
+    preimpreso: Boolean(num(f["preprinted"])),
+    margen_superior: num(f["margin_top"]),
+    margen_inferior: num(f["margin_bottom"]),
+    margen_izquierdo: num(f["margin_left"]),
+    margen_derecho: num(f["margin_right"]),
+    mostrar_logo: Boolean(num(f["show_logo"])),
+    mostrar_codigo: Boolean(num(f["show_code"])),
+    mostrar_itbis_linea: Boolean(num(f["show_line_tax"])),
+    mostrar_descuento: Boolean(num(f["show_discount"])),
+    mostrar_equivalente_dop: Boolean(num(f["show_dop"])),
+    copias: num(f["copies"]) || 1,
+    titulo: txt(f["title"]) || FORMATO_IMPRESION_DEFECTO.titulo,
+    pie: txt(f["footer"]),
+  };
+}
+
+/** Formato del cliente; si no tiene, el formato general ("*"); si no, el de fábrica. */
+export async function obtenerFormatoImpresion(clienteId: string): Promise<FormatoImpresion> {
+  if (await usarMysql()) {
+    try {
+      await asegurarTablaFormatos();
+      const filas = await sql<Record<string, unknown>>(
+        "SELECT * FROM print_formats WHERE customer_id IN (?, '*')",
+        [clienteId],
+      );
+      const propio = filas.find((f) => String(f["customer_id"]) === clienteId);
+      const general = filas.find((f) => String(f["customer_id"]) === "*");
+      const fila = propio ?? general;
+      return fila ? mapearFormato(fila) : { ...FORMATO_IMPRESION_DEFECTO };
+    } catch {
+      return { ...FORMATO_IMPRESION_DEFECTO };
+    }
+  }
+  return {
+    ...FORMATO_IMPRESION_DEFECTO,
+    ...(formatosDemo.get(clienteId) ?? formatosDemo.get("*") ?? {}),
+  };
+}
+
+export async function listarFormatosImpresion(): Promise<FormatoImpresion[]> {
+  if (await usarMysql()) {
+    try {
+      await asegurarTablaFormatos();
+      const filas = await sql<Record<string, unknown>>(
+        "SELECT * FROM print_formats ORDER BY customer_id",
+      );
+      return filas.map(mapearFormato);
+    } catch {
+      return [];
+    }
+  }
+  return [...formatosDemo.values()];
+}
+
+export async function guardarFormatoImpresion(f: FormatoImpresion): Promise<FormatoImpresion> {
+  if (await usarMysql()) {
+    await asegurarTablaFormatos();
+    await ejecutar(
+      `INSERT INTO print_formats
+         (customer_id, name, paper, preprinted, margin_top, margin_bottom, margin_left,
+          margin_right, show_logo, show_code, show_line_tax, show_discount, show_dop,
+          copies, title, footer)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         name = VALUES(name), paper = VALUES(paper), preprinted = VALUES(preprinted),
+         margin_top = VALUES(margin_top), margin_bottom = VALUES(margin_bottom),
+         margin_left = VALUES(margin_left), margin_right = VALUES(margin_right),
+         show_logo = VALUES(show_logo), show_code = VALUES(show_code),
+         show_line_tax = VALUES(show_line_tax), show_discount = VALUES(show_discount),
+         show_dop = VALUES(show_dop), copies = VALUES(copies), title = VALUES(title),
+         footer = VALUES(footer)`,
+      [
+        f.cliente_id,
+        f.nombre,
+        f.papel,
+        f.preimpreso ? 1 : 0,
+        f.margen_superior,
+        f.margen_inferior,
+        f.margen_izquierdo,
+        f.margen_derecho,
+        f.mostrar_logo ? 1 : 0,
+        f.mostrar_codigo ? 1 : 0,
+        f.mostrar_itbis_linea ? 1 : 0,
+        f.mostrar_descuento ? 1 : 0,
+        f.mostrar_equivalente_dop ? 1 : 0,
+        f.copias,
+        f.titulo,
+        f.pie,
+      ],
+    );
+    return f;
+  }
+  formatosDemo.set(f.cliente_id, f);
+  return f;
+}
+
+export async function eliminarFormatoImpresion(clienteId: string): Promise<void> {
+  if (await usarMysql()) {
+    await asegurarTablaFormatos();
+    await ejecutar("DELETE FROM print_formats WHERE customer_id = ?", [clienteId]);
+    return;
+  }
+  formatosDemo.delete(clienteId);
+}
