@@ -351,3 +351,59 @@ export function rncValido(valor: string): boolean {
   const limpio = valor.replace(/\D/g, "");
   return limpio.length === 9 || limpio.length === 11;
 }
+
+/* ---------------------- Formato de impresión por cliente ------------------ */
+
+export type PapelImpresion = "carta" | "legal" | "a4" | "media" | "tirilla";
+
+export const PAPELES: { id: PapelImpresion; nombre: string; css: string }[] = [
+  { id: "carta", nombre: "Carta (8.5 × 11 pulg.)", css: "215.9mm 279.4mm" },
+  { id: "legal", nombre: "Legal (8.5 × 14 pulg.)", css: "215.9mm 355.6mm" },
+  { id: "a4", nombre: "A4 (210 × 297 mm)", css: "210mm 297mm" },
+  { id: "media", nombre: "Media hoja (8.5 × 5.5 pulg.)", css: "215.9mm 139.7mm" },
+  { id: "tirilla", nombre: "Tirilla 80 mm", css: "80mm auto" },
+];
+
+/** Configuración de impresión de la factura. cliente_id = "*" es el formato general. */
+export interface FormatoImpresion {
+  cliente_id: string;
+  nombre: string;
+  papel: PapelImpresion;
+  /** Papel preimpreso: no se imprime encabezado ni logo de la empresa. */
+  preimpreso: boolean;
+  margen_superior: number;
+  margen_inferior: number;
+  margen_izquierdo: number;
+  margen_derecho: number;
+  mostrar_logo: boolean;
+  mostrar_codigo: boolean;
+  mostrar_itbis_linea: boolean;
+  mostrar_descuento: boolean;
+  mostrar_equivalente_dop: boolean;
+  copias: number;
+  titulo: string;
+  pie: string;
+}
+
+export const FORMATO_IMPRESION_DEFECTO: FormatoImpresion = {
+  cliente_id: "*",
+  nombre: "Formato general",
+  papel: "carta",
+  preimpreso: false,
+  margen_superior: 12,
+  margen_inferior: 12,
+  margen_izquierdo: 12,
+  margen_derecho: 12,
+  mostrar_logo: true,
+  mostrar_codigo: true,
+  mostrar_itbis_linea: true,
+  mostrar_descuento: true,
+  mostrar_equivalente_dop: true,
+  copias: 1,
+  titulo: "Factura de crédito fiscal / consumo",
+  pie: "",
+};
+
+export function papelCss(papel: PapelImpresion): string {
+  return PAPELES.find((p) => p.id === papel)?.css ?? "215.9mm 279.4mm";
+}
