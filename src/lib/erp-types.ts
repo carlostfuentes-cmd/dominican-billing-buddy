@@ -364,9 +364,9 @@ export const PAPELES: { id: PapelImpresion; nombre: string; css: string }[] = [
   { id: "tirilla", nombre: "Tirilla 80 mm", css: "80mm auto" },
 ];
 
-/** Configuración de impresión de la factura. cliente_id = "*" es el formato general. */
+/** Configuración de impresión de la factura. empresa_id = "*" es el formato general. */
 export interface FormatoImpresion {
-  cliente_id: string;
+  empresa_id: string;
   nombre: string;
   papel: PapelImpresion;
   /** Papel preimpreso: no se imprime encabezado ni logo de la empresa. */
@@ -386,7 +386,7 @@ export interface FormatoImpresion {
 }
 
 export const FORMATO_IMPRESION_DEFECTO: FormatoImpresion = {
-  cliente_id: "*",
+  empresa_id: "*",
   nombre: "Formato general",
   papel: "carta",
   preimpreso: false,
