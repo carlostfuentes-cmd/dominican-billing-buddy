@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
+import { Route as FormatosRouteImport } from './routes/formatos'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as NcfRouteImport } from './routes/ncf'
 import { Route as ReportesRouteImport } from './routes/reportes'
@@ -32,6 +33,11 @@ const ClientesRoute = ClientesRouteImport.update({
 const ConfiguracionRoute = ConfiguracionRouteImport.update({
   id: '/configuracion',
   path: '/configuracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FormatosRoute = FormatosRouteImport.update({
+  id: '/formatos',
+  path: '/formatos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ItemsRoute = ItemsRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/reportes': typeof ReportesRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/reportes': typeof ReportesRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
+  '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/reportes': typeof ReportesRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/clientes'
     | '/configuracion'
+    | '/formatos'
     | '/items'
     | '/ncf'
     | '/reportes'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/clientes'
     | '/configuracion'
+    | '/formatos'
     | '/items'
     | '/ncf'
     | '/reportes'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/clientes'
     | '/configuracion'
+    | '/formatos'
     | '/items'
     | '/ncf'
     | '/reportes'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
+  FormatosRoute: typeof FormatosRoute
   ItemsRoute: typeof ItemsRoute
   NcfRoute: typeof NcfRoute
   ReportesRoute: typeof ReportesRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracion'
       fullPath: '/configuracion'
       preLoaderRoute: typeof ConfiguracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/formatos': {
+      id: '/formatos'
+      path: '/formatos'
+      fullPath: '/formatos'
+      preLoaderRoute: typeof FormatosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/items': {
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracionRoute: ConfiguracionRoute,
+  FormatosRoute: FormatosRoute,
   ItemsRoute: ItemsRoute,
   NcfRoute: NcfRoute,
   ReportesRoute: ReportesRoute,
