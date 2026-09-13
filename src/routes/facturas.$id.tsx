@@ -124,8 +124,19 @@ function DetalleFactura() {
     });
   }
 
+  const f = formato;
+  const conEncabezado = !(f?.preimpreso ?? false) && (f?.mostrar_logo ?? true);
+  const verCodigo = f?.mostrar_codigo ?? true;
+  const verItbisLinea = f?.mostrar_itbis_linea ?? true;
+  const verEquivalente = f?.mostrar_equivalente_dop ?? true;
+  const copias = Math.max(1, Math.min(4, f?.copias ?? 1));
+  const cssPagina = `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
+    f?.margen_superior ?? 12
+  }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+
   return (
     <div>
+      <style>{cssPagina}</style>
       <div className="no-print mb-5 flex flex-wrap items-center justify-between gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link to="/facturas">
@@ -178,17 +189,21 @@ function DetalleFactura() {
       <Card className="print-area mx-auto max-w-3xl">
         <CardContent className="p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
-            <div>
-              <h1 className="text-lg font-semibold">{empresa?.nombre ?? "Mi Empresa"}</h1>
-              <p className="text-sm text-muted-foreground">RNC {empresa?.rnc}</p>
-              <p className="max-w-xs text-sm text-muted-foreground">{empresa?.direccion}</p>
-              <p className="text-sm text-muted-foreground">
-                {empresa?.telefono} {empresa?.email ? `· ${empresa.email}` : ""}
-              </p>
-            </div>
+            {conEncabezado ? (
+              <div>
+                <h1 className="text-lg font-semibold">{empresa?.nombre ?? "Mi Empresa"}</h1>
+                <p className="text-sm text-muted-foreground">RNC {empresa?.rnc}</p>
+                <p className="max-w-xs text-sm text-muted-foreground">{empresa?.direccion}</p>
+                <p className="text-sm text-muted-foreground">
+                  {empresa?.telefono} {empresa?.email ? `· ${empresa.email}` : ""}
+                </p>
+              </div>
+            ) : (
+              <div />
+            )}
             <div className="text-right">
               <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Factura de crédito fiscal / consumo
+                {f?.titulo || "Factura de crédito fiscal / consumo"}
               </p>
               <p className="font-mono text-xl font-semibold">{factura.ncf}</p>
               <p className="text-sm text-muted-foreground">Tipo {factura.tipo_ncf}</p>
@@ -259,22 +274,26 @@ function DetalleFactura() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
+                {verCodigo ? <TableHead>Código</TableHead> : null}
                 <TableHead>Descripción</TableHead>
                 <TableHead className="text-right">Cant.</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
-                <TableHead className="text-right">ITBIS</TableHead>
+                {verItbisLinea ? <TableHead className="text-right">ITBIS</TableHead> : null}
                 <TableHead className="text-right">Importe</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {factura.lineas.map((l, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
+                  {verCodigo ? (
+                    <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
+                  ) : null}
                   <TableCell>{l.descripcion}</TableCell>
                   <TableCell className="tabular text-right">{l.cantidad}</TableCell>
                   <TableCell className="tabular text-right">{money(l.precio, factura.moneda)}</TableCell>
-                  <TableCell className="tabular text-right">{l.tasa_itbis}%</TableCell>
+                  {verItbisLinea ? (
+                    <TableCell className="tabular text-right">{l.tasa_itbis}%</TableCell>
+                  ) : null}
                   <TableCell className="tabular text-right">{money(l.subtotal, factura.moneda)}</TableCell>
                 </TableRow>
               ))}
@@ -300,7 +319,7 @@ function DetalleFactura() {
               <span>Total</span>
               <span className="tabular">{money(factura.total, factura.moneda)}</span>
             </div>
-            {factura.moneda && factura.moneda.toUpperCase() !== "DOP" ? (
+            {verEquivalente && factura.moneda && factura.moneda.toUpperCase() !== "DOP" ? (
               <p className="text-xs text-muted-foreground">
                 Equivale a {dop(enDOP(factura.total, factura.tasa_cambio))} a la tasa{" "}
                 {factura.tasa_cambio ?? 1}
@@ -354,8 +373,30 @@ function DetalleFactura() {
               {factura.notas}
             </p>
           ) : null}
+          {f?.pie ? (
+            <p className="mt-6 border-t pt-4 text-center text-xs text-muted-foreground">{f.pie}</p>
+          ) : null}
         </CardContent>
       </Card>
+
+      {/* Copias adicionales: solo se ven al imprimir. */}
+      {Array.from({ length: copias - 1 }).map((_, i) => (
+        <div key={i} className="hidden print:block" style={{ breakBefore: "page" }}>
+          <Card className="print-area mx-auto max-w-3xl">
+            <CardContent className="p-8">
+              <p className="mb-4 text-center text-xs uppercase tracking-wide text-muted-foreground">
+                Copia {i + 2}
+              </p>
+              <p className="text-sm">
+                {factura.cliente_nombre} · {factura.ncf} · {fechaCorta(factura.fecha)}
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                Total {money(factura.total, factura.moneda)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      ))}
     </div>
   );
 }
