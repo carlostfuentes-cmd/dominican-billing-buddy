@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   eliminarFormatoImpresion,
   guardarFormatoImpresion,
-  obtenerClientes,
+  obtenerEmpresas,
   obtenerFormatoImpresion,
   obtenerFormatosImpresion,
 } from "@/lib/erp.functions";
@@ -40,12 +40,12 @@ export const Route = createFileRoute("/formatos")({
       {
         name: "description",
         content:
-          "Define el formato de impresión de la factura para cada cliente: tamaño de papel, papel preimpreso, márgenes, columnas y pie de página.",
+          "Define el formato de impresión de la factura para cada empresa: tamaño de papel, papel preimpreso, márgenes, columnas y pie de página.",
       },
       { property: "og:title", content: "Formatos de impresión — ERP Contable RD" },
       {
         property: "og:description",
-        content: "Tamaño de papel, papel preimpreso, márgenes y columnas por cliente.",
+        content: "Tamaño de papel, papel preimpreso, márgenes y columnas por empresa.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -56,26 +56,25 @@ export const Route = createFileRoute("/formatos")({
 
 function Formatos() {
   const qc = useQueryClient();
-  const [clienteId, setClienteId] = useState("*");
-  const [busqueda, setBusqueda] = useState("");
+  const [empresaId, setEmpresaId] = useState("*");
   const [form, setForm] = useState<FormatoImpresion>(FORMATO_IMPRESION_DEFECTO);
 
-  const { data: clientes } = useQuery({
-    queryKey: ["clientes", busqueda],
-    queryFn: () => obtenerClientes({ data: { busqueda } }),
+  const { data: empresas } = useQuery({
+    queryKey: ["empresas"],
+    queryFn: () => obtenerEmpresas(),
   });
   const { data: guardados } = useQuery({
     queryKey: ["formatos"],
     queryFn: () => obtenerFormatosImpresion(),
   });
   const { data: formato } = useQuery({
-    queryKey: ["formato", clienteId],
-    queryFn: () => obtenerFormatoImpresion({ data: { clienteId } }),
+    queryKey: ["formato", empresaId],
+    queryFn: () => obtenerFormatoImpresion({ data: { empresaId } }),
   });
 
   useEffect(() => {
-    if (formato) setForm({ ...formato, cliente_id: clienteId });
-  }, [formato, clienteId]);
+    if (formato) setForm({ ...formato, empresa_id: empresaId });
+  }, [formato, empresaId]);
 
   const guardar = useMutation({
     mutationFn: (f: FormatoImpresion) => guardarFormatoImpresion({ data: f }),
@@ -88,7 +87,7 @@ function Formatos() {
   });
 
   const borrar = useMutation({
-    mutationFn: () => eliminarFormatoImpresion({ data: { clienteId } }),
+    mutationFn: () => eliminarFormatoImpresion({ data: { empresaId } }),
     onSuccess: () => {
       toast.success("Formato eliminado; se usará el formato general");
       void qc.invalidateQueries({ queryKey: ["formatos"] });
@@ -100,11 +99,11 @@ function Formatos() {
   const set = <K extends keyof FormatoImpresion>(campo: K, valor: FormatoImpresion[K]) =>
     setForm((f) => ({ ...f, [campo]: valor }));
 
-  const tieneFormato = (guardados ?? []).some((f) => f.cliente_id === clienteId);
-  const nombreCliente =
-    clienteId === "*"
-      ? "Formato general (todos los clientes)"
-      : (clientes ?? []).find((c) => c.id === clienteId)?.nombre ?? clienteId;
+  const tieneFormato = (guardados ?? []).some((f) => f.empresa_id === empresaId);
+  const nombreEmpresa =
+    empresaId === "*"
+      ? "Formato general (todas las empresas)"
+      : (empresas ?? []).find((e) => e.id === empresaId)?.nombre ?? empresaId;
 
   const casillas: { campo: keyof FormatoImpresion; etiqueta: string; ayuda: string }[] = [
     {
@@ -127,40 +126,35 @@ function Formatos() {
     <div>
       <PageHeader
         titulo="Formatos de impresión"
-        descripcion="Cada cliente puede imprimir su factura con un formato distinto. El formato general se usa cuando el cliente no tiene uno propio."
+        descripcion="Cada empresa imprime su factura con su propio formato. El formato general se usa cuando la empresa no tiene uno propio."
       />
 
       <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Cliente</CardTitle>
+            <CardTitle className="text-base">Empresa</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Input
-              placeholder="Buscar por nombre, RNC o código"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-            />
             <div className="max-h-[420px] overflow-y-auto rounded-md border">
               <button
                 type="button"
-                onClick={() => setClienteId("*")}
+                onClick={() => setEmpresaId("*")}
                 className={`flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm ${
-                  clienteId === "*" ? "bg-accent font-medium" : "hover:bg-muted/60"
+                  empresaId === "*" ? "bg-accent font-medium" : "hover:bg-muted/60"
                 }`}
               >
                 <span>Formato general</span>
                 <Printer className="size-4 opacity-60" />
               </button>
-              {(clientes ?? []).map((c) => {
-                const propio = (guardados ?? []).some((f) => f.cliente_id === c.id);
+              {(empresas ?? []).map((c) => {
+                const propio = (guardados ?? []).some((f) => f.empresa_id === c.id);
                 return (
                   <button
                     key={c.id}
                     type="button"
-                    onClick={() => setClienteId(c.id)}
+                    onClick={() => setEmpresaId(c.id)}
                     className={`flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-0 ${
-                      clienteId === c.id ? "bg-accent font-medium" : "hover:bg-muted/60"
+                      empresaId === c.id ? "bg-accent font-medium" : "hover:bg-muted/60"
                     }`}
                   >
                     <span className="min-w-0 truncate">{c.nombre}</span>
@@ -178,9 +172,9 @@ function Formatos() {
 
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-base">{nombreCliente}</CardTitle>
+            <CardTitle className="text-base">{nombreEmpresa}</CardTitle>
             <div className="flex gap-2">
-              {clienteId !== "*" && tieneFormato ? (
+              {empresaId !== "*" && tieneFormato ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -192,7 +186,7 @@ function Formatos() {
               ) : null}
               <Button
                 size="sm"
-                onClick={() => guardar.mutate({ ...form, cliente_id: clienteId })}
+                onClick={() => guardar.mutate({ ...form, empresa_id: empresaId })}
                 disabled={guardar.isPending}
               >
                 <Save className="size-4" /> Guardar formato

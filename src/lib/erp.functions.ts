@@ -11,6 +11,7 @@ import type {
   Item,
   ListasCliente,
   ListasFactura,
+  OpcionId,
   SecuenciaNCF,
 
   TipoNCF,
@@ -248,10 +249,10 @@ export const obtenerReporte = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ desde: fecha, hasta: fecha }).parse(d))
   .handler(async ({ data }): Promise<Reporte> => (await repo()).reporte(data.desde, data.hasta));
 
-/* --------------------- Formatos de impresión por cliente ------------------ */
+/* --------------------- Formatos de impresión por empresa ------------------ */
 
 const formatoSchema = z.object({
-  cliente_id: texto(20).min(1),
+  empresa_id: texto(20).min(1),
   nombre: texto(60),
   papel: z.enum(["carta", "legal", "a4", "media", "tirilla"]),
   preimpreso: z.boolean(),
@@ -269,10 +270,14 @@ const formatoSchema = z.object({
   pie: texto(300),
 });
 
+export const obtenerEmpresas = createServerFn({ method: "GET" }).handler(
+  async (): Promise<OpcionId[]> => (await repo()).listarEmpresas(),
+);
+
 export const obtenerFormatoImpresion = createServerFn({ method: "GET" })
-  .inputValidator((d: unknown) => z.object({ clienteId: texto(20).default("*") }).parse(d ?? {}))
+  .inputValidator((d: unknown) => z.object({ empresaId: texto(20).default("") }).parse(d ?? {}))
   .handler(async ({ data }): Promise<FormatoImpresion> =>
-    (await repo()).obtenerFormatoImpresion(data.clienteId),
+    (await repo()).obtenerFormatoImpresion(data.empresaId),
   );
 
 export const obtenerFormatosImpresion = createServerFn({ method: "GET" }).handler(
@@ -286,9 +291,9 @@ export const guardarFormatoImpresion = createServerFn({ method: "POST" })
   );
 
 export const eliminarFormatoImpresion = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => z.object({ clienteId: texto(20).min(1) }).parse(d))
+  .inputValidator((d: unknown) => z.object({ empresaId: texto(20).min(1) }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
-    await (await repo()).eliminarFormatoImpresion(data.clienteId);
+    await (await repo()).eliminarFormatoImpresion(data.empresaId);
     return { ok: true };
   });
 
