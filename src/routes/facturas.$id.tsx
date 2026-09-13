@@ -20,8 +20,16 @@ import {
   facturarPedido,
   obtenerEmpresa,
   obtenerFactura,
+  obtenerFormatoImpresion,
 } from "@/lib/erp.functions";
-import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
+import {
+  dop,
+  enDOP,
+  fechaCorta,
+  money,
+  papelCss,
+  round2,
+} from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/$id")({
   validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
@@ -53,6 +61,12 @@ function DetalleFactura() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+  // Formato de impresión del cliente (o el general si no tiene uno propio).
+  const { data: formato } = useQuery({
+    queryKey: ["formato", factura?.cliente_id ?? "*"],
+    queryFn: () => obtenerFormatoImpresion({ data: { clienteId: factura?.cliente_id ?? "*" } }),
+    enabled: Boolean(factura),
+  });
 
   // Impresión automática cuando se llega desde "Imprimir y guardar factura".
   const yaImprimio = useRef(false);
@@ -110,8 +124,214 @@ function DetalleFactura() {
     });
   }
 
+  const f = formato;
+  const conEncabezado = !(f?.preimpreso ?? false) && (f?.mostrar_logo ?? true);
+  const verCodigo = f?.mostrar_codigo ?? true;
+  const verItbisLinea = f?.mostrar_itbis_linea ?? true;
+  const verEquivalente = f?.mostrar_equivalente_dop ?? true;
+  const copias = Math.max(1, Math.min(4, f?.copias ?? 1));
+  const cssPagina = `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
+    f?.margen_superior ?? 12
+  }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+
+  const documento = (
+        <Card className="print-area mx-auto max-w-3xl">
+          <CardContent className="p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
+              {conEncabezado ? (
+                <div>
+                  <h1 className="text-lg font-semibold">{empresa?.nombre ?? "Mi Empresa"}</h1>
+                  <p className="text-sm text-muted-foreground">RNC {empresa?.rnc}</p>
+                  <p className="max-w-xs text-sm text-muted-foreground">{empresa?.direccion}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {empresa?.telefono} {empresa?.email ? `· ${empresa.email}` : ""}
+                  </p>
+                </div>
+              ) : (
+                <div />
+              )}
+              <div className="text-right">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {f?.titulo || "Factura de crédito fiscal / consumo"}
+                </p>
+                <p className="font-mono text-xl font-semibold">{factura.ncf}</p>
+                <p className="text-sm text-muted-foreground">Tipo {factura.tipo_ncf}</p>
+                <Badge
+                  className="mt-2"
+                  variant={
+                    factura.estado === "pagada"
+                      ? "default"
+                      : factura.estado === "anulada"
+                        ? "destructive"
+                        : "secondary"
+                  }
+                >
+                  {factura.estado}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="grid gap-4 py-6 sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">Cliente</p>
+                <p className="font-medium">{factura.cliente_nombre}</p>
+                <p className="text-sm text-muted-foreground">RNC/Cédula {factura.cliente_rnc}</p>
+                {factura.cliente_direccion ? (
+                  <p className="max-w-xs text-sm text-muted-foreground">{factura.cliente_direccion}</p>
+                ) : null}
+                {factura.cliente_telefono ? (
+                  <p className="text-sm text-muted-foreground">Tel. {factura.cliente_telefono}</p>
+                ) : null}
+              </div>
+              <div className="sm:text-right">
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Fecha de emisión: </span>
+                  {fechaCorta(factura.fecha)}
+                </p>
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Vencimiento: </span>
+                  {fechaCorta(factura.vencimiento)}
+                </p>
+                <p className="text-sm">
+                  <span className="text-muted-foreground">Moneda: </span>
+                  {(factura.moneda || "DOP").toUpperCase()}
+                  {factura.moneda && factura.moneda.toUpperCase() !== "DOP"
+                    ? ` · tasa ${factura.tasa_cambio ?? 1}`
+                    : ""}
+                </p>
+                {factura.vendedor ? (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Vendedor: </span>
+                    {factura.vendedor}
+                  </p>
+                ) : null}
+                {factura.almacen ? (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Almacén: </span>
+                    {factura.almacen}
+                  </p>
+                ) : null}
+                {factura.orden_cliente ? (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Orden cliente: </span>
+                    {factura.orden_cliente}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {verCodigo ? <TableHead>Código</TableHead> : null}
+                  <TableHead>Descripción</TableHead>
+                  <TableHead className="text-right">Cant.</TableHead>
+                  <TableHead className="text-right">Precio</TableHead>
+                  {verItbisLinea ? <TableHead className="text-right">ITBIS</TableHead> : null}
+                  <TableHead className="text-right">Importe</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {factura.lineas.map((l, i) => (
+                  <TableRow key={i}>
+                    {verCodigo ? (
+                      <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
+                    ) : null}
+                    <TableCell>{l.descripcion}</TableCell>
+                    <TableCell className="tabular text-right">{l.cantidad}</TableCell>
+                    <TableCell className="tabular text-right">{money(l.precio, factura.moneda)}</TableCell>
+                    {verItbisLinea ? (
+                      <TableCell className="tabular text-right">{l.tasa_itbis}%</TableCell>
+                    ) : null}
+                    <TableCell className="tabular text-right">{money(l.subtotal, factura.moneda)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            <div className="mt-6 ml-auto max-w-xs space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="tabular">{money(factura.subtotal, factura.moneda)}</span>
+              </div>
+              {[...porTasa.entries()]
+                .sort((a, b) => b[0] - a[0])
+                .map(([tasa, v]) => (
+                  <div key={tasa} className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      ITBIS {tasa}% sobre {money(v.base, factura.moneda)}
+                    </span>
+                    <span className="tabular">{money(v.itbis, factura.moneda)}</span>
+                  </div>
+                ))}
+              <div className="flex justify-between border-t pt-2 text-base font-semibold">
+                <span>Total</span>
+                <span className="tabular">{money(factura.total, factura.moneda)}</span>
+              </div>
+              {verEquivalente && factura.moneda && factura.moneda.toUpperCase() !== "DOP" ? (
+                <p className="text-xs text-muted-foreground">
+                  Equivale a {dop(enDOP(factura.total, factura.tasa_cambio))} a la tasa{" "}
+                  {factura.tasa_cambio ?? 1}
+                </p>
+              ) : null}
+              {factura.pagos &&
+              factura.pagos.efectivo +
+                factura.pagos.tarjeta +
+                factura.pagos.cheque +
+                factura.pagos.transferencia +
+                factura.pagos.cardnet >
+                0 ? (
+                <div className="border-t pt-2 text-xs text-muted-foreground">
+                  {factura.pagos.efectivo > 0 && (
+                    <div className="flex justify-between">
+                      <span>Efectivo</span>
+                      <span>{money(factura.pagos.efectivo, factura.moneda)}</span>
+                    </div>
+                  )}
+                  {factura.pagos.tarjeta > 0 && (
+                    <div className="flex justify-between">
+                      <span>Tarjeta</span>
+                      <span>{money(factura.pagos.tarjeta, factura.moneda)}</span>
+                    </div>
+                  )}
+                  {factura.pagos.cheque > 0 && (
+                    <div className="flex justify-between">
+                      <span>Cheque</span>
+                      <span>{money(factura.pagos.cheque, factura.moneda)}</span>
+                    </div>
+                  )}
+                  {factura.pagos.transferencia > 0 && (
+                    <div className="flex justify-between">
+                      <span>Transferencia</span>
+                      <span>{money(factura.pagos.transferencia, factura.moneda)}</span>
+                    </div>
+                  )}
+                  {factura.pagos.cardnet > 0 && (
+                    <div className="flex justify-between">
+                      <span>Cardnet</span>
+                      <span>{money(factura.pagos.cardnet, factura.moneda)}</span>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            {factura.notas ? (
+              <p className="mt-6 border-t pt-4 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Notas: </span>
+                {factura.notas}
+              </p>
+            ) : null}
+            {f?.pie ? (
+              <p className="mt-6 border-t pt-4 text-center text-xs text-muted-foreground">{f.pie}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+  );
+
   return (
     <div>
+      <style>{cssPagina}</style>
       <div className="no-print mb-5 flex flex-wrap items-center justify-between gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link to="/facturas">
@@ -161,187 +381,14 @@ function DetalleFactura() {
         </div>
       </div>
 
-      <Card className="print-area mx-auto max-w-3xl">
-        <CardContent className="p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
-            <div>
-              <h1 className="text-lg font-semibold">{empresa?.nombre ?? "Mi Empresa"}</h1>
-              <p className="text-sm text-muted-foreground">RNC {empresa?.rnc}</p>
-              <p className="max-w-xs text-sm text-muted-foreground">{empresa?.direccion}</p>
-              <p className="text-sm text-muted-foreground">
-                {empresa?.telefono} {empresa?.email ? `· ${empresa.email}` : ""}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                Factura de crédito fiscal / consumo
-              </p>
-              <p className="font-mono text-xl font-semibold">{factura.ncf}</p>
-              <p className="text-sm text-muted-foreground">Tipo {factura.tipo_ncf}</p>
-              <Badge
-                className="mt-2"
-                variant={
-                  factura.estado === "pagada"
-                    ? "default"
-                    : factura.estado === "anulada"
-                      ? "destructive"
-                      : "secondary"
-                }
-              >
-                {factura.estado}
-              </Badge>
-            </div>
-          </div>
+      {documento}
 
-          <div className="grid gap-4 py-6 sm:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Cliente</p>
-              <p className="font-medium">{factura.cliente_nombre}</p>
-              <p className="text-sm text-muted-foreground">RNC/Cédula {factura.cliente_rnc}</p>
-              {factura.cliente_direccion ? (
-                <p className="max-w-xs text-sm text-muted-foreground">{factura.cliente_direccion}</p>
-              ) : null}
-              {factura.cliente_telefono ? (
-                <p className="text-sm text-muted-foreground">Tel. {factura.cliente_telefono}</p>
-              ) : null}
-            </div>
-            <div className="sm:text-right">
-              <p className="text-sm">
-                <span className="text-muted-foreground">Fecha de emisión: </span>
-                {fechaCorta(factura.fecha)}
-              </p>
-              <p className="text-sm">
-                <span className="text-muted-foreground">Vencimiento: </span>
-                {fechaCorta(factura.vencimiento)}
-              </p>
-              <p className="text-sm">
-                <span className="text-muted-foreground">Moneda: </span>
-                {(factura.moneda || "DOP").toUpperCase()}
-                {factura.moneda && factura.moneda.toUpperCase() !== "DOP"
-                  ? ` · tasa ${factura.tasa_cambio ?? 1}`
-                  : ""}
-              </p>
-              {factura.vendedor ? (
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Vendedor: </span>
-                  {factura.vendedor}
-                </p>
-              ) : null}
-              {factura.almacen ? (
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Almacén: </span>
-                  {factura.almacen}
-                </p>
-              ) : null}
-              {factura.orden_cliente ? (
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Orden cliente: </span>
-                  {factura.orden_cliente}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead className="text-right">Cant.</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead className="text-right">ITBIS</TableHead>
-                <TableHead className="text-right">Importe</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {factura.lineas.map((l, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
-                  <TableCell>{l.descripcion}</TableCell>
-                  <TableCell className="tabular text-right">{l.cantidad}</TableCell>
-                  <TableCell className="tabular text-right">{money(l.precio, factura.moneda)}</TableCell>
-                  <TableCell className="tabular text-right">{l.tasa_itbis}%</TableCell>
-                  <TableCell className="tabular text-right">{money(l.subtotal, factura.moneda)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          <div className="mt-6 ml-auto max-w-xs space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="tabular">{money(factura.subtotal, factura.moneda)}</span>
-            </div>
-            {[...porTasa.entries()]
-              .sort((a, b) => b[0] - a[0])
-              .map(([tasa, v]) => (
-                <div key={tasa} className="flex justify-between">
-                  <span className="text-muted-foreground">
-                    ITBIS {tasa}% sobre {money(v.base, factura.moneda)}
-                  </span>
-                  <span className="tabular">{money(v.itbis, factura.moneda)}</span>
-                </div>
-              ))}
-            <div className="flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Total</span>
-              <span className="tabular">{money(factura.total, factura.moneda)}</span>
-            </div>
-            {factura.moneda && factura.moneda.toUpperCase() !== "DOP" ? (
-              <p className="text-xs text-muted-foreground">
-                Equivale a {dop(enDOP(factura.total, factura.tasa_cambio))} a la tasa{" "}
-                {factura.tasa_cambio ?? 1}
-              </p>
-            ) : null}
-            {factura.pagos &&
-            factura.pagos.efectivo +
-              factura.pagos.tarjeta +
-              factura.pagos.cheque +
-              factura.pagos.transferencia +
-              factura.pagos.cardnet >
-              0 ? (
-              <div className="border-t pt-2 text-xs text-muted-foreground">
-                {factura.pagos.efectivo > 0 && (
-                  <div className="flex justify-between">
-                    <span>Efectivo</span>
-                    <span>{money(factura.pagos.efectivo, factura.moneda)}</span>
-                  </div>
-                )}
-                {factura.pagos.tarjeta > 0 && (
-                  <div className="flex justify-between">
-                    <span>Tarjeta</span>
-                    <span>{money(factura.pagos.tarjeta, factura.moneda)}</span>
-                  </div>
-                )}
-                {factura.pagos.cheque > 0 && (
-                  <div className="flex justify-between">
-                    <span>Cheque</span>
-                    <span>{money(factura.pagos.cheque, factura.moneda)}</span>
-                  </div>
-                )}
-                {factura.pagos.transferencia > 0 && (
-                  <div className="flex justify-between">
-                    <span>Transferencia</span>
-                    <span>{money(factura.pagos.transferencia, factura.moneda)}</span>
-                  </div>
-                )}
-                {factura.pagos.cardnet > 0 && (
-                  <div className="flex justify-between">
-                    <span>Cardnet</span>
-                    <span>{money(factura.pagos.cardnet, factura.moneda)}</span>
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          {factura.notas ? (
-            <p className="mt-6 border-t pt-4 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Notas: </span>
-              {factura.notas}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      {/* Copias adicionales: solo se ven al imprimir. */}
+      {Array.from({ length: copias - 1 }).map((_, i) => (
+        <div key={i} className="hidden print:block" style={{ breakBefore: "page" }}>
+          {documento}
+        </div>
+      ))}
     </div>
   );
 }

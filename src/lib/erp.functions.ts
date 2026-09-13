@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { EstadoConexion, FiltroFacturas, Reporte, Resumen } from "@/lib/db/repo.server";
 import type {
   Cliente,
+  FormatoImpresion,
   Empresa,
   EstadoFactura,
   Factura,
@@ -246,5 +247,49 @@ export const cambiarEstadoFactura = createServerFn({ method: "POST" })
 export const obtenerReporte = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ desde: fecha, hasta: fecha }).parse(d))
   .handler(async ({ data }): Promise<Reporte> => (await repo()).reporte(data.desde, data.hasta));
+
+/* --------------------- Formatos de impresión por cliente ------------------ */
+
+const formatoSchema = z.object({
+  cliente_id: texto(20).min(1),
+  nombre: texto(60),
+  papel: z.enum(["carta", "legal", "a4", "media", "tirilla"]),
+  preimpreso: z.boolean(),
+  margen_superior: z.number().int().min(0).max(80),
+  margen_inferior: z.number().int().min(0).max(80),
+  margen_izquierdo: z.number().int().min(0).max(80),
+  margen_derecho: z.number().int().min(0).max(80),
+  mostrar_logo: z.boolean(),
+  mostrar_codigo: z.boolean(),
+  mostrar_itbis_linea: z.boolean(),
+  mostrar_descuento: z.boolean(),
+  mostrar_equivalente_dop: z.boolean(),
+  copias: z.number().int().min(1).max(4),
+  titulo: texto(80),
+  pie: texto(300),
+});
+
+export const obtenerFormatoImpresion = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ clienteId: texto(20).default("*") }).parse(d ?? {}))
+  .handler(async ({ data }): Promise<FormatoImpresion> =>
+    (await repo()).obtenerFormatoImpresion(data.clienteId),
+  );
+
+export const obtenerFormatosImpresion = createServerFn({ method: "GET" }).handler(
+  async (): Promise<FormatoImpresion[]> => (await repo()).listarFormatosImpresion(),
+);
+
+export const guardarFormatoImpresion = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => formatoSchema.parse(d))
+  .handler(async ({ data }): Promise<FormatoImpresion> =>
+    (await repo()).guardarFormatoImpresion(data),
+  );
+
+export const eliminarFormatoImpresion = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ clienteId: texto(20).min(1) }).parse(d))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    await (await repo()).eliminarFormatoImpresion(data.clienteId);
+    return { ok: true };
+  });
 
 export type { TipoNCF };
