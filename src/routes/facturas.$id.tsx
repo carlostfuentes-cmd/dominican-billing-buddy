@@ -61,11 +61,10 @@ function DetalleFactura() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
-  // Formato de impresión del cliente (o el general si no tiene uno propio).
+  // Formato de impresión de la empresa (o el general si no tiene uno propio).
   const { data: formato } = useQuery({
-    queryKey: ["formato", factura?.cliente_id ?? "*"],
-    queryFn: () => obtenerFormatoImpresion({ data: { clienteId: factura?.cliente_id ?? "*" } }),
-    enabled: Boolean(factura),
+    queryKey: ["formato", "empresa"],
+    queryFn: () => obtenerFormatoImpresion({ data: {} }),
   });
 
   // Impresión automática cuando se llega desde "Imprimir y guardar factura".
