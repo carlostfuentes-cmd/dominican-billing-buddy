@@ -1381,24 +1381,27 @@ async function asegurarTablaFormatos(): Promise<void> {
 
 const formatosDemo = new Map<string, FormatoImpresion>();
 
+const t = (v: unknown) => (v == null ? "" : String(v));
+const n = (v: unknown) => Number(v ?? 0) || 0;
+
 function mapearFormato(f: Record<string, unknown>): FormatoImpresion {
   return {
     cliente_id: String(f["customer_id"]),
-    nombre: txt(f["name"]),
-    papel: (txt(f["paper"]) || "carta") as PapelImpresion,
-    preimpreso: Boolean(num(f["preprinted"])),
-    margen_superior: num(f["margin_top"]),
-    margen_inferior: num(f["margin_bottom"]),
-    margen_izquierdo: num(f["margin_left"]),
-    margen_derecho: num(f["margin_right"]),
-    mostrar_logo: Boolean(num(f["show_logo"])),
-    mostrar_codigo: Boolean(num(f["show_code"])),
-    mostrar_itbis_linea: Boolean(num(f["show_line_tax"])),
-    mostrar_descuento: Boolean(num(f["show_discount"])),
-    mostrar_equivalente_dop: Boolean(num(f["show_dop"])),
-    copias: num(f["copies"]) || 1,
-    titulo: txt(f["title"]) || FORMATO_IMPRESION_DEFECTO.titulo,
-    pie: txt(f["footer"]),
+    nombre: t(f["name"]),
+    papel: (t(f["paper"]) || "carta") as PapelImpresion,
+    preimpreso: Boolean(n(f["preprinted"])),
+    margen_superior: n(f["margin_top"]),
+    margen_inferior: n(f["margin_bottom"]),
+    margen_izquierdo: n(f["margin_left"]),
+    margen_derecho: n(f["margin_right"]),
+    mostrar_logo: Boolean(n(f["show_logo"])),
+    mostrar_codigo: Boolean(n(f["show_code"])),
+    mostrar_itbis_linea: Boolean(n(f["show_line_tax"])),
+    mostrar_descuento: Boolean(n(f["show_discount"])),
+    mostrar_equivalente_dop: Boolean(n(f["show_dop"])),
+    copias: n(f["copies"]) || 1,
+    titulo: t(f["title"]) || FORMATO_IMPRESION_DEFECTO.titulo,
+    pie: t(f["footer"]),
   };
 }
 
