@@ -224,6 +224,29 @@ export async function guardarEmpresa(e: Empresa): Promise<Empresa> {
   return e;
 }
 
+/** Empresas registradas (para elegir formato de impresión, etc.). */
+export async function listarEmpresas(): Promise<OpcionId[]> {
+  if (await usarMysql()) {
+    const filas = await sql<{ id: number | string; nombre: string | null }>(
+      "SELECT company_id AS id, name AS nombre FROM companies ORDER BY company_id",
+    );
+    return filas.map((f) => ({ id: String(f.id), nombre: f.nombre ?? String(f.id) }));
+  }
+  return [{ id: "1", nombre: demo().empresa.nombre || "Mi Empresa" }];
+}
+
+/** Empresa activa (la primera de companies). */
+async function empresaActualId(): Promise<string> {
+  if (await usarMysql()) {
+    const filas = await sql<{ company_id: number | string }>(
+      "SELECT company_id FROM companies ORDER BY company_id LIMIT 1",
+    );
+    const id = filas[0]?.company_id;
+    return id === undefined ? "*" : String(id);
+  }
+  return "1";
+}
+
 /* ------------------------------- Clientes ------------------------------- */
 
 type FilaCliente = Record<string, string | number | null>;
@@ -458,7 +481,7 @@ export async function guardarCliente(
     const nuevoId = sig[0]?.id ?? "00001";
     await ejecutar(
       `INSERT INTO customers
-         (customer_id, name, short_name, rnc, ncf_id, phone1, phone2, phone3, fax1,
+         (company_id, name, short_name, rnc, ncf_id, phone1, phone2, phone3, fax1,
           main_email, secondary_email, address1, address2, address3, address4, zip_code,
           ar_location_id, sector_id, credit_days, credit_amount, salesman_id, class_id,
           price_list, datacredito, tax, backorder, advance, purchase_validation, generico,
@@ -1349,11 +1372,11 @@ export async function reporte(desde: string, hasta: string): Promise<Reporte> {
 }
 
 /* ------------------- Formatos de impresión (tabla propia) ----------------- */
-// Única tabla nueva del módulo: guarda el formato de impresión de cada cliente.
+// Única tabla nueva del módulo: guarda el formato de impresión de cada empresa.
 // No modifica ninguna tabla del sistema existente.
 
 const SQL_TABLA_FORMATOS = `CREATE TABLE IF NOT EXISTS print_formats (
-  customer_id   VARCHAR(20)  NOT NULL PRIMARY KEY,
+  company_id    VARCHAR(20)  NOT NULL PRIMARY KEY,
   name          VARCHAR(60)  NOT NULL DEFAULT '',
   paper         VARCHAR(10)  NOT NULL DEFAULT 'carta',
   preprinted    TINYINT(1)   NOT NULL DEFAULT 0,
@@ -1376,6 +1399,12 @@ let tablaFormatosLista = false;
 async function asegurarTablaFormatos(): Promise<void> {
   if (tablaFormatosLista) return;
   await ejecutar(SQL_TABLA_FORMATOS);
+  // La primera versión guardaba por cliente; se migra a formato por empresa.
+  const cols = await sql<{ Field: string }>("SHOW COLUMNS FROM print_formats");
+  if (cols.some((c) => c.Field === "customer_id")) {
+    await ejecutar("DROP TABLE print_formats");
+    await ejecutar(SQL_TABLA_FORMATOS);
+  }
   tablaFormatosLista = true;
 }
 
@@ -1386,7 +1415,7 @@ const n = (v: unknown) => Number(v ?? 0) || 0;
 
 function mapearFormato(f: Record<string, unknown>): FormatoImpresion {
   return {
-    cliente_id: String(f["customer_id"]),
+    empresa_id: String(f["company_id"]),
     nombre: t(f["name"]),
     papel: (t(f["paper"]) || "carta") as PapelImpresion,
     preimpreso: Boolean(n(f["preprinted"])),
@@ -1405,17 +1434,19 @@ function mapearFormato(f: Record<string, unknown>): FormatoImpresion {
   };
 }
 
-/** Formato del cliente; si no tiene, el formato general ("*"); si no, el de fábrica. */
-export async function obtenerFormatoImpresion(clienteId: string): Promise<FormatoImpresion> {
+/** Formato de la empresa; si no tiene, el general ("*"); si no, el de fábrica.
+ *  Sin empresa indicada se usa la empresa activa. */
+export async function obtenerFormatoImpresion(empresaId?: string): Promise<FormatoImpresion> {
+  const id = empresaId && empresaId !== "" ? empresaId : await empresaActualId();
   if (await usarMysql()) {
     try {
       await asegurarTablaFormatos();
       const filas = await sql<Record<string, unknown>>(
-        "SELECT * FROM print_formats WHERE customer_id IN (?, '*')",
-        [clienteId],
+        "SELECT * FROM print_formats WHERE company_id IN (?, '*')",
+        [id],
       );
-      const propio = filas.find((f) => String(f["customer_id"]) === clienteId);
-      const general = filas.find((f) => String(f["customer_id"]) === "*");
+      const propio = filas.find((f) => String(f["company_id"]) === id);
+      const general = filas.find((f) => String(f["company_id"]) === "*");
       const fila = propio ?? general;
       return fila ? mapearFormato(fila) : { ...FORMATO_IMPRESION_DEFECTO };
     } catch {
@@ -1424,7 +1455,7 @@ export async function obtenerFormatoImpresion(clienteId: string): Promise<Format
   }
   return {
     ...FORMATO_IMPRESION_DEFECTO,
-    ...(formatosDemo.get(clienteId) ?? formatosDemo.get("*") ?? {}),
+    ...(formatosDemo.get(id) ?? formatosDemo.get("*") ?? {}),
   };
 }
 
@@ -1433,7 +1464,7 @@ export async function listarFormatosImpresion(): Promise<FormatoImpresion[]> {
     try {
       await asegurarTablaFormatos();
       const filas = await sql<Record<string, unknown>>(
-        "SELECT * FROM print_formats ORDER BY customer_id",
+        "SELECT * FROM print_formats ORDER BY company_id",
       );
       return filas.map(mapearFormato);
     } catch {
@@ -1448,7 +1479,7 @@ export async function guardarFormatoImpresion(f: FormatoImpresion): Promise<Form
     await asegurarTablaFormatos();
     await ejecutar(
       `INSERT INTO print_formats
-         (customer_id, name, paper, preprinted, margin_top, margin_bottom, margin_left,
+         (company_id, name, paper, preprinted, margin_top, margin_bottom, margin_left,
           margin_right, show_logo, show_code, show_line_tax, show_discount, show_dop,
           copies, title, footer)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1461,7 +1492,7 @@ export async function guardarFormatoImpresion(f: FormatoImpresion): Promise<Form
          show_dop = VALUES(show_dop), copies = VALUES(copies), title = VALUES(title),
          footer = VALUES(footer)`,
       [
-        f.cliente_id,
+        f.empresa_id,
         f.nombre,
         f.papel,
         f.preimpreso ? 1 : 0,
@@ -1481,15 +1512,15 @@ export async function guardarFormatoImpresion(f: FormatoImpresion): Promise<Form
     );
     return f;
   }
-  formatosDemo.set(f.cliente_id, f);
+  formatosDemo.set(f.empresa_id, f);
   return f;
 }
 
-export async function eliminarFormatoImpresion(clienteId: string): Promise<void> {
+export async function eliminarFormatoImpresion(empresaId: string): Promise<void> {
   if (await usarMysql()) {
     await asegurarTablaFormatos();
-    await ejecutar("DELETE FROM print_formats WHERE customer_id = ?", [clienteId]);
+    await ejecutar("DELETE FROM print_formats WHERE company_id = ?", [empresaId]);
     return;
   }
-  formatosDemo.delete(clienteId);
+  formatosDemo.delete(empresaId);
 }
