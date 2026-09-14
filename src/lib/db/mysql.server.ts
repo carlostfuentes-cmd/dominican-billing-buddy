@@ -39,10 +39,9 @@ async function obtenerConexion(): Promise<Conexion | null> {
   const cred = leerCredenciales();
   if (!cred) return null;
   try {
-    // Import no estático a propósito: si el entorno de ejecución no admite el
-    // conector MySQL, caemos a modo demostración en lugar de romper la app.
-    const especificador = "mysql2/promise";
-    const mod = (await import(/* @vite-ignore */ especificador)) as {
+    // Import estático (analizable por el bundler) para que el conector viaje
+    // dentro del paquete del servidor también en producción.
+    const mod = (await import("mysql2/promise")) as unknown as {
       createPool: (o: unknown) => Conexion;
     };
     const conexion = mod.createPool({
