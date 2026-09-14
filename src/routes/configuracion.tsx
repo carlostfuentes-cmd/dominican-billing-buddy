@@ -168,23 +168,23 @@ function Configuracion() {
                   Al conectar, la aplicación trabajará sobre las tablas que ya existen en tu
                   sistema (clientes, ítems, facturas, secuencias NCF); no crea tablas nuevas.
                 </p>
-                <p>
-                  En el sitio publicado la conexión directa al servidor no está permitida. Sube el
-                  archivo puente a tu servidor y guarda{" "}
-                  <span className="font-mono text-xs">MYSQL_BRIDGE_URL</span> y{" "}
-                  <span className="font-mono text-xs">MYSQL_BRIDGE_TOKEN</span>.
-                </p>
-                <p>
-                  <a
-                    className="font-medium text-primary underline"
-                    href="/descargas/puente-mysql.php.txt"
-                    download="puente-mysql.php"
-                  >
-                    Descargar archivo puente
-                  </a>
-                </p>
               </>
             )}
+            <p>
+              En el sitio publicado la conexión directa al servidor no está permitida. Sube el
+              archivo puente a tu servidor y guarda{" "}
+              <span className="font-mono text-xs">MYSQL_BRIDGE_URL</span> y{" "}
+              <span className="font-mono text-xs">MYSQL_BRIDGE_TOKEN</span>.
+            </p>
+            <p>
+              <a
+                className="font-medium text-primary underline"
+                href="/descargas/puente-mysql.php.txt"
+                download="puente-mysql.php"
+              >
+                Descargar archivo puente
+              </a>
+            </p>
             {conexion?.error ? (
               <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 Último detalle: {conexion.error}
