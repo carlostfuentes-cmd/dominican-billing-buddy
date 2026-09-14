@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { guardarEmpresa, obtenerEmpresa, obtenerEstadoConexion } from "@/lib/erp.functions";
+import { PUENTE_PHP } from "@/lib/puente-php";
 import { rncValido, type Empresa } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/configuracion")({
