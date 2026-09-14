@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { guardarEmpresa, obtenerEmpresa, obtenerEstadoConexion } from "@/lib/erp.functions";
+import { PUENTE_PHP } from "@/lib/puente-php";
 import { rncValido, type Empresa } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/configuracion")({
@@ -176,15 +177,37 @@ function Configuracion() {
               <span className="font-mono text-xs">MYSQL_BRIDGE_URL</span> y{" "}
               <span className="font-mono text-xs">MYSQL_BRIDGE_TOKEN</span>.
             </p>
-            <p>
-              <a
-                className="font-medium text-primary underline"
-                href="/descargas/puente-mysql.php.txt"
-                download="puente-mysql.php"
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const blob = new Blob([PUENTE_PHP], { type: "application/octet-stream" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "puente-mysql.php";
+                  document.body.appendChild(a);
+                  a.click();
+                  a.remove();
+                  URL.revokeObjectURL(url);
+                }}
               >
                 Descargar archivo puente
-              </a>
-            </p>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(PUENTE_PHP);
+                  toast.success("Contenido copiado");
+                }}
+              >
+                Copiar contenido
+              </Button>
+            </div>
             {conexion?.error ? (
               <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 Último detalle: {conexion.error}
