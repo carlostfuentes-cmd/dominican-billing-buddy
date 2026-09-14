@@ -208,6 +208,14 @@ function Configuracion() {
                 Copiar contenido
               </Button>
             </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-foreground">
+                Vista previa de puente-mysql.php
+              </p>
+              <pre className="max-h-72 overflow-auto rounded-md border bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-foreground">
+                {PUENTE_PHP}
+              </pre>
+            </div>
             {conexion?.error ? (
               <p className="rounded-md bg-destructive/10 p-2 text-xs text-destructive">
                 Último detalle: {conexion.error}
