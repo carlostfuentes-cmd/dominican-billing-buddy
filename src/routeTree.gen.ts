@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CamposRouteImport } from './routes/campos'
 import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as FormatosRouteImport } from './routes/formatos'
@@ -36,6 +37,11 @@ import { Route as InventarioNuevoRouteImport } from './routes/inventario.nuevo'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CamposRoute = CamposRouteImport.update({
+  id: '/campos',
+  path: '/campos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientesRoute = ClientesRouteImport.update({
@@ -151,6 +157,7 @@ const InventarioNuevoRoute = InventarioNuevoRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/campos': typeof CamposRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/campos': typeof CamposRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
@@ -202,6 +210,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/campos': typeof CamposRoute
   '/clientes': typeof ClientesRoute
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
@@ -229,6 +238,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/campos'
     | '/clientes'
     | '/configuracion'
     | '/formatos'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/campos'
     | '/clientes'
     | '/configuracion'
     | '/formatos'
@@ -279,6 +290,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/campos'
     | '/clientes'
     | '/configuracion'
     | '/formatos'
@@ -305,6 +317,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CamposRoute: typeof CamposRoute
   ClientesRoute: typeof ClientesRoute
   ConfiguracionRoute: typeof ConfiguracionRoute
   FormatosRoute: typeof FormatosRoute
@@ -336,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campos': {
+      id: '/campos'
+      path: '/campos'
+      fullPath: '/campos'
+      preLoaderRoute: typeof CamposRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/clientes': {
@@ -497,6 +517,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CamposRoute: CamposRoute,
   ClientesRoute: ClientesRoute,
   ConfiguracionRoute: ConfiguracionRoute,
   FormatosRoute: FormatosRoute,

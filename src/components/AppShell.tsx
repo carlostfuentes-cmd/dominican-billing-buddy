@@ -8,6 +8,7 @@ import {
   FileSpreadsheet,
   Hash,
   LayoutDashboard,
+  ListPlus,
   Package,
   Printer,
   RotateCcw,
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/ncf", label: "Comprobantes fiscales", icon: Hash, grupo: "fiscal" },
   { to: "/reportes", label: "Reportes", icon: BarChart3, grupo: "fiscal" },
   { to: "/formatos", label: "Formatos de impresión", icon: Printer, grupo: "sistema" },
+  { to: "/campos", label: "Campos personalizados", icon: ListPlus, grupo: "sistema" },
   { to: "/configuracion", label: "Configuración", icon: Settings, grupo: "sistema" },
 ] as const;
 

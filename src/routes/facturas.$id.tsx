@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { ArrowLeft, Ban, CheckCircle2, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 
+import { CamposDocumento } from "@/components/CamposPersonalizados";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -315,6 +316,10 @@ function DetalleFactura() {
                   )}
                 </div>
               ) : null}
+            </div>
+
+            <div className="mt-6 border-t pt-4">
+              <CamposDocumento proceso="PEDIDOS" referencia={String(factura.id)} />
             </div>
 
             {factura.notas ? (
