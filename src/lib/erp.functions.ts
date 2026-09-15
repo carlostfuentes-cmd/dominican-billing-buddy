@@ -11,6 +11,8 @@ import type {
   Item,
   ListasCliente,
   ListasFactura,
+  ListasItem,
+
   OpcionId,
   SecuenciaNCF,
 
@@ -116,22 +118,74 @@ export const guardarCliente = createServerFn({ method: "POST" })
 /* --------------------------------- Ítems --------------------------------- */
 
 const itemSchema = z.object({
-  id: texto(20).min(1).optional(),
+  id: texto(30).min(1).optional(),
   codigo: texto(30).min(1, "Requerido"),
   descripcion: texto(200).min(1, "Requerido"),
   unidad: texto(10).min(1, "Requerido"),
   precio: z.number().min(0).max(99_999_999),
   tasa_itbis: z.number().refine((v) => [0, 16, 18].includes(v), "Tasa inválida"),
   activo: z.boolean(),
+  referencia: texto(200).optional(),
+  nombre_corto: texto(20).optional(),
+  suplidor_id: z.number().int().min(0).optional(),
+  grupo_id: texto(10).optional(),
+  tipo_id: texto(10).optional(),
+  familia_id: z.number().int().min(0).optional(),
+  codigo_barras: texto(40).optional(),
+  moneda: texto(3).optional(),
+  comision: z.number().min(0).max(100).optional(),
+  costo: z.number().min(0).optional(),
+  precio2: z.number().min(0).optional(),
+  precio3: z.number().min(0).optional(),
+  precio4: z.number().min(0).optional(),
+  precio5: z.number().min(0).optional(),
+  aplica_impuesto: z.boolean().optional(),
+  es_servicio: z.boolean().optional(),
+  requiere_serial: z.boolean().optional(),
+  compuesto: z.boolean().optional(),
+  validar_existencia: z.boolean().optional(),
+  venta_controlada: z.boolean().optional(),
+  no_comisionable: z.boolean().optional(),
+  empaque_id: texto(10).optional(),
+  cantidad_empaque: z.number().min(0).optional(),
+  venta_minima: z.number().min(0).optional(),
+  venta_maxima: z.number().min(0).optional(),
+  existencia_maxima: z.number().min(0).optional(),
+  existencia_minima: z.number().min(0).optional(),
+  rotacion: z.number().int().min(0).optional(),
+  alto: z.number().min(0).optional(),
+  ancho: z.number().min(0).optional(),
+  profundidad: z.number().min(0).optional(),
+  medida_volumen_id: texto(10).optional(),
+  peso: z.number().min(0).optional(),
+  medida_peso_id: texto(10).optional(),
+  ficha: texto(200).optional(),
+  dias_antes_vencimiento: z.number().int().min(0).optional(),
+  permitir_edicion_precio: z.boolean().optional(),
+  arancel: z.number().min(0).max(100).optional(),
+  marca_id: texto(10).optional(),
+  color_id: texto(10).optional(),
+  origen_id: z.number().int().min(0).optional(),
+  disparador: z.enum(["", "FST"]).optional(),
+  pasillo: texto(30).optional(),
+  tramo: texto(30).optional(),
+  estante: texto(30).optional(),
+  notas: texto(4000).optional(),
+  garantia: texto(4000).optional(),
 });
 
 export const obtenerItems = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) => z.object({ busqueda: texto(80).default("") }).parse(d ?? {}))
   .handler(async ({ data }): Promise<Item[]> => (await repo()).listarItems(data.busqueda));
 
+export const obtenerListasItem = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ListasItem> => (await repo()).listasItem(),
+);
+
 export const guardarItem = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => itemSchema.parse(d))
   .handler(async ({ data }): Promise<Item> => (await repo()).guardarItem(data));
+
 
 /* ------------------------------ Secuencias ------------------------------- */
 

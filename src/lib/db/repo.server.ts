@@ -512,6 +512,23 @@ export async function guardarCliente(
 
 /* --------------------------------- Ítems -------------------------------- */
 
+const CAMPOS_ITEM = `p.product_id AS id, p.product_id AS codigo, p.name AS descripcion,
+       COALESCE(m.abreviature, 'UND') AS unidad, p.price1 AS precio,
+       CASE WHEN p.tax = 1 THEN COALESCE(p.tax_rate, 18) ELSE 0 END AS tasa_itbis,
+       p.status = 'A' AS activo,
+       p.reference AS referencia, p.short_name AS nombre_corto, p.supplier_id,
+       p.inventory_group_id, p.product_kind_id, p.product_family_id,
+       p.barcode, p.currency_id, p.comision, p.cost,
+       p.price2, p.price3, p.price4, p.price5,
+       p.tax AS aplica_impuesto, p.is_service, p.serial_require, p.is_compound,
+       p.stock_validate, p.is_drug, p.is_comisionable,
+       p.packaging_id, p.pack_quantity, p.min_sale, p.max_sale,
+       p.max_stock, p.min_stock, p.rotation,
+       p.height, p.wide, p.deep, p.volume_measure_id,
+       p.weight, p.weight_measure_id, p.ficha, p.life, p.price_edition, p.arancel,
+       p.brand_id, p.color_id, p.source_id, p.p_trigger,
+       p.pasillo, p.tramo, p.estante, p.notes, p.guarantee`;
+
 interface FilaItem {
   id: string;
   codigo: string;
@@ -520,7 +537,56 @@ interface FilaItem {
   precio: number | null;
   tasa_itbis: number | null;
   activo: number | null;
+  referencia: string | null;
+  nombre_corto: string | null;
+  supplier_id: number | null;
+  inventory_group_id: string | null;
+  product_kind_id: string | null;
+  product_family_id: number | null;
+  barcode: string | null;
+  currency_id: string | null;
+  comision: number | null;
+  cost: number | null;
+  price2: number | null;
+  price3: number | null;
+  price4: number | null;
+  price5: number | null;
+  aplica_impuesto: number | null;
+  is_service: number | null;
+  serial_require: number | null;
+  is_compound: number | null;
+  stock_validate: number | null;
+  is_drug: number | null;
+  is_comisionable: number | null;
+  packaging_id: string | null;
+  pack_quantity: number | null;
+  min_sale: number | null;
+  max_sale: number | null;
+  max_stock: number | null;
+  min_stock: number | null;
+  rotation: number | null;
+  height: number | null;
+  wide: number | null;
+  deep: number | null;
+  volume_measure_id: string | null;
+  weight: number | null;
+  weight_measure_id: string | null;
+  ficha: string | null;
+  life: number | null;
+  price_edition: number | null;
+  arancel: number | null;
+  brand_id: string | null;
+  color_id: string | null;
+  source_id: number | null;
+  p_trigger: string | null;
+  pasillo: string | null;
+  tramo: string | null;
+  estante: string | null;
+  notes: string | null;
+  guarantee: string | null;
 }
+
+const numItem = (v: unknown) => Number(v ?? 0);
 
 function mapearItem(f: FilaItem): Item {
   return {
@@ -528,9 +594,56 @@ function mapearItem(f: FilaItem): Item {
     codigo: f.codigo,
     descripcion: f.descripcion ?? "",
     unidad: f.unidad ?? "UND",
-    precio: Number(f.precio ?? 0),
-    tasa_itbis: Number(f.tasa_itbis ?? 0),
+    precio: numItem(f.precio),
+    tasa_itbis: numItem(f.tasa_itbis),
     activo: Boolean(f.activo),
+    referencia: f.referencia ?? "",
+    nombre_corto: f.nombre_corto ?? "",
+    suplidor_id: f.supplier_id == null ? undefined : Number(f.supplier_id),
+    grupo_id: f.inventory_group_id ?? undefined,
+    tipo_id: f.product_kind_id ?? undefined,
+    familia_id: f.product_family_id == null ? undefined : Number(f.product_family_id),
+    codigo_barras: f.barcode ?? "",
+    moneda: f.currency_id ?? "DOP",
+    comision: numItem(f.comision),
+    costo: numItem(f.cost),
+    precio2: numItem(f.price2),
+    precio3: numItem(f.price3),
+    precio4: numItem(f.price4),
+    precio5: numItem(f.price5),
+    aplica_impuesto: Boolean(f.aplica_impuesto),
+    es_servicio: Boolean(f.is_service),
+    requiere_serial: Boolean(f.serial_require),
+    compuesto: Boolean(f.is_compound),
+    validar_existencia: Boolean(f.stock_validate),
+    venta_controlada: Boolean(f.is_drug),
+    no_comisionable: !Number(f.is_comisionable ?? 0),
+    empaque_id: f.packaging_id ?? undefined,
+    cantidad_empaque: numItem(f.pack_quantity),
+    venta_minima: numItem(f.min_sale),
+    venta_maxima: numItem(f.max_sale),
+    existencia_maxima: numItem(f.max_stock),
+    existencia_minima: numItem(f.min_stock),
+    rotacion: numItem(f.rotation),
+    alto: numItem(f.height),
+    ancho: numItem(f.wide),
+    profundidad: numItem(f.deep),
+    medida_volumen_id: f.volume_measure_id ?? undefined,
+    peso: numItem(f.weight),
+    medida_peso_id: f.weight_measure_id ?? undefined,
+    ficha: f.ficha ?? "",
+    dias_antes_vencimiento: numItem(f.life),
+    permitir_edicion_precio: Boolean(f.price_edition),
+    arancel: numItem(f.arancel),
+    marca_id: f.brand_id ?? undefined,
+    color_id: f.color_id ?? undefined,
+    origen_id: f.source_id == null ? undefined : Number(f.source_id),
+    disparador: f.p_trigger === "FST" ? "FST" : "",
+    pasillo: f.pasillo ?? "",
+    tramo: f.tramo ?? "",
+    estante: f.estante ?? "",
+    notas: f.notes ?? "",
+    garantia: f.guarantee ?? "",
   };
 }
 
@@ -538,16 +651,13 @@ export async function listarItems(busqueda = ""): Promise<Item[]> {
   if (await usarMysql()) {
     const like = `%${busqueda}%`;
     const filas = await sql<FilaItem>(
-      `SELECT p.product_id AS id, p.product_id AS codigo, p.name AS descripcion,
-              COALESCE(m.abreviature, 'UND') AS unidad, p.price1 AS precio,
-              CASE WHEN p.tax = 1 THEN COALESCE(p.tax_rate, 18) ELSE 0 END AS tasa_itbis,
-              p.status = 'A' AS activo
+      `SELECT ${CAMPOS_ITEM}
        FROM products p
        LEFT JOIN measures m ON m.measure_id = p.measure_id
-       WHERE (? = '' OR p.product_id LIKE ? OR p.name LIKE ?)
+       WHERE (? = '' OR p.product_id LIKE ? OR p.name LIKE ? OR p.reference LIKE ?)
        ORDER BY p.product_id
        LIMIT 500`,
-      [busqueda, like, like],
+      [busqueda, like, like, like],
     );
     return filas.map(mapearItem);
   }
@@ -559,50 +669,182 @@ export async function listarItems(busqueda = ""): Promise<Item[]> {
     .sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
+export async function listasItem(): Promise<import("@/lib/erp-types").ListasItem> {
+  const vacio = {
+    suplidores: [] as OpcionId[],
+    grupos: [] as OpcionId[],
+    tipos: [] as OpcionId[],
+    familias: [] as OpcionId[],
+    marcas: [] as OpcionId[],
+    colores: [] as OpcionId[],
+    origenes: [] as OpcionId[],
+    empaques: [] as OpcionId[],
+    unidades: [] as OpcionId[],
+    monedas: [] as OpcionId[],
+  };
+  if (!(await usarMysql())) return vacio;
+  const cargar = async (consulta: string): Promise<OpcionId[]> => {
+    try {
+      const filas = await sql<{ id: string | number; nombre: string }>(consulta);
+      return filas.map((f) => ({ id: String(f.id), nombre: f.nombre ?? "" }));
+    } catch {
+      return [];
+    }
+  };
+  const [
+    suplidores,
+    grupos,
+    tipos,
+    familias,
+    marcas,
+    colores,
+    origenes,
+    empaques,
+    unidades,
+    monedas,
+  ] = await Promise.all([
+    cargar(`SELECT supplier_id AS id, name AS nombre FROM suppliers ORDER BY name LIMIT 3000`),
+    cargar(
+      `SELECT inventory_group_id AS id, name AS nombre FROM inventory_groups ORDER BY name LIMIT 300`,
+    ),
+    cargar(`SELECT product_kind_id AS id, name AS nombre FROM products_kinds ORDER BY name`),
+    cargar(`SELECT product_family_id AS id, name AS nombre FROM products_family ORDER BY name`),
+    cargar(`SELECT brand_id AS id, name AS nombre FROM brands ORDER BY name LIMIT 2000`),
+    cargar(`SELECT color_id AS id, name AS nombre FROM colors ORDER BY name LIMIT 300`),
+    cargar(`SELECT source_id AS id, name AS nombre FROM sources ORDER BY name`),
+    cargar(`SELECT packaging_id AS id, name AS nombre FROM packaging ORDER BY name`),
+    cargar(
+      `SELECT measure_id AS id, CONCAT(abreviature, ' — ', name) AS nombre FROM measures ORDER BY name`,
+    ),
+    cargar(`SELECT currency_id AS id, name AS nombre FROM currencies ORDER BY name`),
+  ]);
+  return {
+    suplidores,
+    grupos,
+    tipos,
+    familias,
+    marcas,
+    colores,
+    origenes,
+    empaques,
+    unidades,
+    monedas,
+  };
+}
+
 export async function guardarItem(
   it: Omit<Item, "id"> & { id?: string | undefined },
 ): Promise<Item> {
   if (await usarMysql()) {
+    const comunes = [
+      it.descripcion,
+      it.referencia ?? "",
+      it.nombre_corto ?? "",
+      it.activo ? "A" : "I",
+      it.tasa_itbis > 0 ? 1 : 0,
+      it.tasa_itbis,
+      it.precio,
+      it.precio2 ?? 0,
+      it.precio3 ?? 0,
+      it.precio4 ?? 0,
+      it.precio5 ?? 0,
+      it.costo ?? 0,
+      it.comision ?? 0,
+      it.codigo_barras ?? "",
+      it.moneda ?? "DOP",
+      it.es_servicio ? 1 : 0,
+      it.compuesto ? 1 : 0,
+      it.requiere_serial ? 1 : 0,
+      it.validar_existencia ? 1 : 0,
+      it.venta_controlada ? 1 : 0,
+      it.no_comisionable ? 0 : 1,
+      it.tasa_itbis > 0 ? 0 : 1,
+      it.empaque_id ?? "0",
+      it.cantidad_empaque ?? 0,
+      it.venta_minima ?? 0,
+      it.venta_maxima ?? 0,
+      it.existencia_minima ?? 0,
+      it.existencia_maxima ?? 0,
+      it.rotacion ?? 0,
+      it.alto ?? 0,
+      it.ancho ?? 0,
+      it.profundidad ?? 0,
+      it.peso ?? 0,
+      it.ficha ?? "",
+      it.dias_antes_vencimiento ?? 0,
+      it.permitir_edicion_precio ? 1 : 0,
+      it.arancel ?? 0,
+      it.disparador === "FST" ? "FST" : null,
+      it.pasillo ?? "",
+      it.tramo ?? "",
+      it.estante ?? "",
+      it.notas ?? "",
+      it.garantia ?? "",
+    ];
+    const d = await defectos();
+    const relaciones = [
+      it.suplidor_id ?? d.supplier_id,
+      it.grupo_id ?? d.inventory_group_id,
+      it.tipo_id ?? d.product_kind_id,
+      it.familia_id ?? d.product_family_id,
+      it.marca_id ?? d.brand_id,
+      it.color_id ?? d.color_id,
+      it.origen_id ?? d.source_id,
+      it.medida_peso_id ?? "0",
+      it.medida_volumen_id ?? "0",
+    ];
+
     if (it.id) {
       await ejecutar(
-        `UPDATE products SET name = ?, price1 = ?, tax = ?, tax_rate = ?, status = ?
+        `UPDATE products SET
+           name = ?, reference = ?, short_name = ?, status = ?, tax = ?, tax_rate = ?,
+           price1 = ?, price2 = ?, price3 = ?, price4 = ?, price5 = ?, cost = ?, comision = ?,
+           barcode = ?, currency_id = ?, is_service = ?, is_compound = ?, serial_require = ?,
+           stock_validate = ?, is_drug = ?, is_comisionable = ?, no_gravamen = ?,
+           packaging_id = ?, pack_quantity = ?, min_sale = ?, max_sale = ?,
+           min_stock = ?, max_stock = ?, rotation = ?,
+           height = ?, wide = ?, deep = ?, weight = ?, ficha = ?, life = ?,
+           price_edition = ?, arancel = ?, p_trigger = ?, pasillo = ?, tramo = ?, estante = ?,
+           notes = ?, guarantee = ?,
+           supplier_id = ?, inventory_group_id = ?, product_kind_id = ?, product_family_id = ?,
+           brand_id = ?, color_id = ?, source_id = ?, weight_measure_id = ?, volume_measure_id = ?,
+           measure_id = COALESCE((SELECT measure_id FROM (SELECT measure_id FROM measures WHERE abreviature = ? LIMIT 1) mm), measure_id)
          WHERE product_id = ?`,
-        [it.descripcion, it.precio, it.tasa_itbis > 0 ? 1 : 0, it.tasa_itbis, it.activo ? "A" : "I", it.id],
+        [...comunes, ...relaciones, it.unidad, it.id],
       );
-      return { ...it, id: it.id } as Item;
+      const filas = await sql<FilaItem>(
+        `SELECT ${CAMPOS_ITEM} FROM products p
+         LEFT JOIN measures m ON m.measure_id = p.measure_id
+         WHERE p.product_id = ?`,
+        [it.id],
+      );
+      return filas[0] ? mapearItem(filas[0]) : ({ ...it, id: it.id } as Item);
     }
-    const d = await defectos();
+
     await ejecutar(
       `INSERT INTO products
-         (product_id, name, status, tax, tax_rate, price1, cost,
-          is_compound, is_service, stock_validate, is_drug, is_comisionable, no_gravamen,
-          price_edition, rotation, life, serial_require,
-          weight_measure_id, measure_id, volume_measure_id, supplier_id, color_id,
-          packaging_id, source_id, currency_id, inventory_group_id, brand_id,
-          product_family_id, product_kind_id)
-       VALUES (?, ?, ?, ?, ?, ?, 0, 0, 1, 0, 0, 0, ?, 0, 0, 0, 0,
-               '0', COALESCE((SELECT measure_id FROM (SELECT measure_id FROM measures WHERE abreviature = ? LIMIT 1) mm), '0'),
-               '0', ?, ?, ?, ?, 'DOP', ?, ?, ?, ?)`,
-      [
-        it.codigo,
-        it.descripcion,
-        it.activo ? "A" : "I",
-        it.tasa_itbis > 0 ? 1 : 0,
-        it.tasa_itbis,
-        it.precio,
-        it.tasa_itbis > 0 ? 0 : 1,
-        it.unidad,
-        d.supplier_id,
-        d.color_id,
-        d.packaging_id,
-        d.source_id,
-        d.inventory_group_id,
-        d.brand_id,
-        d.product_family_id,
-        d.product_kind_id,
-      ],
+         (product_id, name, reference, short_name, status, tax, tax_rate,
+          price1, price2, price3, price4, price5, cost, comision,
+          barcode, currency_id, is_service, is_compound, serial_require,
+          stock_validate, is_drug, is_comisionable, no_gravamen,
+          packaging_id, pack_quantity, min_sale, max_sale, min_stock, max_stock, rotation,
+          height, wide, deep, weight, ficha, life, price_edition, arancel, p_trigger,
+          pasillo, tramo, estante, notes, guarantee,
+          supplier_id, inventory_group_id, product_kind_id, product_family_id,
+          brand_id, color_id, source_id, weight_measure_id, volume_measure_id, measure_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               COALESCE((SELECT measure_id FROM (SELECT measure_id FROM measures WHERE abreviature = ? LIMIT 1) mm), '0'))`,
+      [it.codigo, ...comunes, ...relaciones, it.unidad],
     );
-    return { ...it, id: it.codigo } as Item;
+    const filas = await sql<FilaItem>(
+      `SELECT ${CAMPOS_ITEM} FROM products p
+       LEFT JOIN measures m ON m.measure_id = p.measure_id
+       WHERE p.product_id = ?`,
+      [it.codigo],
+    );
+    return filas[0] ? mapearItem(filas[0]) : ({ ...it, id: it.codigo } as Item);
   }
   const d = demo();
   if (it.id) {
@@ -615,6 +857,7 @@ export async function guardarItem(
   d.items.push(nuevo);
   return nuevo;
 }
+
 
 /* ------------------------------ Secuencias ------------------------------ */
 

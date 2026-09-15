@@ -111,7 +111,71 @@ export interface Item {
   precio: number;
   tasa_itbis: number;
   activo: boolean;
+  // Datos generales
+  referencia?: string | undefined;
+  nombre_corto?: string | undefined;
+  suplidor_id?: number | undefined;
+  grupo_id?: string | undefined;
+  tipo_id?: string | undefined;
+  familia_id?: number | undefined;
+  codigo_barras?: string | undefined;
+  moneda?: string | undefined;
+  comision?: number | undefined;
+  costo?: number | undefined;
+  precio2?: number | undefined;
+  precio3?: number | undefined;
+  precio4?: number | undefined;
+  precio5?: number | undefined;
+  aplica_impuesto?: boolean | undefined;
+  es_servicio?: boolean | undefined;
+  requiere_serial?: boolean | undefined;
+  compuesto?: boolean | undefined;
+  validar_existencia?: boolean | undefined;
+  venta_controlada?: boolean | undefined;
+  no_comisionable?: boolean | undefined;
+  // Presentación y disponibilidad
+  empaque_id?: string | undefined;
+  cantidad_empaque?: number | undefined;
+  venta_minima?: number | undefined;
+  venta_maxima?: number | undefined;
+  existencia_maxima?: number | undefined;
+  existencia_minima?: number | undefined;
+  rotacion?: number | undefined;
+  alto?: number | undefined;
+  ancho?: number | undefined;
+  profundidad?: number | undefined;
+  medida_volumen_id?: string | undefined;
+  peso?: number | undefined;
+  medida_peso_id?: string | undefined;
+  ficha?: string | undefined;
+  dias_antes_vencimiento?: number | undefined;
+  permitir_edicion_precio?: boolean | undefined;
+  arancel?: number | undefined;
+  marca_id?: string | undefined;
+  color_id?: string | undefined;
+  origen_id?: number | undefined;
+  disparador?: "" | "FST" | undefined;
+  pasillo?: string | undefined;
+  tramo?: string | undefined;
+  estante?: string | undefined;
+  // Notas y garantía
+  notas?: string | undefined;
+  garantia?: string | undefined;
 }
+
+export interface ListasItem {
+  suplidores: OpcionLista[];
+  grupos: OpcionLista[];
+  tipos: OpcionLista[];
+  familias: OpcionLista[];
+  marcas: OpcionLista[];
+  colores: OpcionLista[];
+  origenes: OpcionLista[];
+  empaques: OpcionLista[];
+  unidades: OpcionLista[];
+  monedas: OpcionLista[];
+}
+
 
 export interface SecuenciaNCF {
   tipo_ncf: TipoNCF;
