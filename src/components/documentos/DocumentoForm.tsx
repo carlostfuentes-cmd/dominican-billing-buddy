@@ -547,23 +547,14 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                 return (
                   <TableRow key={i}>
                     <TableCell>
-                      <Select
-                        value={l.item_id ? String(l.item_id) : ""}
-                        onValueChange={(v) => seleccionarItem(i, v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {items
-                            .filter((it) => it.activo)
-                            .map((it) => (
-                              <SelectItem key={it.id} value={String(it.id)}>
-                                {it.codigo} — {it.descripcion}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      <SelectorBuscable
+                        opciones={opcionesItems}
+                        valor={l.item_id ? String(l.item_id) : ""}
+                        placeholder="Buscar producto"
+                        placeholderBusqueda="Escribe código o nombre…"
+                        vacio="Sin productos que coincidan"
+                        onSeleccionar={(v) => seleccionarItem(i, v)}
+                      />
                     </TableCell>
                     <TableCell>
                       <Input
