@@ -283,7 +283,7 @@ function InventarioPage() {
                           <TableCell>{fechaCorta(m.fecha)}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Badge variant={m.tipo === "E" ? "success" : "secondary"}>
+                              <Badge variant={m.tipo === "E" ? "default" : "secondary"}>
                                 {m.tipo === "E" ? "Entrada" : "Salida"}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{m.operacion}</span>
