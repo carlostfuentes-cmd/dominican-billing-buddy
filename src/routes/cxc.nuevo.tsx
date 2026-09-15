@@ -209,9 +209,9 @@ function NuevoMovimientoPage() {
   return (
     <div>
       <PageHeader
-        title="Movimientos de cuentas por cobrar"
-        description="Aplica cobros, notas y avances a los documentos pendientes del cliente."
-        actions={
+        titulo="Movimientos de cuentas por cobrar"
+        descripcion="Aplica cobros, notas y avances a los documentos pendientes del cliente."
+        acciones={
           <div className="flex gap-2">
             <Button variant="outline" onClick={limpiar}>
               <RotateCcw className="size-4" /> Limpiar

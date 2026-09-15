@@ -93,11 +93,11 @@ function CxCPage() {
   return (
     <div>
       <PageHeader
-        title="Cuentas por cobrar"
-        description="Balances pendientes por cliente y movimientos de cobro."
-        actions={
+        titulo="Cuentas por cobrar"
+        descripcion="Balances pendientes por cliente y movimientos de cobro."
+        acciones={
           <Button asChild>
-            <Link to="/cxc/nuevo">
+            <Link to="/cxc/nuevo" search={{ cliente: "" }}>
               <Plus className="size-4" /> Nuevo movimiento
             </Link>
           </Button>
