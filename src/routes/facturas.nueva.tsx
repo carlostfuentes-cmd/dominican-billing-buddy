@@ -124,6 +124,64 @@ function NuevaFactura() {
     queryKey: ["listas-factura"],
     queryFn: () => obtenerListasFactura(),
   });
+  // Cotizaciones vigentes para halar sus datos al pedido.
+  const { data: cotizaciones = [] } = useQuery({
+    queryKey: ["documentos", "cotizacion", "para-pedido"],
+    queryFn: () => obtenerDocumentos({ data: { tipo: "cotizacion" as const } }),
+  });
+
+  const opcionesCotizaciones = useMemo(
+    () =>
+      cotizaciones
+        .filter((c) => !c.anulado)
+        .map((c) => ({
+          valor: String(c.id),
+          etiqueta: `#${c.id} — ${c.cliente_nombre || c.cliente_id}`,
+          detalle: `${c.fecha} · ${money(c.total, c.moneda)}`,
+        })),
+    [cotizaciones],
+  );
+
+  const traerCotizacion = useMutation({
+    mutationFn: (id: number) =>
+      obtenerDocumento({ data: { tipo: "cotizacion" as const, id } }),
+    onSuccess: (doc) => {
+      if (!doc) {
+        toast.error("No se encontró la cotización");
+        return;
+      }
+      setClienteId(doc.cliente_id);
+      setMoneda(doc.moneda);
+      setTasa(doc.tasa_cambio);
+      setDias(doc.dias_credito);
+      if (doc.notas) setNotas(doc.notas);
+      if (doc.vendedor_id) setVendedor(doc.vendedor_id);
+      if (doc.tecnico_id) setTecnico(doc.tecnico_id);
+      if (doc.almacen_id) setAlmacen(doc.almacen_id);
+      if (doc.sucursal_id) setSucursal(String(doc.sucursal_id));
+      if (doc.departamento_id) setDepartamento(doc.departamento_id);
+      if (doc.proyecto_id) setProyecto(doc.proyecto_id);
+      if (doc.orden_cliente) setOrdenCliente(doc.orden_cliente);
+      if (doc.lineas.length) {
+        setLineas(
+          doc.lineas.map((l) => ({
+            item_id: l.item_id,
+            codigo: l.codigo,
+            descripcion: l.descripcion,
+            cantidad: l.cantidad,
+            oferta: l.oferta ?? 0,
+            precio: l.precio,
+            descuento_pct: l.descuento_pct,
+            tasa_itbis: l.tasa_itbis,
+          })),
+        );
+      }
+      toast.success(`Datos de la cotización ${doc.id} copiados al pedido`);
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo traer la cotización"),
+  });
+
+
 
   const opcionesClientes = useMemo(
     () =>
