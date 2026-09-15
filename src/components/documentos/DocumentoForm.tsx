@@ -231,27 +231,18 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
           <CardContent className="grid gap-3">
             <div>
               <Label>Cliente</Label>
-              <Select
-                value={clienteId}
-                onValueChange={(v) => {
+              <SelectorBuscable
+                opciones={opcionesClientes}
+                valor={clienteId}
+                placeholder="Seleccionar cliente"
+                placeholderBusqueda="Escribe código, nombre o RNC…"
+                vacio="Sin clientes que coincidan"
+                onSeleccionar={(v) => {
                   setClienteId(v);
                   const c = clientes.find((x) => String(x.id) === v);
                   if (c) setDias(c.dias_credito);
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes
-                    .filter((c) => c.activo)
-                    .map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.nombre}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div>
               <Label>RNC / Cédula</Label>
