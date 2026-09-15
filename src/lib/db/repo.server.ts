@@ -115,7 +115,7 @@ function tipoDesdeNcfId(ncfId: number | null | undefined): TipoNCF {
 
 /* --------- Valores por defecto para campos obligatorios del sistema ------- */
 
-interface Defectos {
+export interface Defectos {
   user_id: number;
   salesman_id: number;
   warehouse_id: number;
