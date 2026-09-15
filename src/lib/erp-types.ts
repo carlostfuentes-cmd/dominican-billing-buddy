@@ -186,6 +186,28 @@ export interface SecuenciaNCF {
   activa: boolean;
 }
 
+/** Rango autorizado tal como se registra en la pantalla de Comprobantes Fiscales. */
+export interface RangoNCF {
+  id: number;
+  prefijo: string;
+  ncf_id: number;
+  sucursal_id: number;
+  desde: number;
+  hasta: number;
+  ultimo: number;
+  alerta: number;
+  activa: boolean;
+  autorizacion: string;
+  vence: string;
+}
+
+export interface ListasNCF {
+  sucursales: OpcionLista[];
+  tipos: OpcionLista[];
+}
+
+export const TAMANO_SUFIJO_NCF = 8;
+
 export interface LineaFactura {
   item_id: string | null;
   codigo: string;
