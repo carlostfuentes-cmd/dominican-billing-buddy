@@ -616,3 +616,90 @@ export interface FiltroDocumentos {
   hasta?: string | undefined;
   clienteId?: string | undefined;
 }
+
+/* ------------------------ Cuentas por cobrar (CxC) ----------------------- */
+
+/** Tipo de transacción de CxC (tabla ar_kinds). "D" carga al cliente, "C" abona. */
+export interface TipoMovimientoCxC {
+  id: string;
+  nombre: string;
+  signo: "D" | "C";
+  ncf: boolean;
+}
+
+/** Documento con balance pendiente (agrupado por referencia en ar_reference). */
+export interface DocPendienteCxC {
+  referencia: number;
+  fecha: string;
+  balance: number;
+  moneda: string;
+}
+
+export interface MovimientoCxC {
+  id: number;
+  fecha: string;
+  documento: number;
+  tipo_id: string;
+  tipo: string;
+  signo: "D" | "C";
+  cliente_id: string;
+  cliente: string;
+  moneda: string;
+  tasa_cambio: number;
+  monto: number;
+  descripcion: string;
+  forma_pago: string;
+  banco: string;
+  pago_doc: string;
+}
+
+export interface BalanceClienteCxC {
+  cliente_id: string;
+  cliente: string;
+  moneda: string;
+  balance: number;
+  documentos: number;
+  mas_antiguo: string;
+}
+
+export interface ListasCxC {
+  tipos: TipoMovimientoCxC[];
+  formas: OpcionId[];
+  bancos: OpcionId[];
+  sucursales: OpcionId[];
+  vendedores: OpcionId[];
+  monedas: Moneda[];
+}
+
+export interface AplicacionCxC {
+  referencia: number;
+  valor: number;
+  descuento: number;
+}
+
+export interface NuevoMovimientoCxC {
+  cliente_id: string;
+  tipo_id: string;
+  fecha: string;
+  documento?: number | undefined;
+  sucursal_id?: string | undefined;
+  vendedor_id?: string | undefined;
+  moneda: string;
+  tasa_cambio: number;
+  monto: number;
+  itbis_retenido: number;
+  anticipo_retenido: number;
+  concepto: string;
+  pago_fecha: string;
+  forma_pago_id: string;
+  banco_id?: string | undefined;
+  pago_numero: string;
+  aplicaciones: AplicacionCxC[];
+}
+
+export interface FiltroCxC {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  clienteId?: string | undefined;
+  tipoId?: string | undefined;
+}
