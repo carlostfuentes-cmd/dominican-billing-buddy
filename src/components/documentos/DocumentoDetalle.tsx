@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Printer } from "lucide-react";
 import { toast } from "sonner";
 
+import { CamposDocumento } from "@/components/CamposPersonalizados";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -265,8 +266,20 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
             )}
           </div>
 
+          <div className="mt-6 border-t pt-4">
+            <CamposDocumento
+              proceso={
+                tipo === "cotizacion"
+                  ? "COTIZACIONES"
+                  : tipo === "conduce"
+                    ? "CONDUCES"
+                    : "DEVOLUCIONES"
+              }
+              referencia={String(doc.id)}
+            />
+          </div>
           {doc.notas ? (
-            <p className="mt-6 border-t pt-4 text-xs text-muted-foreground">{doc.notas}</p>
+            <p className="mt-4 text-xs text-muted-foreground">{doc.notas}</p>
           ) : null}
           {f?.pie ? <p className="mt-2 text-center text-xs text-muted-foreground">{f.pie}</p> : null}
         </CardContent>

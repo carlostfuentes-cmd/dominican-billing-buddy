@@ -5,6 +5,9 @@ import { Download, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { CamposPersonalizados, type ValoresCampos } from "@/components/CamposPersonalizados";
+import { guardarValoresCampos } from "@/lib/campos.functions";
+import type { ProcesoCampo } from "@/lib/db/campos.server";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,11 +63,19 @@ const lineaVacia: LineaEntrada = {
 
 const lista = (v: OpcionId[] | undefined): OpcionId[] => v ?? [];
 
+const PROCESO: Record<TipoDocumento, ProcesoCampo> = {
+  cotizacion: "COTIZACIONES",
+  conduce: "CONDUCES",
+  devolucion: "DEVOLUCIONES",
+};
+
 export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
   const cfg = DOCUMENTOS[tipo];
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const proceso = PROCESO[tipo];
 
+  const [camposValores, setCamposValores] = useState<ValoresCampos>({});
   const [clienteId, setClienteId] = useState("");
   const [fecha, setFecha] = useState(hoyISO());
   const [fechaEntrega, setFechaEntrega] = useState(hoyISO());
@@ -184,10 +195,25 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
         },
       }),
-    onSuccess: (doc) => {
+    onSuccess: async (doc) => {
+      const valores = Object.entries(camposValores)
+        .map(([campo_id, valor]) => ({ campo_id: Number(campo_id), valor }))
+        .filter((v) => v.valor.trim() !== "");
+      if (valores.length) {
+        try {
+          await guardarValoresCampos({
+            data: { proceso, referencia: String(doc.id), valores },
+          });
+        } catch {
+          toast.error(
+            "El documento se guardó, pero no se pudieron guardar los campos personalizados",
+          );
+        }
+      }
       toast.success(`${cfg.singular} ${doc.id} guardada`);
       void qc.invalidateQueries({ queryKey: ["documentos"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
+      void qc.invalidateQueries({ queryKey: ["valores-campos"] });
       void navigate({ to: cfg.rutaDetalle, params: { id: String(doc.id) } });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),
@@ -240,9 +266,16 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
         titulo={cfg.nuevo}
         descripcion={cfg.descripcion}
         acciones={
-          <Button onClick={enviar} disabled={guardar.isPending}>
-            <Save className="size-4" /> Guardar {cfg.singular.toLowerCase()}
-          </Button>
+          <>
+            <CamposPersonalizados
+              proceso={proceso}
+              valores={camposValores}
+              onCambiar={setCamposValores}
+            />
+            <Button onClick={enviar} disabled={guardar.isPending}>
+              <Save className="size-4" /> Guardar {cfg.singular.toLowerCase()}
+            </Button>
+          </>
         }
       />
 

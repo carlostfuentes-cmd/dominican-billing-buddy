@@ -5,6 +5,11 @@ import { FileText, Plus, Printer, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import {
+  CamposPersonalizados,
+  type ValoresCampos,
+} from "@/components/CamposPersonalizados";
+import { guardarValoresCampos } from "@/lib/campos.functions";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -219,6 +224,7 @@ function NuevaFactura() {
   );
   const { totales } = useMemo(() => calcularTotales(lineasCalculo), [lineasCalculo]);
   const cobrado = efectivo + tarjeta + cheque + transferencia;
+  const [camposValores, setCamposValores] = useState<ValoresCampos>({});
 
   const guardar = useMutation({
     mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) =>
@@ -245,13 +251,26 @@ function NuevaFactura() {
           facturar: opciones.facturar,
         },
       }),
-    onSuccess: (doc, opciones) => {
+    onSuccess: async (doc, opciones) => {
+      const valores = Object.entries(camposValores)
+        .map(([campo_id, valor]) => ({ campo_id: Number(campo_id), valor }))
+        .filter((v) => v.valor.trim() !== "");
+      if (valores.length) {
+        try {
+          await guardarValoresCampos({
+            data: { proceso: "PEDIDOS", referencia: String(doc.id), valores },
+          });
+        } catch {
+          toast.error("El documento se guardó, pero no se pudieron guardar los campos personalizados");
+        }
+      }
       toast.success(
         opciones.facturar ? `Factura ${doc.ncf} guardada` : `Pedido ${doc.id} guardado`,
       );
       void qc.invalidateQueries({ queryKey: ["facturas"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
+      void qc.invalidateQueries({ queryKey: ["valores-campos"] });
       void navigate({
         to: "/facturas/$id",
         params: { id: String(doc.id) },
@@ -304,6 +323,13 @@ function NuevaFactura() {
       <PageHeader
         titulo="Nuevo pedido"
         descripcion="Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
+        acciones={
+          <CamposPersonalizados
+            proceso="PEDIDOS"
+            valores={camposValores}
+            onCambiar={setCamposValores}
+          />
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
