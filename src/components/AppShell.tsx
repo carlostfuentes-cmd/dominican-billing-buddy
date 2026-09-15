@@ -27,6 +27,7 @@ const NAV = [
   { to: "/cotizaciones", label: "Cotizaciones", icon: FileSpreadsheet, grupo: "operaciones" },
   { to: "/conduces", label: "Conduces", icon: Truck, grupo: "operaciones" },
   { to: "/devoluciones", label: "Devoluciones", icon: RotateCcw, grupo: "operaciones" },
+  { to: "/inventario", label: "Inventario", icon: Boxes, grupo: "operaciones" },
   { to: "/clientes", label: "Clientes", icon: Users, grupo: "maestros" },
   { to: "/items", label: "Ítems", icon: Package, grupo: "maestros" },
   { to: "/ncf", label: "Comprobantes fiscales", icon: Hash, grupo: "fiscal" },
