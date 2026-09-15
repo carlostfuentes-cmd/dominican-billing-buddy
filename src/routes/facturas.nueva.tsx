@@ -34,6 +34,8 @@ import {
   obtenerListasFactura,
   obtenerSecuencias,
 } from "@/lib/erp.functions";
+import { obtenerDocumento, obtenerDocumentos } from "@/lib/documentos.functions";
+
 import {
   calcularTotales,
   dop,
