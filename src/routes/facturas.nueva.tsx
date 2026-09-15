@@ -122,6 +122,29 @@ function NuevaFactura() {
     queryFn: () => obtenerListasFactura(),
   });
 
+  const opcionesClientes = useMemo(
+    () =>
+      clientes
+        .filter((c) => c.activo)
+        .map((c) => ({
+          valor: String(c.id),
+          etiqueta: `${c.id} — ${c.nombre}`,
+          detalle: c.rnc ?? "",
+        })),
+    [clientes],
+  );
+  const opcionesItems = useMemo(
+    () =>
+      items
+        .filter((it) => it.activo)
+        .map((it) => ({
+          valor: String(it.id),
+          etiqueta: `${it.codigo} — ${it.descripcion}`,
+          detalle: it.referencia ?? "",
+        })),
+    [items],
+  );
+
   const cliente = clientes.find((c) => String(c.id) === clienteId);
   const secuencia = secuencias.find((s) => s.tipo_ncf === tipo);
   const esDOP = moneda.toUpperCase() === "DOP";
