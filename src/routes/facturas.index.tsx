@@ -112,19 +112,21 @@ function Facturas() {
           </div>
           <div>
             <Label>Cliente</Label>
-            <Select value={cliente} onValueChange={setCliente}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TODOS}>Todos</SelectItem>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectorBuscable
+              opciones={[
+                { valor: TODOS, etiqueta: "Todos" },
+                ...clientes.map((c) => ({
+                  valor: String(c.id),
+                  etiqueta: `${c.id} — ${c.nombre}`,
+                  detalle: c.rnc ?? "",
+                })),
+              ]}
+              valor={cliente}
+              placeholder="Todos"
+              placeholderBusqueda="Escribe código, nombre o RNC…"
+              vacio="Sin clientes que coincidan"
+              onSeleccionar={setCliente}
+            />
           </div>
           <div>
             <Label>Tipo de NCF</Label>
