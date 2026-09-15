@@ -84,6 +84,7 @@ function Comprobantes() {
   const [sucursal, setSucursal] = useState("1");
   const [secuencia, setSecuencia] = useState(TODOS);
   const [editando, setEditando] = useState<RangoNCF | null>(null);
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
 
   const { data: listas } = useQuery({ queryKey: ["listas-ncf"], queryFn: () => obtenerListasNCF() });
   const { data: rangos = [], isLoading } = useQuery({
