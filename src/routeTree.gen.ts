@@ -22,6 +22,7 @@ import { Route as ConducesNuevaRouteImport } from './routes/conduces.nueva'
 import { Route as CotizacionesIndexRouteImport } from './routes/cotizaciones.index'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
+import { Route as DevolucionesIndexRouteImport } from './routes/devoluciones.index'
 import { Route as FacturasIndexRouteImport } from './routes/facturas.index'
 import { Route as FacturasIdRouteImport } from './routes/facturas.$id'
 import { Route as FacturasNuevaRouteImport } from './routes/facturas.nueva'
@@ -91,6 +92,11 @@ const CotizacionesNuevaRoute = CotizacionesNuevaRouteImport.update({
   path: '/cotizaciones/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevolucionesIndexRoute = DevolucionesIndexRouteImport.update({
+  id: '/devoluciones/',
+  path: '/devoluciones/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FacturasIndexRoute = FacturasIndexRouteImport.update({
   id: '/facturas/',
   path: '/facturas/',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
+  '/devoluciones/': typeof DevolucionesIndexRoute
   '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces': typeof ConducesIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
+  '/devoluciones': typeof DevolucionesIndexRoute
   '/facturas': typeof FacturasIndexRoute
 }
 export interface FileRoutesById {
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
+  '/devoluciones/': typeof DevolucionesIndexRoute
   '/facturas/': typeof FacturasIndexRoute
 }
 export interface FileRouteTypes {
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/conduces/'
     | '/cotizaciones/'
+    | '/devoluciones/'
     | '/facturas/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/conduces'
     | '/cotizaciones'
+    | '/devoluciones'
     | '/facturas'
   id:
     | '__root__'
@@ -216,6 +227,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/conduces/'
     | '/cotizaciones/'
+    | '/devoluciones/'
     | '/facturas/'
   fileRoutesById: FileRoutesById
 }
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   FacturasNuevaRoute: typeof FacturasNuevaRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
+  DevolucionesIndexRoute: typeof DevolucionesIndexRoute
   FacturasIndexRoute: typeof FacturasIndexRoute
 }
 
@@ -331,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CotizacionesNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devoluciones/': {
+      id: '/devoluciones/'
+      path: '/devoluciones'
+      fullPath: '/devoluciones/'
+      preLoaderRoute: typeof DevolucionesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/facturas/': {
       id: '/facturas/'
       path: '/facturas'
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   FacturasNuevaRoute: FacturasNuevaRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
+  DevolucionesIndexRoute: DevolucionesIndexRoute,
   FacturasIndexRoute: FacturasIndexRoute,
 }
 export const routeTree = rootRouteImport
