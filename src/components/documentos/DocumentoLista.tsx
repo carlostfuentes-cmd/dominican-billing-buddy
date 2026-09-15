@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -82,19 +83,21 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
           </div>
           <div>
             <Label>Cliente</Label>
-            <Select value={cliente} onValueChange={setCliente}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TODOS}>Todos</SelectItem>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectorBuscable
+              opciones={[
+                { valor: TODOS, etiqueta: "Todos" },
+                ...clientes.map((c) => ({
+                  valor: String(c.id),
+                  etiqueta: `${c.id} — ${c.nombre}`,
+                  detalle: c.rnc ?? "",
+                })),
+              ]}
+              valor={cliente}
+              placeholder="Todos"
+              placeholderBusqueda="Escribe código, nombre o RNC…"
+              vacio="Sin clientes que coincidan"
+              onSeleccionar={setCliente}
+            />
           </div>
         </CardContent>
       </Card>

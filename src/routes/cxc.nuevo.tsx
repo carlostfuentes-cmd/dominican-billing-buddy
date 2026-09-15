@@ -5,6 +5,7 @@ import { Printer, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,6 +107,15 @@ function NuevoMovimientoPage() {
   });
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
+  const opcionesClientes = useMemo(
+    () =>
+      clientes.map((c) => ({
+        valor: String(c.id),
+        etiqueta: `${c.id} — ${c.nombre}`,
+        detalle: c.rnc ?? "",
+      })),
+    [clientes],
+  );
   const tipo = (listas?.tipos ?? []).find((t) => t.id === tipoId);
 
   const fila = (ref: number): FilaAplicacion =>
@@ -234,18 +244,14 @@ function NuevoMovimientoPage() {
         <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Label>Cliente</Label>
-            <Select value={clienteId} onValueChange={setClienteId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona el cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.id} — {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectorBuscable
+              opciones={opcionesClientes}
+              valor={clienteId}
+              placeholder="Selecciona el cliente"
+              placeholderBusqueda="Escribe código, nombre o RNC…"
+              vacio="Sin clientes que coincidan"
+              onSeleccionar={setClienteId}
+            />
             {cliente?.rnc ? (
               <p className="mt-1 text-xs text-muted-foreground">RNC/Cédula: {cliente.rnc}</p>
             ) : null}

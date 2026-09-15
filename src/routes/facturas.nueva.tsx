@@ -5,6 +5,7 @@ import { FileText, Plus, Printer, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -122,6 +123,29 @@ function NuevaFactura() {
     queryFn: () => obtenerListasFactura(),
   });
 
+  const opcionesClientes = useMemo(
+    () =>
+      clientes
+        .filter((c) => c.activo)
+        .map((c) => ({
+          valor: String(c.id),
+          etiqueta: `${c.id} — ${c.nombre}`,
+          detalle: c.rnc ?? "",
+        })),
+    [clientes],
+  );
+  const opcionesItems = useMemo(
+    () =>
+      items
+        .filter((it) => it.activo)
+        .map((it) => ({
+          valor: String(it.id),
+          etiqueta: `${it.codigo} — ${it.descripcion}`,
+          detalle: it.referencia ?? "",
+        })),
+    [items],
+  );
+
   const cliente = clientes.find((c) => String(c.id) === clienteId);
   const secuencia = secuencias.find((s) => s.tipo_ncf === tipo);
   const esDOP = moneda.toUpperCase() === "DOP";
@@ -226,9 +250,13 @@ function NuevaFactura() {
           <CardContent className="grid gap-4">
             <div>
               <Label>Cliente</Label>
-              <Select
-                value={clienteId}
-                onValueChange={(v) => {
+              <SelectorBuscable
+                opciones={opcionesClientes}
+                valor={clienteId}
+                placeholder="Selecciona un cliente"
+                placeholderBusqueda="Escribe código, nombre o RNC…"
+                vacio="Sin clientes que coincidan"
+                onSeleccionar={(v) => {
                   setClienteId(v);
                   const c = clientes.find((x) => String(x.id) === v);
                   if (c) {
@@ -237,20 +265,7 @@ function NuevaFactura() {
                     if (c.vendedor_id) setVendedor(String(c.vendedor_id));
                   }
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes
-                    .filter((c) => c.activo)
-                    .map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.id} — {c.nombre}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="grid gap-1 text-sm">
               <p>
@@ -537,23 +552,14 @@ function NuevaFactura() {
                 return (
                   <TableRow key={i}>
                     <TableCell>
-                      <Select
-                        value={l.item_id ? String(l.item_id) : ""}
-                        onValueChange={(v) => seleccionarItem(i, v)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {items
-                            .filter((it) => it.activo)
-                            .map((it) => (
-                              <SelectItem key={it.id} value={String(it.id)}>
-                                {it.codigo} — {it.descripcion}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
+                      <SelectorBuscable
+                        opciones={opcionesItems}
+                        valor={l.item_id ? String(l.item_id) : ""}
+                        placeholder="Buscar producto"
+                        placeholderBusqueda="Escribe código o nombre…"
+                        vacio="Sin productos que coincidan"
+                        onSeleccionar={(v) => seleccionarItem(i, v)}
+                      />
                     </TableCell>
                     <TableCell>
                       <Input
