@@ -223,7 +223,6 @@ function Comprobantes() {
                   <TableHead className="text-center">Activo?</TableHead>
                   <TableHead>Autorización No.</TableHead>
                   <TableHead>F/Vigencia</TableHead>
-                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -264,31 +263,6 @@ function Comprobantes() {
                         ) : (
                           "—"
                         )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setEditando(r)}>
-                          Cambiar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={r.activa || activar.isPending}
-                          onClick={() => activar.mutate(r.id)}
-                        >
-                          Activar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          disabled={eliminar.isPending}
-                          onClick={() => {
-                            if (confirm(`¿Eliminar el rango ${r.prefijo} ${r.desde}-${r.hasta}?`))
-                              eliminar.mutate(r.id);
-                          }}
-                        >
-                          Eliminar
-                        </Button>
                       </TableCell>
                     </TableRow>
                   );
