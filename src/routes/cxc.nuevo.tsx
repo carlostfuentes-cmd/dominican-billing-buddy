@@ -106,6 +106,15 @@ function NuevoMovimientoPage() {
   });
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
+  const opcionesClientes = useMemo(
+    () =>
+      clientes.map((c) => ({
+        valor: String(c.id),
+        etiqueta: `${c.id} — ${c.nombre}`,
+        detalle: c.rnc ?? "",
+      })),
+    [clientes],
+  );
   const tipo = (listas?.tipos ?? []).find((t) => t.id === tipoId);
 
   const fila = (ref: number): FilaAplicacion =>
