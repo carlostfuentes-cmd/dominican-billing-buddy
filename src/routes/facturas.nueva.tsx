@@ -45,7 +45,9 @@ import {
   money,
   sumarDias,
   TIPOS_NCF,
+  type Documento,
   type LineaEntrada,
+
   type TipoNCF,
 } from "@/lib/erp-types";
 
