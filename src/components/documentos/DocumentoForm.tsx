@@ -103,6 +103,28 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
   });
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
+  const opcionesClientes = useMemo(
+    () =>
+      clientes
+        .filter((c) => c.activo)
+        .map((c) => ({
+          valor: String(c.id),
+          etiqueta: `${c.id} — ${c.nombre}`,
+          detalle: c.rnc ?? "",
+        })),
+    [clientes],
+  );
+  const opcionesItems = useMemo(
+    () =>
+      items
+        .filter((it) => it.activo)
+        .map((it) => ({
+          valor: String(it.id),
+          etiqueta: `${it.codigo} — ${it.descripcion}`,
+          detalle: it.referencia ?? "",
+        })),
+    [items],
+  );
   const esDOP = moneda.toUpperCase() === "DOP";
   const lineasCalculo = useMemo(
     () => lineas.map((l) => ({ ...l, precio_incluye_itbis: incluyeItbis })),
