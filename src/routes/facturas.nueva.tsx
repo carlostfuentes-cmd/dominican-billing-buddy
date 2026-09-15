@@ -145,9 +145,10 @@ function NuevaFactura() {
   );
 
   const traerCotizacion = useMutation({
-    mutationFn: (id: number) =>
+    mutationFn: (id: number): Promise<Documento | null> =>
       obtenerDocumento({ data: { tipo: "cotizacion" as const, id } }),
-    onSuccess: (doc) => {
+    onSuccess: (doc: Documento | null) => {
+
       if (!doc) {
         toast.error("No se encontró la cotización");
         return;
