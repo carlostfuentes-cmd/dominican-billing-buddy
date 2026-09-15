@@ -12,6 +12,9 @@ import type {
   ListasCliente,
   ListasFactura,
   ListasItem,
+  ListasNCF,
+  RangoNCF,
+
 
   OpcionId,
   SecuenciaNCF,
@@ -205,6 +208,48 @@ export const obtenerSecuencias = createServerFn({ method: "GET" }).handler(
 export const guardarSecuencia = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => secuenciaSchema.parse(d))
   .handler(async ({ data }): Promise<SecuenciaNCF> => (await repo()).guardarSecuencia(data));
+
+/* ------------------- Comprobantes fiscales (rangos) ---------------------- */
+
+const rangoSchema = z.object({
+  id: z.number().int().min(0),
+  prefijo: texto(11).min(1, "Prefijo requerido"),
+  ncf_id: z.number().int().min(0).max(99),
+  sucursal_id: z.number().int().min(1),
+  desde: z.number().int().min(0),
+  hasta: z.number().int().min(0),
+  ultimo: z.number().int().min(0),
+  alerta: z.number().int().min(0).max(99_999),
+  activa: z.boolean(),
+  autorizacion: texto(15),
+  vence: fecha.or(z.literal("")),
+});
+
+export const obtenerRangosNCF = createServerFn({ method: "GET" }).handler(
+  async (): Promise<RangoNCF[]> => (await repo()).listarRangosNCF(),
+);
+
+export const obtenerListasNCF = createServerFn({ method: "GET" }).handler(
+  async (): Promise<ListasNCF> => (await repo()).listasNCF(),
+);
+
+export const guardarRangoNCF = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => rangoSchema.parse(d))
+  .handler(async ({ data }): Promise<RangoNCF> => (await repo()).guardarRangoNCF(data));
+
+export const eliminarRangoNCF = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    await (await repo()).eliminarRangoNCF(data.id);
+    return { ok: true };
+  });
+
+export const activarRangoNCF = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    await (await repo()).activarRangoNCF(data.id);
+    return { ok: true };
+  });
 
 /* -------------------------------- Facturas ------------------------------- */
 
