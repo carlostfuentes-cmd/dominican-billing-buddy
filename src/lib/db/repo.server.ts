@@ -921,8 +921,8 @@ export async function guardarSecuencia(s: SecuenciaNCF): Promise<SecuenciaNCF> {
     await ejecutar("UPDATE ncf_sequences SET status = 0 WHERE prefix = ?", [s.tipo_ncf]);
     await ejecutar(
       `INSERT INTO ncf_sequences
-         (start, end, last, alert, status, ncf_id, branch_id, sb_id, caja_id, prefix, autorizacion, vencimiento)
-       VALUES (?, ?, ?, 5, ?, ?, 1, 1, 1, ?, '', ?)`,
+         (start, end, last, alert, status, ncf_id, branch_id, prefix, autorizacion, vencimiento)
+       VALUES (?, ?, ?, 5, ?, ?, 1, ?, '', ?)`,
       [
         s.desde,
         s.hasta,
