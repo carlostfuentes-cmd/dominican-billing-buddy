@@ -703,13 +703,13 @@ export async function listasItem(): Promise<import("@/lib/erp-types").ListasItem
     unidades,
     monedas,
   ] = await Promise.all([
-    cargar(`SELECT supplier_id AS id, name AS nombre FROM suppliers ORDER BY name LIMIT 500`),
+    cargar(`SELECT supplier_id AS id, name AS nombre FROM suppliers ORDER BY name LIMIT 3000`),
     cargar(
       `SELECT inventory_group_id AS id, name AS nombre FROM inventory_groups ORDER BY name LIMIT 300`,
     ),
     cargar(`SELECT product_kind_id AS id, name AS nombre FROM products_kinds ORDER BY name`),
     cargar(`SELECT product_family_id AS id, name AS nombre FROM products_family ORDER BY name`),
-    cargar(`SELECT brand_id AS id, name AS nombre FROM brands ORDER BY name LIMIT 500`),
+    cargar(`SELECT brand_id AS id, name AS nombre FROM brands ORDER BY name LIMIT 2000`),
     cargar(`SELECT color_id AS id, name AS nombre FROM colors ORDER BY name LIMIT 300`),
     cargar(`SELECT source_id AS id, name AS nombre FROM sources ORDER BY name`),
     cargar(`SELECT packaging_id AS id, name AS nombre FROM packaging ORDER BY name`),
