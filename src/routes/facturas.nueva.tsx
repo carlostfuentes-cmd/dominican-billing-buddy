@@ -226,9 +226,13 @@ function NuevaFactura() {
           <CardContent className="grid gap-4">
             <div>
               <Label>Cliente</Label>
-              <Select
-                value={clienteId}
-                onValueChange={(v) => {
+              <SelectorBuscable
+                opciones={opcionesClientes}
+                valor={clienteId}
+                placeholder="Selecciona un cliente"
+                placeholderBusqueda="Escribe código, nombre o RNC…"
+                vacio="Sin clientes que coincidan"
+                onSeleccionar={(v) => {
                   setClienteId(v);
                   const c = clientes.find((x) => String(x.id) === v);
                   if (c) {
@@ -237,20 +241,7 @@ function NuevaFactura() {
                     if (c.vendedor_id) setVendedor(String(c.vendedor_id));
                   }
                 }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona un cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes
-                    .filter((c) => c.activo)
-                    .map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.id} — {c.nombre}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="grid gap-1 text-sm">
               <p>
