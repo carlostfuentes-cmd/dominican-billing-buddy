@@ -31,6 +31,7 @@ import { Route as FacturasIndexRouteImport } from './routes/facturas.index'
 import { Route as FacturasIdRouteImport } from './routes/facturas.$id'
 import { Route as FacturasNuevaRouteImport } from './routes/facturas.nueva'
 import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
+import { Route as InventarioNuevoRouteImport } from './routes/inventario.nuevo'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -142,6 +143,11 @@ const InventarioIndexRoute = InventarioIndexRouteImport.update({
   path: '/inventario/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InventarioNuevoRoute = InventarioNuevoRouteImport.update({
+  id: '/inventario/nuevo',
+  path: '/inventario/nuevo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
+  '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
+  '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces': typeof ConducesIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
   '/cxc': typeof CxcIndexRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
+  '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
     | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
+    | '/inventario/nuevo'
     | '/conduces/'
     | '/cotizaciones/'
     | '/cxc/'
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
+    | '/inventario/nuevo'
     | '/conduces'
     | '/cotizaciones'
     | '/cxc'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
+    | '/inventario/nuevo'
     | '/conduces/'
     | '/cotizaciones/'
     | '/cxc/'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   DevolucionesNuevaRoute: typeof DevolucionesNuevaRoute
   FacturasIdRoute: typeof FacturasIdRoute
   FacturasNuevaRoute: typeof FacturasNuevaRoute
+  InventarioNuevoRoute: typeof InventarioNuevoRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
   CxcIndexRoute: typeof CxcIndexRoute
@@ -472,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InventarioIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inventario/nuevo': {
+      id: '/inventario/nuevo'
+      path: '/inventario/nuevo'
+      fullPath: '/inventario/nuevo'
+      preLoaderRoute: typeof InventarioNuevoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevolucionesNuevaRoute: DevolucionesNuevaRoute,
   FacturasIdRoute: FacturasIdRoute,
   FacturasNuevaRoute: FacturasNuevaRoute,
+  InventarioNuevoRoute: InventarioNuevoRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
   CxcIndexRoute: CxcIndexRoute,
