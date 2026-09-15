@@ -61,6 +61,8 @@ export const Route = createFileRoute("/facturas/nueva")({
         property: "og:description",
         content: "Pedido con conversión a factura, NCF, ITBIS y multimoneda.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: NuevaFactura,

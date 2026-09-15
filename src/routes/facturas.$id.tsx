@@ -43,6 +43,8 @@ export const Route = createFileRoute("/facturas/$id")({
       },
       { property: "og:title", content: "Detalle de factura — ERP Contable RD" },
       { property: "og:description", content: "Factura imprimible con NCF y desglose de ITBIS." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

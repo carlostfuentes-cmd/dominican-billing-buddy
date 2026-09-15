@@ -50,6 +50,8 @@ export const Route = createFileRoute("/facturas/")({
         property: "og:description",
         content: "Listado y filtros de pedidos y facturas con NCF e ITBIS.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Facturas,

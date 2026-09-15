@@ -56,6 +56,8 @@ export const Route = createFileRoute("/ncf")({
         property: "og:description",
         content: "Control de rangos autorizados de NCF, su disponibilidad y vigencia.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Comprobantes,

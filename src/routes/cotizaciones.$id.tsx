@@ -12,6 +12,8 @@ export const Route = createFileRoute("/cotizaciones/$id")({
       },
       { property: "og:title", content: "Detalle de cotización — ERP Contable RD" },
       { property: "og:description", content: "Cotización imprimible con desglose de ITBIS." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

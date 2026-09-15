@@ -30,6 +30,8 @@ export const Route = createFileRoute("/reportes")({
       },
       { property: "og:title", content: "Reportes de ventas e ITBIS — ERP Contable RD" },
       { property: "og:description", content: "Ventas por período, ITBIS por tasa y export CSV." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Reportes,
