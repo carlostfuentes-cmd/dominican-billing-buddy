@@ -23,6 +23,7 @@ import { Route as CotizacionesIndexRouteImport } from './routes/cotizaciones.ind
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
 import { Route as DevolucionesIndexRouteImport } from './routes/devoluciones.index'
+import { Route as DevolucionesNuevaRouteImport } from './routes/devoluciones.nueva'
 import { Route as FacturasIndexRouteImport } from './routes/facturas.index'
 import { Route as FacturasIdRouteImport } from './routes/facturas.$id'
 import { Route as FacturasNuevaRouteImport } from './routes/facturas.nueva'
@@ -97,6 +98,11 @@ const DevolucionesIndexRoute = DevolucionesIndexRouteImport.update({
   path: '/devoluciones/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevolucionesNuevaRoute = DevolucionesNuevaRouteImport.update({
+  id: '/devoluciones/nueva',
+  path: '/devoluciones/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FacturasIndexRoute = FacturasIndexRouteImport.update({
   id: '/facturas/',
   path: '/facturas/',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
+  '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
+  '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces': typeof ConducesIndexRoute
@@ -164,6 +172,7 @@ export interface FileRoutesById {
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
+  '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
     | '/conduces/nueva'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
+    | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/conduces/'
@@ -204,6 +214,7 @@ export interface FileRouteTypes {
     | '/conduces/nueva'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
+    | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/conduces'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/conduces/nueva'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
+    | '/devoluciones/nueva'
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/conduces/'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   ConducesNuevaRoute: typeof ConducesNuevaRoute
   CotizacionesIdRoute: typeof CotizacionesIdRoute
   CotizacionesNuevaRoute: typeof CotizacionesNuevaRoute
+  DevolucionesNuevaRoute: typeof DevolucionesNuevaRoute
   FacturasIdRoute: typeof FacturasIdRoute
   FacturasNuevaRoute: typeof FacturasNuevaRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
@@ -351,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevolucionesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/devoluciones/nueva': {
+      id: '/devoluciones/nueva'
+      path: '/devoluciones/nueva'
+      fullPath: '/devoluciones/nueva'
+      preLoaderRoute: typeof DevolucionesNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/facturas/': {
       id: '/facturas/'
       path: '/facturas'
@@ -387,6 +407,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConducesNuevaRoute: ConducesNuevaRoute,
   CotizacionesIdRoute: CotizacionesIdRoute,
   CotizacionesNuevaRoute: CotizacionesNuevaRoute,
+  DevolucionesNuevaRoute: DevolucionesNuevaRoute,
   FacturasIdRoute: FacturasIdRoute,
   FacturasNuevaRoute: FacturasNuevaRoute,
   ConducesIndexRoute: ConducesIndexRoute,
