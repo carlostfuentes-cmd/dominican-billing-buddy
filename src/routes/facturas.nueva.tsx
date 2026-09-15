@@ -423,14 +423,38 @@ function NuevaFactura() {
           </CardHeader>
           <CardContent className="grid gap-3">
             <div>
-              <Label htmlFor="cot">Cotización</Label>
-              <Input
-                id="cot"
-                value={cotizacion}
-                maxLength={10}
-                onChange={(e) => setCotizacion(e.target.value.replace(/\D/g, ""))}
+              <Label>Cotización</Label>
+              <SelectorBuscable
+                opciones={opcionesCotizaciones}
+                valor={cotizacion}
+                placeholder="Buscar cotización por número o cliente"
+                placeholderBusqueda="Escribe número de cotización o cliente…"
+                vacio="Sin cotizaciones que coincidan"
+                onSeleccionar={(v) => {
+                  setCotizacion(v);
+                  traerCotizacion.mutate(Number(v));
+                }}
               />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {traerCotizacion.isPending
+                  ? "Trayendo datos de la cotización…"
+                  : cotizacion
+                    ? `Cotización ${cotizacion} vinculada al pedido`
+                    : "Al elegir una cotización se copian su cliente, moneda y líneas."}
+              </p>
+              {cotizacion ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 px-0"
+                  onClick={() => setCotizacion("")}
+                >
+                  Quitar cotización
+                </Button>
+              ) : null}
             </div>
+
             <div>
               <Label htmlFor="oc">Orden cliente</Label>
               <Input
