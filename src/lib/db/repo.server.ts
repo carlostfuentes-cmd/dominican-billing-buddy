@@ -965,7 +965,10 @@ function mapearRango(f: FilaRango): RangoNCF {
     alerta: Number(f.alert ?? 0),
     activa: Number(f.status) === 1,
     autorizacion: String(f.autorizacion ?? ""),
-    vence: f.vencimiento ? String(f.vencimiento).slice(0, 10) : "",
+    vence:
+      f.vencimiento && !String(f.vencimiento).startsWith("0000")
+        ? String(f.vencimiento).slice(0, 10)
+        : "",
   };
 }
 
