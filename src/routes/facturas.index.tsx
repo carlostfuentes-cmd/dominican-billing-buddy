@@ -101,8 +101,8 @@ function Facturas() {
         }
       />
 
-      <Card className="mb-4">
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-5">
+      <Card className="mb-4 border-border/80 bg-muted/25">
+        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
           <div>
             <Label htmlFor="desde">Desde</Label>
             <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
@@ -163,9 +163,9 @@ function Facturas() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="pt-6">
-          <Table>
+      <Card className="overflow-hidden">
+        <CardContent className="px-0 pb-0 pt-0">
+          <Table className="min-w-[1040px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Pedido</TableHead>
@@ -184,7 +184,7 @@ function Facturas() {
               {facturas.map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-mono text-xs">
-                    <Link to="/facturas/$id" params={{ id: String(f.id) }} className="underline">
+                     <Link to="/facturas/$id" params={{ id: String(f.id) }} className="font-semibold text-primary hover:underline">
                       {f.id}
                     </Link>
                   </TableCell>
@@ -222,7 +222,7 @@ function Facturas() {
               )}
             </TableBody>
           </Table>
-          <p className="mt-4 text-right text-sm text-muted-foreground">
+          <p className="border-t bg-muted/35 px-5 py-4 text-right text-sm text-muted-foreground">
             Total del período (sin anuladas):{" "}
             <span className="tabular font-semibold text-foreground">{dop(totalPeriodo)}</span>
           </p>

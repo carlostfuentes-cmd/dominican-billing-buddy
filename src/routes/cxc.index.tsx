@@ -112,9 +112,9 @@ function CxCPage() {
         </TabsList>
 
         <TabsContent value="pendientes">
-          <Card>
-            <CardContent className="pt-6">
-              <p className="mb-3 text-sm text-muted-foreground">
+          <Card className="overflow-hidden">
+            <CardContent className="px-0 pb-0 pt-0">
+              <p className="border-b bg-muted/30 px-5 py-4 text-sm text-muted-foreground">
                 {balances.length} clientes con balance pendiente · Total equivalente{" "}
                 <span className="font-medium text-foreground">{dop(totalPendiente)}</span>
               </p>
@@ -169,8 +169,8 @@ function CxCPage() {
         </TabsContent>
 
         <TabsContent value="movimientos">
-          <Card className="mb-4">
-            <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-4">
+           <Card className="mb-4 border-border/80 bg-muted/25">
+             <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <Label htmlFor="desde">Desde</Label>
                 <Input
@@ -226,8 +226,8 @@ function CxCPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
+           <Card className="overflow-hidden">
+             <CardContent className="px-0 pb-0 pt-0">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
