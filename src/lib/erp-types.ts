@@ -493,3 +493,126 @@ export const FORMATO_IMPRESION_DEFECTO: FormatoImpresion = {
 export function papelCss(papel: PapelImpresion): string {
   return PAPELES.find((p) => p.id === papel)?.css ?? "215.9mm 279.4mm";
 }
+
+/* -------- Otros documentos: cotizaciones, conduces y devoluciones -------- */
+
+export type TipoDocumento = "cotizacion" | "conduce" | "devolucion";
+
+export interface DocConfig {
+  tipo: TipoDocumento;
+  singular: string;
+  plural: string;
+  nuevo: string;
+  ruta: "/cotizaciones" | "/conduces" | "/devoluciones";
+  rutaNueva: "/cotizaciones/nueva" | "/conduces/nueva" | "/devoluciones/nueva";
+  rutaDetalle: "/cotizaciones/$id" | "/conduces/$id" | "/devoluciones/$id";
+  titulo: string;
+  descripcion: string;
+}
+
+export const DOCUMENTOS: Record<TipoDocumento, DocConfig> = {
+  cotizacion: {
+    tipo: "cotizacion",
+    singular: "Cotización",
+    plural: "Cotizaciones",
+    nuevo: "Nueva cotización",
+    ruta: "/cotizaciones",
+    rutaNueva: "/cotizaciones/nueva",
+    rutaDetalle: "/cotizaciones/$id",
+    titulo: "Cotización",
+    descripcion: "Ofertas de precio al cliente, sin efecto fiscal ni de inventario.",
+  },
+  conduce: {
+    tipo: "conduce",
+    singular: "Conduce",
+    plural: "Conduces",
+    nuevo: "Nuevo conduce",
+    ruta: "/conduces",
+    rutaNueva: "/conduces/nueva",
+    rutaDetalle: "/conduces/$id",
+    titulo: "Conduce / orden de entrega",
+    descripcion: "Entrega de mercancía al cliente, con referencia al pedido o cotización.",
+  },
+  devolucion: {
+    tipo: "devolucion",
+    singular: "Devolución",
+    plural: "Devoluciones",
+    nuevo: "Nueva devolución",
+    ruta: "/devoluciones",
+    rutaNueva: "/devoluciones/nueva",
+    rutaDetalle: "/devoluciones/$id",
+    titulo: "Nota de crédito por devolución",
+    descripcion: "Devoluciones de clientes con nota de crédito (NCF B04) y motivo.",
+  },
+};
+
+export interface Documento {
+  tipo: TipoDocumento;
+  id: number;
+  sucursal_id: number;
+  fecha: string;
+  fecha_entrega?: string | undefined;
+  cliente_id: string;
+  cliente_nombre: string;
+  cliente_rnc: string;
+  cliente_direccion?: string | undefined;
+  cliente_telefono?: string | undefined;
+  moneda: string;
+  tasa_cambio: number;
+  dias_credito: number;
+  notas: string;
+  contacto?: string | undefined;
+  vendedor_id?: string | undefined;
+  vendedor?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  almacen?: string | undefined;
+  proyecto_id?: string | undefined;
+  departamento_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  /** Referencias: pedido, cotización o factura de origen. */
+  pedido_id?: number | undefined;
+  cotizacion_id?: number | undefined;
+  factura_id?: number | undefined;
+  /** Devoluciones: NCF de la nota de crédito y motivo. */
+  ncf?: string | undefined;
+  motivo_id?: number | undefined;
+  motivo?: string | undefined;
+  anulado: boolean;
+  aplicada?: boolean | undefined;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  lineas: LineaFactura[];
+}
+
+export interface NuevoDocumento {
+  tipo: TipoDocumento;
+  cliente_id: string;
+  fecha: string;
+  fecha_entrega?: string | undefined;
+  dias_credito: number;
+  notas: string;
+  contacto?: string | undefined;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
+  vendedor_id?: string | undefined;
+  tecnico_id?: string | undefined;
+  almacen_id?: string | undefined;
+  sucursal_id?: string | undefined;
+  departamento_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  orden_cliente?: string | undefined;
+  pedido_id?: number | undefined;
+  cotizacion_id?: number | undefined;
+  factura_id?: number | undefined;
+  motivo_id?: number | undefined;
+  lineas: LineaEntrada[];
+}
+
+export interface FiltroDocumentos {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  clienteId?: string | undefined;
+}
