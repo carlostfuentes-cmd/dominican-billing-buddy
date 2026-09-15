@@ -234,18 +234,14 @@ function NuevoMovimientoPage() {
         <CardContent className="grid gap-3 pt-6 md:grid-cols-2 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Label>Cliente</Label>
-            <Select value={clienteId} onValueChange={setClienteId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona el cliente" />
-              </SelectTrigger>
-              <SelectContent>
-                {clientes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.id} — {c.nombre}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectorBuscable
+              opciones={opcionesClientes}
+              valor={clienteId}
+              placeholder="Selecciona el cliente"
+              placeholderBusqueda="Escribe código, nombre o RNC…"
+              vacio="Sin clientes que coincidan"
+              onSeleccionar={setClienteId}
+            />
             {cliente?.rnc ? (
               <p className="mt-1 text-xs text-muted-foreground">RNC/Cédula: {cliente.rnc}</p>
             ) : null}
