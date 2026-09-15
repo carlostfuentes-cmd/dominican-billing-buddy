@@ -703,3 +703,83 @@ export interface FiltroCxC {
   clienteId?: string | undefined;
   tipoId?: string | undefined;
 }
+
+/* ------------------------------- Inventario ------------------------------ */
+
+/** Tipo de transacción de inventario (tabla inventory_operations). */
+export interface OperacionInventario {
+  id: number;
+  nombre: string;
+  /** "E" entrada al almacén, "S" salida. */
+  tipo: "E" | "S";
+  app: string;
+  /** "ENTRADA"/"SALIDA" en la transferencia entre almacenes. */
+  adicional: string;
+}
+
+export interface ListasInventario {
+  operaciones: OperacionInventario[];
+  almacenes: OpcionId[];
+  departamentos: OpcionId[];
+}
+
+export interface MovimientoInventario {
+  id: number;
+  fecha: string;
+  producto_id: string;
+  producto: string;
+  operacion_id: number;
+  operacion: string;
+  tipo: "E" | "S";
+  almacen_id: string;
+  almacen: string;
+  /** Positiva en entradas, negativa en salidas. */
+  cantidad: number;
+  costo_unitario: number;
+  costo_total: number;
+  documento: string;
+  referencia: string;
+  serial: string;
+  ubicacion: string;
+  departamento_id: string;
+  notas: string;
+  anulado: boolean;
+}
+
+export interface ExistenciaInventario {
+  producto_id: string;
+  producto: string;
+  unidad: string;
+  almacen_id: string;
+  almacen: string;
+  existencia: number;
+  costo: number;
+  valor: number;
+}
+
+export interface NuevoMovimientoInventario {
+  producto_id: string;
+  operacion_id: number;
+  fecha: string;
+  /** Almacén de origen (o el único almacén afectado). */
+  almacen_id: string;
+  /** Solo en transferencia entre almacenes. */
+  almacen_destino_id?: string | undefined;
+  ubicacion?: string | undefined;
+  documento?: string | undefined;
+  referencia?: string | undefined;
+  departamento_id?: string | undefined;
+  cantidad: number;
+  costo_total: number;
+  costo_unitario: number;
+  seriales?: string[] | undefined;
+  notas?: string | undefined;
+}
+
+export interface FiltroInventario {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  productoId?: string | undefined;
+  almacenId?: string | undefined;
+  operacionId?: number | undefined;
+}
