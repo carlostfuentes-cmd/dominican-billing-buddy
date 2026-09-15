@@ -942,6 +942,160 @@ export async function guardarSecuencia(s: SecuenciaNCF): Promise<SecuenciaNCF> {
   return s;
 }
 
+/* -------------------- Comprobantes fiscales (rangos) --------------------- */
+
+interface FilaRango extends FilaSecuencia {
+  alert: number;
+  ncf_id: number;
+  branch_id: number;
+  autorizacion: string | null;
+}
+
+function mapearRango(f: FilaRango): RangoNCF {
+  return {
+    id: Number(f.ID),
+    prefijo: String(f.prefix ?? ""),
+    ncf_id: Number(f.ncf_id ?? 0),
+    sucursal_id: Number(f.branch_id ?? 1),
+    desde: Number(f.start ?? 0),
+    hasta: Number(f.end ?? 0),
+    ultimo: Number(f.last ?? 0),
+    alerta: Number(f.alert ?? 0),
+    activa: Number(f.status) === 1,
+    autorizacion: String(f.autorizacion ?? ""),
+    vence: f.vencimiento ? String(f.vencimiento).slice(0, 10) : "",
+  };
+}
+
+let rangosDemo: RangoNCF[] | null = null;
+function demoRangos(): RangoNCF[] {
+  if (!rangosDemo) {
+    rangosDemo = demo().secuencias.map((s, i) => ({
+      id: i + 1,
+      prefijo: s.tipo_ncf,
+      ncf_id: NCF_ID_POR_TIPO[s.tipo_ncf],
+      sucursal_id: 1,
+      desde: s.desde,
+      hasta: s.hasta,
+      ultimo: s.proximo - 1,
+      alerta: 10,
+      activa: s.activa,
+      autorizacion: "",
+      vence: s.vence,
+    }));
+  }
+  return rangosDemo;
+}
+
+export async function listarRangosNCF(): Promise<RangoNCF[]> {
+  if (await usarMysql()) {
+    const filas = await sql<FilaRango>(
+      `SELECT ID, prefix, start, end, last, alert, status, ncf_id, branch_id, autorizacion,
+              DATE_FORMAT(vencimiento, '%Y-%m-%d') AS vencimiento
+       FROM ncf_sequences ORDER BY prefix, start, ID`,
+    );
+    return filas.map(mapearRango);
+  }
+  return demoRangos();
+}
+
+export async function listasNCF(): Promise<ListasNCF> {
+  if (await usarMysql()) {
+    const [sucursales, tipos] = await Promise.all([
+      sql<{ id: number; nombre: string }>(
+        "SELECT branch_id AS id, name AS nombre FROM branchs ORDER BY name",
+      ).catch(() => []),
+      sql<{ id: number; nombre: string }>(
+        "SELECT ncf_id AS id, name AS nombre FROM ncf_kinds ORDER BY ncf_id",
+      ).catch(() => []),
+    ]);
+    return {
+      sucursales: sucursales.map((s) => ({ id: String(s.id), nombre: String(s.nombre ?? s.id) })),
+      tipos: tipos.map((t) => ({ id: String(t.id), nombre: `${t.id} - ${t.nombre}` })),
+    };
+  }
+  return {
+    sucursales: [{ id: "1", nombre: "PRINCIPAL" }],
+    tipos: Object.entries(NCF_ID_POR_TIPO).map(([tipo, id]) => ({
+      id: String(id),
+      nombre: `${id} - ${tipo}`,
+    })),
+  };
+}
+
+export async function guardarRangoNCF(r: RangoNCF): Promise<RangoNCF> {
+  if (await usarMysql()) {
+    if (r.id > 0) {
+      await ejecutar(
+        `UPDATE ncf_sequences
+            SET prefix = ?, ncf_id = ?, branch_id = ?, start = ?, end = ?, last = ?,
+                alert = ?, status = ?, autorizacion = ?, vencimiento = ?
+          WHERE ID = ?`,
+        [
+          r.prefijo, r.ncf_id, r.sucursal_id, r.desde, r.hasta, r.ultimo,
+          r.alerta, r.activa ? 1 : 0, r.autorizacion, r.vence || null, r.id,
+        ],
+      );
+      return r;
+    }
+    const res = await ejecutar(
+      `INSERT INTO ncf_sequences
+         (start, end, last, alert, status, ncf_id, branch_id, prefix, autorizacion, vencimiento)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        r.desde, r.hasta, r.ultimo, r.alerta, r.activa ? 1 : 0, r.ncf_id,
+        r.sucursal_id, r.prefijo, r.autorizacion, r.vence || null,
+      ],
+    );
+    const id = Number((res as { insertId?: number }).insertId ?? 0);
+    return { ...r, id };
+  }
+  const lista = demoRangos();
+  if (r.id > 0) {
+    const i = lista.findIndex((x) => x.id === r.id);
+    if (i !== -1) lista[i] = r;
+    return r;
+  }
+  const nuevo = { ...r, id: Math.max(0, ...lista.map((x) => x.id)) + 1 };
+  lista.push(nuevo);
+  return nuevo;
+}
+
+export async function eliminarRangoNCF(id: number): Promise<void> {
+  if (await usarMysql()) {
+    await ejecutar("DELETE FROM ncf_sequences WHERE ID = ?", [id]);
+    return;
+  }
+  const lista = demoRangos();
+  const i = lista.findIndex((x) => x.id === id);
+  if (i !== -1) lista.splice(i, 1);
+}
+
+/** Activa un rango y desactiva los demás del mismo prefijo y sucursal. */
+export async function activarRangoNCF(id: number): Promise<void> {
+  if (await usarMysql()) {
+    const filas = await sql<{ prefix: string; branch_id: number }>(
+      "SELECT prefix, branch_id FROM ncf_sequences WHERE ID = ?",
+      [id],
+    );
+    const f = filas[0];
+    if (!f) throw new Error("Rango no encontrado");
+    await ejecutar("UPDATE ncf_sequences SET status = 0 WHERE prefix = ? AND branch_id = ?", [
+      f.prefix,
+      f.branch_id,
+    ]);
+    await ejecutar("UPDATE ncf_sequences SET status = 1 WHERE ID = ?", [id]);
+    return;
+  }
+  const lista = demoRangos();
+  const actual = lista.find((x) => x.id === id);
+  if (!actual) throw new Error("Rango no encontrado");
+  for (const r of lista) {
+    if (r.prefijo === actual.prefijo && r.sucursal_id === actual.sucursal_id) r.activa = false;
+  }
+  actual.activa = true;
+}
+
 /* ------------------------------- Facturas ------------------------------- */
 
 function normalizarFactura(f: Factura): Factura {
