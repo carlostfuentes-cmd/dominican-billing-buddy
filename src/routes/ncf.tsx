@@ -84,6 +84,7 @@ function Comprobantes() {
   const [sucursal, setSucursal] = useState("1");
   const [secuencia, setSecuencia] = useState(TODOS);
   const [editando, setEditando] = useState<RangoNCF | null>(null);
+  const [seleccionado, setSeleccionado] = useState<number | null>(null);
 
   const { data: listas } = useQuery({ queryKey: ["listas-ncf"], queryFn: () => obtenerListasNCF() });
   const { data: rangos = [], isLoading } = useQuery({
@@ -222,7 +223,6 @@ function Comprobantes() {
                   <TableHead className="text-center">Activo?</TableHead>
                   <TableHead>Autorización No.</TableHead>
                   <TableHead>F/Vigencia</TableHead>
-                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,7 +230,11 @@ function Comprobantes() {
                   const disponible = Math.max(0, r.hasta - r.ultimo);
                   const vencida = r.vence !== "" && r.vence < hoyISO();
                   return (
-                    <TableRow key={r.id} className={r.activa ? "bg-primary/5" : undefined}>
+                    <TableRow
+                      key={r.id}
+                      onClick={() => setSeleccionado(r.id)}
+                      className={`cursor-pointer ${seleccionado === r.id ? "bg-primary/10" : r.activa ? "bg-primary/5" : ""}`}
+                    >
                       <TableCell className="font-mono font-medium">{r.prefijo}</TableCell>
                       <TableCell className="tabular text-right">{r.desde}</TableCell>
                       <TableCell className="tabular text-right">{r.hasta}</TableCell>
@@ -260,31 +264,6 @@ function Comprobantes() {
                           "—"
                         )}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">
-                        <Button variant="ghost" size="sm" onClick={() => setEditando(r)}>
-                          Cambiar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={r.activa || activar.isPending}
-                          onClick={() => activar.mutate(r.id)}
-                        >
-                          Activar
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          disabled={eliminar.isPending}
-                          onClick={() => {
-                            if (confirm(`¿Eliminar el rango ${r.prefijo} ${r.desde}-${r.hasta}?`))
-                              eliminar.mutate(r.id);
-                          }}
-                        >
-                          Eliminar
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -301,6 +280,42 @@ function Comprobantes() {
 
           <div className="flex flex-wrap gap-2">
             <Button onClick={nueva}>Nueva</Button>
+            <Button
+              variant="outline"
+              disabled={seleccionado === null}
+              onClick={() => {
+                const r = visibles.find((x) => x.id === seleccionado);
+                if (r) setEditando(r);
+              }}
+            >
+              Cambiar
+            </Button>
+            <Button
+              variant="outline"
+              disabled={
+                seleccionado === null ||
+                activar.isPending ||
+                (visibles.find((x) => x.id === seleccionado)?.activa ?? true)
+              }
+              onClick={() => {
+                if (seleccionado !== null) activar.mutate(seleccionado);
+              }}
+            >
+              Activar
+            </Button>
+            <Button
+              variant="outline"
+              className="text-destructive"
+              disabled={seleccionado === null || eliminar.isPending}
+              onClick={() => {
+                const r = visibles.find((x) => x.id === seleccionado);
+                if (r && confirm(`¿Eliminar el rango ${r.prefijo} ${r.desde}-${r.hasta}?`)) {
+                  eliminar.mutate(r.id);
+                }
+              }}
+            >
+              Eliminar
+            </Button>
           </div>
         </CardContent>
       </Card>
