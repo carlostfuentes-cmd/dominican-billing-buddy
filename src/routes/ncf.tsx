@@ -147,10 +147,18 @@ function Comprobantes() {
 
   const enviar = () => {
     if (!editando) return;
-    if (!editando.prefijo.trim()) return toast.error("Indica el prefijo");
-    if (editando.hasta < editando.desde) return toast.error("Fin de secuencia debe ser mayor");
-    if (editando.ultimo < editando.desde - 1 || editando.ultimo > editando.hasta)
-      return toast.error("El último emitido debe estar dentro del rango");
+    if (!editando.prefijo.trim()) {
+      toast.error("Indica el prefijo");
+      return;
+    }
+    if (editando.hasta < editando.desde) {
+      toast.error("Fin de secuencia debe ser mayor");
+      return;
+    }
+    if (editando.ultimo < editando.desde - 1 || editando.ultimo > editando.hasta) {
+      toast.error("El último emitido debe estar dentro del rango");
+      return;
+    }
     guardar.mutate(editando);
   };
 
