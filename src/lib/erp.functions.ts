@@ -11,6 +11,8 @@ import type {
   Item,
   ListasCliente,
   ListasFactura,
+  ListasItem,
+
   OpcionId,
   SecuenciaNCF,
 
