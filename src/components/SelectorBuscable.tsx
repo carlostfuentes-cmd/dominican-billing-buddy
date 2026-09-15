@@ -44,7 +44,7 @@ export function SelectorBuscable({
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
 
-  const seleccionada = opciones.find((o) => o.valor === valor);
+  const seleccionada = valor ? opciones.find((o) => o.valor === valor) : undefined;
 
   const filtradas = useMemo(() => {
     const q = texto.trim().toLowerCase();
