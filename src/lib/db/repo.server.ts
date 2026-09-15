@@ -31,6 +31,8 @@ import {
 
 
   type LineaEntrada,
+  type ListasNCF,
+  type RangoNCF,
   type SecuenciaNCF,
   type TipoNCF,
 } from "@/lib/erp-types";
