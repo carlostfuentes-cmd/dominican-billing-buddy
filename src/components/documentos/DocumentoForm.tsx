@@ -185,14 +185,28 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
     });
   };
 
-  const enviar = () => {
-    if (!clienteId) return toast.error("Selecciona un cliente");
-    if (!esDOP && (!tasa || tasa <= 0)) return toast.error("Indica la tasa de cambio a aplicar");
-    if (tipo === "devolucion" && !referencia)
-      return toast.error("Indica el número de factura que se devuelve");
+  const enviar = (): void => {
+    if (!clienteId) {
+      toast.error("Selecciona un cliente");
+      return;
+    }
+    if (!esDOP && (!tasa || tasa <= 0)) {
+      toast.error("Indica la tasa de cambio a aplicar");
+      return;
+    }
+    if (tipo === "devolucion" && !referencia) {
+      toast.error("Indica el número de factura que se devuelve");
+      return;
+    }
     for (const l of lineas) {
-      if (!l.descripcion.trim()) return toast.error("Cada línea necesita una descripción");
-      if (l.cantidad <= 0) return toast.error("La cantidad debe ser mayor que cero");
+      if (!l.descripcion.trim()) {
+        toast.error("Cada línea necesita una descripción");
+        return;
+      }
+      if (l.cantidad <= 0) {
+        toast.error("La cantidad debe ser mayor que cero");
+        return;
+      }
     }
     guardar.mutate();
   };

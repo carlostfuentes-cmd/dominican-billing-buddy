@@ -3,11 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
   FileText,
+  FileSpreadsheet,
   Hash,
   LayoutDashboard,
   Package,
   Printer,
+  RotateCcw,
   Settings,
+  Truck,
   Users,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -17,7 +20,10 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "Panel", icon: LayoutDashboard },
-  { to: "/facturas", label: "Facturas", icon: FileText },
+  { to: "/cotizaciones", label: "Cotizaciones", icon: FileSpreadsheet },
+  { to: "/facturas", label: "Pedidos y facturas", icon: FileText },
+  { to: "/conduces", label: "Conduces", icon: Truck },
+  { to: "/devoluciones", label: "Devoluciones", icon: RotateCcw },
   { to: "/clientes", label: "Clientes", icon: Users },
   { to: "/items", label: "Ítems", icon: Package },
   { to: "/ncf", label: "Secuencias NCF", icon: Hash },
