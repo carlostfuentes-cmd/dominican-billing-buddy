@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -25,169 +33,385 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { guardarSecuencia, obtenerSecuencias } from "@/lib/erp.functions";
-import { fechaCorta, formatearNCF, hoyISO, TIPOS_NCF, type SecuenciaNCF } from "@/lib/erp-types";
+import {
+  activarRangoNCF,
+  eliminarRangoNCF,
+  guardarRangoNCF,
+  obtenerListasNCF,
+  obtenerRangosNCF,
+} from "@/lib/erp.functions";
+import { fechaCorta, hoyISO, TAMANO_SUFIJO_NCF, type RangoNCF } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/ncf")({
   head: () => ({
     meta: [
-      { title: "Secuencias NCF — ERP Contable RD" },
+      { title: "Comprobantes fiscales (NCF) — ERP Contable RD" },
       {
         name: "description",
         content:
-          "Control de rangos autorizados de comprobantes fiscales B01, B02, B14 y B15 con su vencimiento.",
+          "Rangos autorizados de comprobantes fiscales por sucursal y secuencia: inicio, fin, último emitido, disponible, alerta, autorización y vigencia.",
       },
-      { property: "og:title", content: "Secuencias NCF — ERP Contable RD" },
-      { property: "og:description", content: "Rangos autorizados de NCF y su disponibilidad." },
+      { property: "og:title", content: "Comprobantes fiscales (NCF) — ERP Contable RD" },
+      {
+        property: "og:description",
+        content: "Control de rangos autorizados de NCF, su disponibilidad y vigencia.",
+      },
     ],
   }),
-  component: Secuencias,
+  component: Comprobantes,
 });
 
-function Secuencias() {
+const TODOS = "__todos__";
+
+function rangoVacio(ncfId: number, sucursalId: number, prefijo: string): RangoNCF {
+  return {
+    id: 0,
+    prefijo,
+    ncf_id: ncfId,
+    sucursal_id: sucursalId,
+    desde: 0,
+    hasta: 0,
+    ultimo: 0,
+    alerta: 0,
+    activa: false,
+    autorizacion: "",
+    vence: hoyISO(),
+  };
+}
+
+function Comprobantes() {
   const qc = useQueryClient();
-  const [editando, setEditando] = useState<SecuenciaNCF | null>(null);
+  const [sucursal, setSucursal] = useState("1");
+  const [secuencia, setSecuencia] = useState(TODOS);
+  const [editando, setEditando] = useState<RangoNCF | null>(null);
 
-  const { data: secuencias = [], isLoading } = useQuery({
-    queryKey: ["secuencias"],
-    queryFn: () => obtenerSecuencias(),
+  const { data: listas } = useQuery({ queryKey: ["listas-ncf"], queryFn: () => obtenerListasNCF() });
+  const { data: rangos = [], isLoading } = useQuery({
+    queryKey: ["rangos-ncf"],
+    queryFn: () => obtenerRangosNCF(),
   });
 
-  const mutar = useMutation({
-    mutationFn: (s: SecuenciaNCF) => guardarSecuencia({ data: s }),
+  const invalidar = () => {
+    void qc.invalidateQueries({ queryKey: ["rangos-ncf"] });
+    void qc.invalidateQueries({ queryKey: ["secuencias"] });
+    void qc.invalidateQueries({ queryKey: ["resumen"] });
+  };
+
+  const guardar = useMutation({
+    mutationFn: (r: RangoNCF) => guardarRangoNCF({ data: r }),
     onSuccess: () => {
-      toast.success("Secuencia actualizada");
+      toast.success("Comprobante guardado");
       setEditando(null);
-      void qc.invalidateQueries({ queryKey: ["secuencias"] });
-      void qc.invalidateQueries({ queryKey: ["resumen"] });
+      invalidar();
     },
-    onError: (e: Error) => toast.error(e.message || "No se pudo guardar la secuencia"),
+    onError: (e: Error) => toast.error(e.message || "No se pudo guardar"),
   });
+
+  const eliminar = useMutation({
+    mutationFn: (id: number) => eliminarRangoNCF({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Comprobante eliminado");
+      invalidar();
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo eliminar"),
+  });
+
+  const activar = useMutation({
+    mutationFn: (id: number) => activarRangoNCF({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Secuencia activada");
+      invalidar();
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo activar"),
+  });
+
+  const visibles = useMemo(
+    () =>
+      rangos.filter(
+        (r) =>
+          String(r.sucursal_id) === sucursal &&
+          (secuencia === TODOS || String(r.ncf_id) === secuencia),
+      ),
+    [rangos, sucursal, secuencia],
+  );
+
+  const prefijoSugerido = useMemo(() => {
+    const igual = rangos.find((r) => String(r.ncf_id) === secuencia);
+    return igual?.prefijo ?? "";
+  }, [rangos, secuencia]);
+
+  const nueva = () => {
+    const ncfId = secuencia === TODOS ? 1 : Number(secuencia);
+    setEditando(rangoVacio(ncfId, Number(sucursal), prefijoSugerido));
+  };
 
   const enviar = () => {
     if (!editando) return;
-    if (editando.hasta < editando.desde) { toast.error("El rango final debe ser mayor"); return; }
-    if (editando.proximo < editando.desde || editando.proximo > editando.hasta + 1)
-      { toast.error("El próximo número debe estar dentro del rango"); return; }
-    mutar.mutate(editando);
+    if (!editando.prefijo.trim()) return toast.error("Indica el prefijo");
+    if (editando.hasta < editando.desde) return toast.error("Fin de secuencia debe ser mayor");
+    if (editando.ultimo < editando.desde - 1 || editando.ultimo > editando.hasta)
+      return toast.error("El último emitido debe estar dentro del rango");
+    guardar.mutate(editando);
   };
 
   return (
     <div>
       <PageHeader
-        titulo="Secuencias NCF"
-        descripcion="Rangos autorizados por la DGII para cada tipo de comprobante"
+        titulo="Comprobantes fiscales"
+        descripcion="Rangos autorizados por la DGII, por sucursal y tipo de secuencia"
       />
 
       <Card>
-        <CardContent className="pt-6">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Rango autorizado</TableHead>
-                <TableHead>Próximo comprobante</TableHead>
-                <TableHead className="text-right">Disponibles</TableHead>
-                <TableHead>Vence</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {secuencias.map((s) => {
-                const restantes = Math.max(0, s.hasta - s.proximo + 1);
-                const vencida = s.vence < hoyISO();
-                return (
-                  <TableRow key={s.tipo_ncf}>
-                    <TableCell className="font-medium">
-                      {TIPOS_NCF.find((t) => t.codigo === s.tipo_ncf)?.nombre ?? s.tipo_ncf}
-                    </TableCell>
-                    <TableCell className="tabular">
-                      {s.desde} – {s.hasta}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {formatearNCF(s.tipo_ncf, s.proximo)}
-                    </TableCell>
-                    <TableCell className="tabular text-right">{restantes}</TableCell>
-                    <TableCell>{fechaCorta(s.vence)}</TableCell>
-                    <TableCell>
-                      {!s.activa ? (
-                        <Badge variant="outline">Inactiva</Badge>
-                      ) : vencida ? (
-                        <Badge variant="destructive">Vencida</Badge>
-                      ) : restantes === 0 ? (
-                        <Badge variant="destructive">Agotada</Badge>
-                      ) : restantes <= 20 ? (
-                        <Badge className="bg-amber-500 text-white">Por agotarse</Badge>
-                      ) : (
-                        <Badge variant="secondary">Disponible</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => setEditando(s)}>
-                        Editar
-                      </Button>
+        <CardContent className="space-y-5 pt-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <Label>Sucursal</Label>
+              <Select value={sucursal} onValueChange={setSucursal}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sucursal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(listas?.sucursales ?? []).map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Secuencia</Label>
+              <Select value={secuencia} onValueChange={setSecuencia}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Secuencia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={TODOS}>Todas las secuencias</SelectItem>
+                  {(listas?.tipos ?? []).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="sufijo">Tamaño sufijo</Label>
+              <Input id="sufijo" value={TAMANO_SUFIJO_NCF} readOnly className="w-24" />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Prefijo</TableHead>
+                  <TableHead className="text-right">Inicio Sec.</TableHead>
+                  <TableHead className="text-right">Fin Sec.</TableHead>
+                  <TableHead className="text-right">Último Emitido</TableHead>
+                  <TableHead className="text-right">Disponible</TableHead>
+                  <TableHead className="text-right">Alerta</TableHead>
+                  <TableHead className="text-center">Activo?</TableHead>
+                  <TableHead>Autorización No.</TableHead>
+                  <TableHead>F/Vigencia</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibles.map((r) => {
+                  const disponible = Math.max(0, r.hasta - r.ultimo);
+                  const vencida = r.vence !== "" && r.vence < hoyISO();
+                  return (
+                    <TableRow key={r.id} className={r.activa ? "bg-primary/5" : undefined}>
+                      <TableCell className="font-mono font-medium">{r.prefijo}</TableCell>
+                      <TableCell className="tabular text-right">{r.desde}</TableCell>
+                      <TableCell className="tabular text-right">{r.hasta}</TableCell>
+                      <TableCell className="tabular text-right">{r.ultimo}</TableCell>
+                      <TableCell className="tabular text-right">
+                        {disponible === 0 ? (
+                          <span className="text-muted-foreground">0</span>
+                        ) : disponible <= r.alerta ? (
+                          <span className="font-semibold text-amber-600">{disponible}</span>
+                        ) : (
+                          disponible
+                        )}
+                      </TableCell>
+                      <TableCell className="tabular text-right">{r.alerta}</TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox checked={r.activa} disabled aria-label="Activo" />
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{r.autorizacion || "—"}</TableCell>
+                      <TableCell>
+                        {r.vence ? (
+                          vencida ? (
+                            <Badge variant="destructive">{fechaCorta(r.vence)}</Badge>
+                          ) : (
+                            fechaCorta(r.vence)
+                          )
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">
+                        <Button variant="ghost" size="sm" onClick={() => setEditando(r)}>
+                          Cambiar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={r.activa || activar.isPending}
+                          onClick={() => activar.mutate(r.id)}
+                        >
+                          Activar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                          disabled={eliminar.isPending}
+                          onClick={() => {
+                            if (confirm(`¿Eliminar el rango ${r.prefijo} ${r.desde}-${r.hasta}?`))
+                              eliminar.mutate(r.id);
+                          }}
+                        >
+                          Eliminar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {!isLoading && visibles.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={10} className="text-center text-muted-foreground">
+                      Sin comprobantes registrados para esta selección.
                     </TableCell>
                   </TableRow>
-                );
-              })}
-              {!isLoading && secuencias.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Sin secuencias configuradas.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={nueva}>Nueva</Button>
+          </div>
         </CardContent>
       </Card>
 
       <Dialog open={editando !== null} onOpenChange={(v) => !v && setEditando(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Secuencia {editando?.tipo_ncf}</DialogTitle>
+            <DialogTitle>
+              {editando && editando.id > 0 ? "Cambiar comprobante" : "Nuevo comprobante"}
+            </DialogTitle>
           </DialogHeader>
           {editando && (
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Label>Secuencia</Label>
+                <Select
+                  value={String(editando.ncf_id)}
+                  onValueChange={(v) => setEditando({ ...editando, ncf_id: Number(v) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Secuencia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(listas?.tipos ?? []).map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
-                <Label htmlFor="desde">Desde</Label>
+                <Label htmlFor="prefijo">Prefijo</Label>
+                <Input
+                  id="prefijo"
+                  maxLength={11}
+                  value={editando.prefijo}
+                  onChange={(e) =>
+                    setEditando({ ...editando, prefijo: e.target.value.toUpperCase() })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Sucursal</Label>
+                <Select
+                  value={String(editando.sucursal_id)}
+                  onValueChange={(v) => setEditando({ ...editando, sucursal_id: Number(v) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sucursal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(listas?.sucursales ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="desde">Inicio Sec.</Label>
                 <Input
                   id="desde"
                   type="number"
-                  min={1}
+                  min={0}
                   value={editando.desde}
                   onChange={(e) =>
-                    setEditando({ ...editando, desde: Math.max(1, Number(e.target.value) || 1) })
+                    setEditando({ ...editando, desde: Math.max(0, Number(e.target.value) || 0) })
                   }
                 />
               </div>
               <div>
-                <Label htmlFor="hasta">Hasta</Label>
+                <Label htmlFor="hasta">Fin Sec.</Label>
                 <Input
                   id="hasta"
                   type="number"
-                  min={1}
+                  min={0}
                   value={editando.hasta}
                   onChange={(e) =>
-                    setEditando({ ...editando, hasta: Math.max(1, Number(e.target.value) || 1) })
+                    setEditando({ ...editando, hasta: Math.max(0, Number(e.target.value) || 0) })
                   }
                 />
               </div>
               <div>
-                <Label htmlFor="proximo">Próximo número</Label>
+                <Label htmlFor="ultimo">Último emitido</Label>
                 <Input
-                  id="proximo"
+                  id="ultimo"
                   type="number"
-                  min={1}
-                  value={editando.proximo}
+                  min={0}
+                  value={editando.ultimo}
                   onChange={(e) =>
-                    setEditando({ ...editando, proximo: Math.max(1, Number(e.target.value) || 1) })
+                    setEditando({ ...editando, ultimo: Math.max(0, Number(e.target.value) || 0) })
                   }
                 />
               </div>
               <div>
-                <Label htmlFor="vence">Vence</Label>
+                <Label htmlFor="alerta">Alerta</Label>
+                <Input
+                  id="alerta"
+                  type="number"
+                  min={0}
+                  value={editando.alerta}
+                  onChange={(e) =>
+                    setEditando({ ...editando, alerta: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="autorizacion">Autorización No.</Label>
+                <Input
+                  id="autorizacion"
+                  maxLength={15}
+                  value={editando.autorizacion}
+                  onChange={(e) => setEditando({ ...editando, autorizacion: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="vence">F/Vigencia</Label>
                 <Input
                   id="vence"
                   type="date"
@@ -209,8 +433,8 @@ function Secuencias() {
             <Button variant="outline" onClick={() => setEditando(null)}>
               Cancelar
             </Button>
-            <Button onClick={enviar} disabled={mutar.isPending}>
-              {mutar.isPending ? "Guardando…" : "Guardar"}
+            <Button onClick={enviar} disabled={guardar.isPending}>
+              {guardar.isPending ? "Guardando…" : "Guardar"}
             </Button>
           </DialogFooter>
         </DialogContent>
