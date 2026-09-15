@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, FileText, Plus } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, FileCheck2, FileText, Plus, ReceiptText } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Resumen mensual de ventas, ITBIS y disponibilidad de NCF.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Panel,
@@ -50,6 +52,13 @@ function Panel() {
 
   const alertas = (data?.alertasNCF ?? []).filter((a) => a.restantes <= 20);
 
+  const indicadores = [
+    { titulo: "Facturado sin ITBIS", valor: dop(data?.facturado ?? 0), icono: ReceiptText },
+    { titulo: "ITBIS cobrado", valor: dop(data?.itbis ?? 0), icono: FileCheck2 },
+    { titulo: "Facturas emitidas", valor: String(data?.cantidad ?? 0), icono: FileText },
+    { titulo: "Pendiente de cobro", valor: dop(data?.porCobrar ?? 0), icono: CircleDollarSign },
+  ];
+
   return (
     <div>
       <PageHeader
@@ -58,40 +67,39 @@ function Panel() {
         acciones={
           <Button asChild>
             <Link to="/facturas/nueva">
-              <Plus className="size-4" /> Nueva factura
+              <Plus className="size-4" /> Nuevo pedido
             </Link>
           </Button>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          { titulo: "Facturado (sin ITBIS)", valor: dop(data?.facturado ?? 0) },
-          { titulo: "ITBIS cobrado", valor: dop(data?.itbis ?? 0) },
-          { titulo: "Facturas emitidas", valor: String(data?.cantidad ?? 0) },
-          { titulo: "Pendiente de cobro", valor: dop(data?.porCobrar ?? 0) },
-        ].map((k) => (
-          <Card key={k.titulo}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+        {indicadores.map((k, index) => (
+          <Card key={k.titulo} className={index === 0 ? "border-primary/20" : undefined}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-xs font-semibold text-muted-foreground">
                 {k.titulo}
               </CardTitle>
+              <span className="flex size-8 items-center justify-center rounded-md bg-accent text-primary">
+                <k.icono className="size-4" />
+              </span>
             </CardHeader>
             <CardContent>
-              <p className="tabular text-2xl font-semibold">{isLoading ? "—" : k.valor}</p>
+              <p className="tabular font-display text-2xl font-semibold">{isLoading ? "—" : k.valor}</p>
+              <p className="mt-2 text-xs text-muted-foreground">Mes en curso</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {alertas.length > 0 && (
-        <Card className="mt-6 border-amber-300 bg-amber-50">
+        <Card className="mt-6 border-warning/30 bg-warning/8">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-sm text-amber-900">
+            <CardTitle className="flex items-center gap-2 text-sm text-warning-foreground">
               <AlertTriangle className="size-4" /> Secuencias NCF por agotarse
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-amber-900">
+          <CardContent className="text-sm text-warning-foreground">
             {alertas.map((a) => (
               <p key={a.tipo_ncf}>
                 {a.tipo_ncf}: quedan {a.restantes} comprobantes (vence {fechaCorta(a.vence)}).
@@ -105,7 +113,7 @@ function Panel() {
       )}
 
       <Card className="mt-6">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between border-b pb-4">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="size-4" /> Últimas facturas
           </CardTitle>
@@ -113,7 +121,7 @@ function Panel() {
             <Link to="/facturas">Ver todas</Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 pb-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -128,7 +136,7 @@ function Panel() {
               {(data?.ultimas ?? []).map((f) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-mono text-xs">
-                    <Link to="/facturas/$id" params={{ id: String(f.id) }} className="underline">
+                    <Link to="/facturas/$id" params={{ id: String(f.id) }} className="font-medium text-primary hover:underline">
                       {f.ncf}
                     </Link>
                   </TableCell>

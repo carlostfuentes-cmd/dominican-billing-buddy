@@ -71,8 +71,8 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
         }
       />
 
-      <Card className="mb-4">
-        <CardContent className="grid gap-3 pt-6 sm:grid-cols-2 lg:grid-cols-3">
+      <Card className="mb-4 border-border/80 bg-muted/25">
+        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <Label htmlFor="desde">Desde</Label>
             <Input id="desde" type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
@@ -102,8 +102,8 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="overflow-x-auto pt-6">
+      <Card className="overflow-hidden">
+        <CardContent className="overflow-x-auto px-0 pb-0 pt-0">
           <Table className="min-w-[880px]">
             <TableHeader>
               <TableRow>
@@ -124,7 +124,7 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
               {docs.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell className="font-mono text-xs">
-                    <Link to={cfg.rutaDetalle} params={{ id: String(d.id) }} className="underline">
+                     <Link to={cfg.rutaDetalle} params={{ id: String(d.id) }} className="font-semibold text-primary hover:underline">
                       {d.id}
                     </Link>
                   </TableCell>
@@ -175,7 +175,7 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
               )}
             </TableBody>
           </Table>
-          <p className="mt-4 text-right text-sm text-muted-foreground">
+           <p className="border-t bg-muted/35 px-5 py-4 text-right text-sm text-muted-foreground">
             Total del período en pesos:{" "}
             <span className="tabular font-semibold text-foreground">{dop(total)}</span>
           </p>

@@ -12,6 +12,8 @@ export const Route = createFileRoute("/devoluciones/$id")({
       },
       { property: "og:title", content: "Detalle de devolución — ERP Contable RD" },
       { property: "og:description", content: "Nota de crédito imprimible con NCF y motivo." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

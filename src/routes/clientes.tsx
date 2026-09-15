@@ -50,6 +50,8 @@ export const Route = createFileRoute("/clientes")({
       },
       { property: "og:title", content: "Clientes — ERP Contable RD" },
       { property: "og:description", content: "Maestra de clientes con RNC, NCF, crédito y retenciones." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Clientes,

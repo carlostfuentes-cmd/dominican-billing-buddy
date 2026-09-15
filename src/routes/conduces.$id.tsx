@@ -12,6 +12,8 @@ export const Route = createFileRoute("/conduces/$id")({
       },
       { property: "og:title", content: "Detalle de conduce — ERP Contable RD" },
       { property: "og:description", content: "Conduce imprimible con líneas entregadas." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
     ],
   }),

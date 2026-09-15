@@ -22,6 +22,8 @@ export const Route = createFileRoute("/configuracion")({
       },
       { property: "og:title", content: "Configuración de la empresa — ERP Contable RD" },
       { property: "og:description", content: "Datos fiscales impresos en las facturas." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Configuracion,

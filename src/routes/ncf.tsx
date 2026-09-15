@@ -56,6 +56,8 @@ export const Route = createFileRoute("/ncf")({
         property: "og:description",
         content: "Control de rangos autorizados de NCF, su disponibilidad y vigencia.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Comprobantes,
@@ -170,9 +172,9 @@ function Comprobantes() {
         descripcion="Rangos autorizados por la DGII, por sucursal y tipo de secuencia"
       />
 
-      <Card>
-        <CardContent className="space-y-5 pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
+      <Card className="overflow-hidden">
+        <CardContent className="space-y-0 px-0 pb-0 pt-0">
+          <div className="grid gap-4 border-b bg-muted/30 p-5 md:grid-cols-3">
             <div>
               <Label>Sucursal</Label>
               <Select value={sucursal} onValueChange={setSucursal}>
@@ -233,7 +235,7 @@ function Comprobantes() {
                     <TableRow
                       key={r.id}
                       onClick={() => setSeleccionado(r.id)}
-                      className={`cursor-pointer ${seleccionado === r.id ? "bg-primary/10" : r.activa ? "bg-primary/5" : ""}`}
+                       className={`cursor-pointer ${seleccionado === r.id ? "bg-accent" : r.activa ? "bg-success/5" : ""}`}
                     >
                       <TableCell className="font-mono font-medium">{r.prefijo}</TableCell>
                       <TableCell className="tabular text-right">{r.desde}</TableCell>
@@ -278,7 +280,7 @@ function Comprobantes() {
             </Table>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 border-t bg-muted/25 p-4">
             <Button onClick={nueva}>Nueva</Button>
             <Button
               variant="outline"
