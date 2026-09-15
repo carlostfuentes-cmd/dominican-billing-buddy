@@ -93,14 +93,14 @@ export async function estadoConexion(): Promise<EstadoConexion> {
   }
 }
 
-async function usarMysql(): Promise<boolean> {
+export async function usarMysql(): Promise<boolean> {
   return mysqlActivo();
 }
 
 /* --------------------- Correspondencia de comprobantes -------------------- */
 
 // Tipo de comprobante (prefijo) <-> ncf_id de la tabla ncf_kinds del sistema.
-const NCF_ID_POR_TIPO: Record<TipoNCF, number> = {
+export const NCF_ID_POR_TIPO: Record<TipoNCF, number> = {
   B01: 1, B02: 2, B03: 3, B04: 4, B11: 5, B13: 7, B14: 8, B15: 9,
   E31: 31, E32: 32, E33: 33, E34: 34, E41: 41, E43: 43, E44: 44, E45: 45, E46: 46,
 };
@@ -115,7 +115,7 @@ function tipoDesdeNcfId(ncfId: number | null | undefined): TipoNCF {
 
 /* --------- Valores por defecto para campos obligatorios del sistema ------- */
 
-interface Defectos {
+export interface Defectos {
   user_id: number;
   salesman_id: number;
   warehouse_id: number;
@@ -136,7 +136,7 @@ let cacheDefectos: Defectos | null = null;
 
 // Toma el primer registro de cada tabla relacionada para rellenar los campos
 // obligatorios que el módulo de facturación no maneja (almacén, vendedor…).
-async function defectos(): Promise<Defectos> {
+export async function defectos(): Promise<Defectos> {
   if (cacheDefectos) return cacheDefectos;
   const filas = await sql<Record<string, string | number | null>>(
     `SELECT
@@ -1389,7 +1389,7 @@ export interface NuevoPedido {
 }
 
 /** Reserva de forma atómica el siguiente NCF del tipo indicado. */
-async function reservarNCF(tipo: TipoNCF): Promise<string> {
+export async function reservarNCF(tipo: TipoNCF): Promise<string> {
   const rangos = await sql<{ ID: number; last: number }>(
     `SELECT ID, last FROM ncf_sequences
      WHERE prefix = ? AND status = 1 AND last < end
