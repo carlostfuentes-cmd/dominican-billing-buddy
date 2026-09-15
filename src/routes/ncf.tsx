@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-// colSpan ajustado a 9 columnas
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
