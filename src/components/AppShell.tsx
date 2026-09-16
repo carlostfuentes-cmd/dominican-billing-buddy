@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
@@ -10,17 +10,23 @@ import {
   Hash,
   LayoutDashboard,
   ListPlus,
+  LogOut,
   Package,
   Printer,
   RotateCcw,
   Settings,
+  ShieldCheck,
   Truck,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { SesionProvider, useSesion } from "@/components/Sesion";
+import { Button } from "@/components/ui/button";
 import { obtenerEstadoConexion } from "@/lib/erp.functions";
+import { pantallaDeRuta } from "@/lib/pantallas";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -38,6 +44,8 @@ const NAV = [
   { to: "/reportes", label: "Reportes", icon: BarChart3, grupo: "fiscal" },
   { to: "/formatos", label: "Formatos de impresión", icon: Printer, grupo: "sistema" },
   { to: "/campos", label: "Campos personalizados", icon: ListPlus, grupo: "sistema" },
+  { to: "/usuarios", label: "Usuarios", icon: UserCog, grupo: "sistema" },
+  { to: "/perfiles", label: "Perfiles y permisos", icon: ShieldCheck, grupo: "sistema" },
   { to: "/configuracion", label: "Configuración", icon: Settings, grupo: "sistema" },
 ] as const;
 
@@ -48,6 +56,7 @@ const GRUPOS = [
   { id: "fiscal", titulo: "Fiscal y análisis" },
   { id: "sistema", titulo: "Sistema" },
 ] as const;
+
 
 function EstadoDatos() {
   const { data } = useQuery({
