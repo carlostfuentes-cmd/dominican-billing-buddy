@@ -1,9 +1,12 @@
 // Sesión de trabajo: cookie firmada y cifrada con SESSION_SECRET.
+// En la cookie solo se guarda el identificador del usuario; el perfil y los
+// permisos se leen de la base en cada petición para que un cambio de permisos
+// tenga efecto de inmediato.
 import { useSession } from "@tanstack/react-start/server";
 
-import type { Sesion } from "./usuarios.server";
+import { recargarSesion, sesionDemo, type Sesion } from "./usuarios.server";
 
-type Datos = { sesion?: Sesion };
+type Datos = { usuario_id?: number; demo?: boolean };
 
 function config() {
   const password =
@@ -20,12 +23,17 @@ function config() {
 
 export async function leerSesion(): Promise<Sesion | null> {
   const sesion = await useSession<Datos>(config());
-  return sesion.data.sesion ?? null;
+  if (sesion.data.demo) return sesionDemo();
+  const id = sesion.data.usuario_id;
+  if (!id) return null;
+  return recargarSesion(id);
 }
 
 export async function escribirSesion(datos: Sesion): Promise<void> {
   const sesion = await useSession<Datos>(config());
-  await sesion.update({ sesion: datos });
+  await sesion.update(
+    datos.usuario_id > 0 ? { usuario_id: datos.usuario_id, demo: false } : { demo: true },
+  );
 }
 
 export async function borrarSesion(): Promise<void> {

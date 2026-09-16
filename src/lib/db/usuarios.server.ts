@@ -108,9 +108,25 @@ export async function listarPerfiles(): Promise<Perfil[]> {
   return filas.map(mapearPerfil);
 }
 
+type FilaUsuario = {
+  user_id: number;
+  login: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  status: string | null;
+  is_supervisor: number | null;
+  profile_id: number | null;
+  perfil: string | null;
+  main_email: string | null;
+  max_discount: number | null;
+  last_login: string | null;
+  password2?: string | null;
+  administrator?: number | null;
+};
+
 export async function listarUsuarios(): Promise<Usuario[]> {
   if (!(await mysqlActivo())) return [];
-  const filas = await sql<Record<string, unknown>>(
+  const filas = await sql<FilaUsuario>(
     `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
             u.profile_id, p.name AS perfil, u.main_email, u.max_discount, u.last_login
        FROM users u
@@ -139,14 +155,16 @@ export async function listarUsuarios(): Promise<Usuario[]> {
 async function cadenaPerfiles(perfilId: number): Promise<Perfil[]> {
   const cadena: Perfil[] = [];
   let actual: number | null = perfilId;
+  // eslint-disable-next-line
   const vistos = new Set<number>();
   while (actual && !vistos.has(actual)) {
     vistos.add(actual);
-    const filas = await sql<FilaPerfil>(
+    const filas: FilaPerfil[] = await sql<FilaPerfil>(
       "SELECT profile_id, name, status, administrator, parent, company_id FROM profiles WHERE profile_id = ? LIMIT 1",
       [actual],
     );
-    const perfil = filas[0] ? mapearPerfil(filas[0]) : null;
+    const primera = filas[0];
+    const perfil: Perfil | null = primera ? mapearPerfil(primera) : null;
     if (!perfil) break;
     cadena.push(perfil);
     actual = perfil.padre;
@@ -156,7 +174,15 @@ async function cadenaPerfiles(perfilId: number): Promise<Perfil[]> {
 
 export async function permisosDePerfil(perfilId: number): Promise<PermisoPantalla[]> {
   if (!(await mysqlActivo())) return [];
-  const filas = await sql<Record<string, unknown>>(
+  const filas = await sql<{
+    menu_id: string;
+    action_add: number;
+    action_edit: number;
+    action_delete: number;
+    action_search: number;
+    action_print: number;
+    action_export: number;
+  }>(
     `SELECT menu_id, action_add, action_edit, action_delete, action_search, action_print, action_export
        FROM profiles_menues WHERE profile_id = ?`,
     [perfilId],
@@ -202,7 +228,7 @@ export async function autenticar(login: string, clave: string): Promise<Sesion |
   if (!(await mysqlActivo())) {
     return login.trim().length > 0 ? sesionDemo() : null;
   }
-  const filas = await sql<Record<string, unknown>>(
+  const filas = await sql<FilaUsuario>(
     `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
             u.password2, u.profile_id, p.name AS perfil, p.administrator, p.status AS perfil_status
        FROM users u
@@ -239,7 +265,7 @@ export async function autenticar(login: string, clave: string): Promise<Sesion |
 
 export async function recargarSesion(usuarioId: number): Promise<Sesion | null> {
   if (!(await mysqlActivo())) return sesionDemo();
-  const filas = await sql<Record<string, unknown>>(
+  const filas = await sql<FilaUsuario>(
     `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
             u.profile_id, p.name AS perfil, p.administrator
        FROM users u
@@ -265,16 +291,16 @@ export async function recargarSesion(usuarioId: number): Promise<Sesion | null> 
 }
 
 export type NuevoUsuario = {
-  id?: number;
+  id?: number | undefined;
   login: string;
   nombre: string;
   apellido: string;
-  email?: string;
+  email?: string | undefined;
   perfil_id: number;
   activo: boolean;
   supervisor: boolean;
   descuento_maximo: number;
-  clave?: string;
+  clave?: string | undefined;
 };
 
 export async function guardarUsuario(entrada: NuevoUsuario): Promise<{ id: number }> {
@@ -347,12 +373,12 @@ export async function verificarClave(usuarioId: number, clave: string): Promise<
 }
 
 export type NuevoPerfil = {
-  id?: number;
+  id?: number | undefined;
   nombre: string;
   activo: boolean;
   administrador: boolean;
   padre: number | null;
-  empresa_id?: number;
+  empresa_id?: number | undefined;
 };
 
 export async function guardarPerfil(entrada: NuevoPerfil): Promise<{ id: number }> {

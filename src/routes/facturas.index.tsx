@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/facturas/")({
 const TODOS = "todos";
 
 function Facturas() {
+  const { puedeAgregar } = usePermisoPantalla();
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
   const [desde, setDesde] = useState(inicioMes);
   const [hasta, setHasta] = useState(hoyISO());
@@ -95,11 +97,13 @@ function Facturas() {
         titulo="Pedidos y facturas"
         descripcion="Los pedidos sin NCF están pendientes de facturar"
         acciones={
-          <Button asChild>
-            <Link to="/facturas/nueva">
-              <Plus className="size-4" /> Nuevo pedido
-            </Link>
-          </Button>
+          puedeAgregar ? (
+            <Button asChild>
+              <Link to="/facturas/nueva">
+                <Plus className="size-4" /> Nuevo pedido
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

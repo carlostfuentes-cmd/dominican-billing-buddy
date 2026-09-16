@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ export const Route = createFileRoute("/inventario/")({
 const TODOS = "todos";
 
 function InventarioPage() {
+  const { puedeAgregar } = usePermisoPantalla();
   const inicioAno = `${hoyISO().slice(0, 4)}-01-01`;
   const [desde, setDesde] = useState(inicioAno);
   const [hasta, setHasta] = useState(hoyISO());
@@ -172,11 +174,13 @@ function InventarioPage() {
         titulo="Inventario"
         descripcion="Existencias por almacén y movimientos de entrada, salida y transferencia."
         acciones={
-          <Button asChild>
-            <Link to="/inventario/nuevo">
-              <Plus className="size-4" /> Nuevo movimiento
-            </Link>
-          </Button>
+          puedeAgregar ? (
+            <Button asChild>
+              <Link to="/inventario/nuevo">
+                <Plus className="size-4" /> Nuevo movimiento
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

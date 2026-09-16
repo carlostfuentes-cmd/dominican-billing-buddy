@@ -5,6 +5,7 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -101,6 +102,7 @@ const DATACREDITO = ["NORMAL", "ATRASO", "LEGAL", "CASTIGADO", "SALDADO"] as con
 const SIN_VALOR = "__sin__";
 
 function Clientes() {
+  const { puedeAgregar } = usePermisoPantalla();
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState(false);
   const [form, setForm] = useState<FormCliente>(vacio);
@@ -146,14 +148,16 @@ function Clientes() {
         titulo="Clientes"
         descripcion="Datos generales, administración y condiciones comerciales"
         acciones={
-          <Button
-            onClick={() => {
-              setForm(vacio);
-              setAbierto(true);
-            }}
-          >
-            <Plus className="size-4" /> Nuevo cliente
-          </Button>
+          puedeAgregar ? (
+            <Button
+              onClick={() => {
+                setForm(vacio);
+                setAbierto(true);
+              }}
+            >
+              <Plus className="size-4" /> Nuevo cliente
+            </Button>
+          ) : undefined
         }
       />
 
