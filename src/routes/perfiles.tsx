@@ -277,7 +277,10 @@ function PerfilesPage() {
                   className="flex-1"
                   disabled={guardarDatos.isPending}
                   onClick={() => {
-                    if (!nombre.trim()) return toast.error("Indica el nombre del perfil");
+                    if (!nombre.trim()) {
+                      toast.error("Indica el nombre del perfil");
+                      return;
+                    }
                     guardarDatos.mutate();
                   }}
                 >

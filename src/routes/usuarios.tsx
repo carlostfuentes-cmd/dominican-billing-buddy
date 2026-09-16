@@ -280,9 +280,18 @@ function UsuariosPage() {
                 className="w-full"
                 disabled={guardar.isPending}
                 onClick={() => {
-                  if (!form.login.trim()) return toast.error("Indica el usuario");
-                  if (!form.perfil_id) return toast.error("Selecciona un perfil");
-                  if (!form.id && !form.clave) return toast.error("Indica la clave del usuario");
+                  if (!form.login.trim()) {
+                    toast.error("Indica el usuario");
+                    return;
+                  }
+                  if (!form.perfil_id) {
+                    toast.error("Selecciona un perfil");
+                    return;
+                  }
+                  if (!form.id && !form.clave) {
+                    toast.error("Indica la clave del usuario");
+                    return;
+                  }
                   guardar.mutate();
                 }}
               >
@@ -320,8 +329,10 @@ function UsuariosPage() {
                 className="w-full"
                 disabled={miClave.isPending}
                 onClick={() => {
-                  if (!claveActual || claveNueva.length < 4)
-                    return toast.error("Indica tu clave actual y una nueva de 4 caracteres o más");
+                  if (!claveActual || claveNueva.length < 4) {
+                    toast.error("Indica tu clave actual y una nueva de 4 caracteres o más");
+                    return;
+                  }
                   miClave.mutate();
                 }}
               >

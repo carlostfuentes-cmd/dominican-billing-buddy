@@ -291,16 +291,16 @@ export async function recargarSesion(usuarioId: number): Promise<Sesion | null> 
 }
 
 export type NuevoUsuario = {
-  id?: number;
+  id?: number | undefined;
   login: string;
   nombre: string;
   apellido: string;
-  email?: string;
+  email?: string | undefined;
   perfil_id: number;
   activo: boolean;
   supervisor: boolean;
   descuento_maximo: number;
-  clave?: string;
+  clave?: string | undefined;
 };
 
 export async function guardarUsuario(entrada: NuevoUsuario): Promise<{ id: number }> {
@@ -373,12 +373,12 @@ export async function verificarClave(usuarioId: number, clave: string): Promise<
 }
 
 export type NuevoPerfil = {
-  id?: number;
+  id?: number | undefined;
   nombre: string;
   activo: boolean;
   administrador: boolean;
   padre: number | null;
-  empresa_id?: number;
+  empresa_id?: number | undefined;
 };
 
 export async function guardarPerfil(entrada: NuevoPerfil): Promise<{ id: number }> {
