@@ -11,6 +11,8 @@ import {
 } from "@/components/CamposPersonalizados";
 import { guardarValoresCampos } from "@/lib/campos.functions";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
+import { AsientoContable } from "@/components/AsientoContable";
+import { obtenerPropuestaPedido } from "@/lib/cuentas.functions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -224,6 +226,36 @@ function NuevaFactura() {
   );
   const { totales } = useMemo(() => calcularTotales(lineasCalculo), [lineasCalculo]);
   const cobrado = efectivo + tarjeta + cheque + transferencia;
+
+  // Cuentas propuestas por la clasificación de inventario del producto.
+  const [asiento, setAsiento] = useState<LineaAsiento[]>([]);
+  const lineasVenta = useMemo(
+    () =>
+      calcularTotales(lineasCalculo).lineas.map((l) => ({
+        producto_id: l.codigo,
+        cantidad: l.cantidad,
+        precio: l.precio,
+        descuento: round2(l.cantidad * l.precio - l.subtotal),
+        itbis: l.itbis,
+      })),
+    [lineasCalculo],
+  );
+  const { data: propuesta, isFetching: calculandoAsiento } = useQuery({
+    queryKey: ["propuesta-pedido", clienteId, moneda, tasa, JSON.stringify(lineasVenta)],
+    queryFn: () =>
+      obtenerPropuestaPedido({
+        data: {
+          cliente_id: clienteId,
+          moneda,
+          tasa_cambio: tasa,
+          lineas: lineasVenta.filter((l) => l.producto_id && l.cantidad > 0),
+        },
+      }),
+    enabled: clienteId.length > 0 && lineasVenta.some((l) => l.producto_id && l.cantidad > 0),
+  });
+  useEffect(() => {
+    setAsiento(propuesta?.lineas ?? []);
+  }, [propuesta]);
   const [camposValores, setCamposValores] = useState<ValoresCampos>({});
 
   const guardar = useMutation({
@@ -249,6 +281,7 @@ function NuevaFactura() {
           pagos: { efectivo, tarjeta, cheque, transferencia, cardnet: 0 },
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
           facturar: opciones.facturar,
+          ...(opciones.facturar && asiento.length ? { asiento } : {}),
         },
       }),
     onSuccess: async (doc, opciones) => {
@@ -759,6 +792,17 @@ function NuevaFactura() {
           </Table>
         </CardContent>
       </Card>
+
+      <div className="mt-4">
+        <AsientoContable
+          lineas={asiento}
+          onCambiar={setAsiento}
+          advertencias={propuesta?.advertencias ?? []}
+          cargando={calculandoAsiento}
+          titulo="Cuentas contables de la venta"
+          nota="Se toman de la clasificación del producto y del cliente. El asiento se registra al guardar la factura; puedes cambiar las cuentas antes."
+        />
+      </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
