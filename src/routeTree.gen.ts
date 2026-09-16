@@ -20,6 +20,8 @@ import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
 import { Route as ConducesIdRouteImport } from './routes/conduces.$id'
 import { Route as ConducesNuevaRouteImport } from './routes/conduces.nueva'
+import { Route as ContabilidadIndexRouteImport } from './routes/contabilidad.index'
+import { Route as ContabilidadNuevoRouteImport } from './routes/contabilidad.nuevo'
 import { Route as CotizacionesIndexRouteImport } from './routes/cotizaciones.index'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
@@ -87,6 +89,16 @@ const ConducesIdRoute = ConducesIdRouteImport.update({
 const ConducesNuevaRoute = ConducesNuevaRouteImport.update({
   id: '/conduces/nueva',
   path: '/conduces/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilidadIndexRoute = ContabilidadIndexRouteImport.update({
+  id: '/contabilidad/',
+  path: '/contabilidad/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilidadNuevoRoute = ContabilidadNuevoRouteImport.update({
+  id: '/contabilidad/nuevo',
+  path: '/contabilidad/nuevo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CotizacionesIndexRoute = CotizacionesIndexRouteImport.update({
@@ -166,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -175,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
+  '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
@@ -192,6 +206,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -201,6 +216,7 @@ export interface FileRoutesByTo {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces': typeof ConducesIndexRoute
+  '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
   '/cxc': typeof CxcIndexRoute
   '/devoluciones': typeof DevolucionesIndexRoute
@@ -219,6 +235,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -228,6 +245,7 @@ export interface FileRoutesById {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
+  '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
@@ -247,6 +265,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -256,6 +275,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces/'
+    | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
     | '/devoluciones/'
@@ -273,6 +293,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -282,6 +303,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces'
+    | '/contabilidad'
     | '/cotizaciones'
     | '/cxc'
     | '/devoluciones'
@@ -299,6 +321,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -308,6 +331,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces/'
+    | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
     | '/devoluciones/'
@@ -326,6 +350,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
+  ContabilidadNuevoRoute: typeof ContabilidadNuevoRoute
   CotizacionesIdRoute: typeof CotizacionesIdRoute
   CotizacionesNuevaRoute: typeof CotizacionesNuevaRoute
   CxcNuevoRoute: typeof CxcNuevoRoute
@@ -335,6 +360,7 @@ export interface RootRouteChildren {
   FacturasNuevaRoute: typeof FacturasNuevaRoute
   InventarioNuevoRoute: typeof InventarioNuevoRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
+  ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
   CxcIndexRoute: typeof CxcIndexRoute
   DevolucionesIndexRoute: typeof DevolucionesIndexRoute
@@ -419,6 +445,20 @@ declare module '@tanstack/react-router' {
       path: '/conduces/nueva'
       fullPath: '/conduces/nueva'
       preLoaderRoute: typeof ConducesNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabilidad/': {
+      id: '/contabilidad/'
+      path: '/contabilidad'
+      fullPath: '/contabilidad/'
+      preLoaderRoute: typeof ContabilidadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabilidad/nuevo': {
+      id: '/contabilidad/nuevo'
+      path: '/contabilidad/nuevo'
+      fullPath: '/contabilidad/nuevo'
+      preLoaderRoute: typeof ContabilidadNuevoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cotizaciones/': {
@@ -526,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
+  ContabilidadNuevoRoute: ContabilidadNuevoRoute,
   CotizacionesIdRoute: CotizacionesIdRoute,
   CotizacionesNuevaRoute: CotizacionesNuevaRoute,
   CxcNuevoRoute: CxcNuevoRoute,
@@ -535,6 +576,7 @@ const rootRouteChildren: RootRouteChildren = {
   FacturasNuevaRoute: FacturasNuevaRoute,
   InventarioNuevoRoute: InventarioNuevoRoute,
   ConducesIndexRoute: ConducesIndexRoute,
+  ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
   CxcIndexRoute: CxcIndexRoute,
   DevolucionesIndexRoute: DevolucionesIndexRoute,

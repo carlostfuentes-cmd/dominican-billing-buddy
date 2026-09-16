@@ -783,3 +783,114 @@ export interface FiltroInventario {
   almacenId?: string | undefined;
   operacionId?: number | undefined;
 }
+
+/* ---------------------------- Contabilidad general ----------------------- */
+
+export interface CuentaCatalogo {
+  cuenta: string;
+  nombre: string;
+  nivel: number;
+  naturaleza: "D" | "C";
+  /** true cuando la cuenta no tiene hijas: es la que recibe movimiento. */
+  detalle: boolean;
+  padre?: string | undefined;
+  clasificacion?: string | undefined;
+  moneda?: string | undefined;
+}
+
+export interface LineaAsiento {
+  cuenta: string;
+  cuenta_nombre?: string | undefined;
+  departamento_id?: string | undefined;
+  departamento?: string | undefined;
+  descripcion: string;
+  referencia?: string | undefined;
+  debito: number;
+  credito: number;
+}
+
+export interface AsientoContable {
+  id: number;
+  numero: number;
+  ano: number;
+  fecha: string;
+  descripcion: string;
+  /** 'N' normal, 'A' ajuste, 'C' cierre. */
+  clase: string;
+  estado_id: string;
+  estado: string;
+  tipo_id: string;
+  tipo: string;
+  moneda: string;
+  debito: number;
+  credito: number;
+  lineas: LineaAsiento[];
+}
+
+export interface NuevoAsiento {
+  fecha: string;
+  descripcion: string;
+  tipo_id?: string | undefined;
+  estado_id?: string | undefined;
+  clase?: string | undefined;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
+  documento?: string | undefined;
+  lineas: LineaAsiento[];
+}
+
+export interface ListasContabilidad {
+  tipos: OpcionId[];
+  estados: OpcionId[];
+  departamentos: OpcionId[];
+  monedas: Moneda[];
+  cuentas: CuentaCatalogo[];
+}
+
+export interface FiltroAsientos {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  tipoId?: string | undefined;
+  estadoId?: string | undefined;
+  busqueda?: string | undefined;
+}
+
+export interface FiltroMayor {
+  cuenta: string;
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  departamentoId?: string | undefined;
+}
+
+export interface LineaMayor {
+  id: number;
+  fecha: string;
+  asiento_id: number;
+  documento: string;
+  descripcion: string;
+  operacion: string;
+  origen: string;
+  departamento: string;
+  debito: number;
+  credito: number;
+  saldo: number;
+}
+
+export interface MayorGeneral {
+  cuenta: string;
+  cuenta_nombre: string;
+  saldo_anterior: number;
+  debito: number;
+  credito: number;
+  saldo: number;
+  movimientos: LineaMayor[];
+}
+
+export interface LineaBalance {
+  cuenta: string;
+  nombre: string;
+  saldo_anterior: number;
+  debito: number;
+  credito: number;
+  saldo: number;
+}

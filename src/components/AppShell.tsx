@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
+  BookOpen,
   Boxes,
   Building2,
   FileText,
@@ -32,6 +33,7 @@ const NAV = [
   { to: "/inventario", label: "Inventario", icon: Boxes, grupo: "operaciones" },
   { to: "/clientes", label: "Clientes", icon: Users, grupo: "maestros" },
   { to: "/items", label: "Ítems", icon: Package, grupo: "maestros" },
+  { to: "/contabilidad", label: "Diario general", icon: BookOpen, grupo: "fiscal" },
   { to: "/ncf", label: "Comprobantes fiscales", icon: Hash, grupo: "fiscal" },
   { to: "/reportes", label: "Reportes", icon: BarChart3, grupo: "fiscal" },
   { to: "/formatos", label: "Formatos de impresión", icon: Printer, grupo: "sistema" },
