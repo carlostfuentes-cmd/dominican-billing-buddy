@@ -21,6 +21,7 @@ import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
 import { Route as ConducesIdRouteImport } from './routes/conduces.$id'
 import { Route as ConducesNuevaRouteImport } from './routes/conduces.nueva'
 import { Route as ContabilidadIndexRouteImport } from './routes/contabilidad.index'
+import { Route as ContabilidadNuevoRouteImport } from './routes/contabilidad.nuevo'
 import { Route as CotizacionesIndexRouteImport } from './routes/cotizaciones.index'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
@@ -93,6 +94,11 @@ const ConducesNuevaRoute = ConducesNuevaRouteImport.update({
 const ContabilidadIndexRoute = ContabilidadIndexRouteImport.update({
   id: '/contabilidad/',
   path: '/contabilidad/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilidadNuevoRoute = ContabilidadNuevoRouteImport.update({
+  id: '/contabilidad/nuevo',
+  path: '/contabilidad/nuevo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CotizacionesIndexRoute = CotizacionesIndexRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/reportes': typeof ReportesRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
+  '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -283,6 +293,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/reportes'
     | '/conduces/$id'
     | '/conduces/nueva'
+    | '/contabilidad/nuevo'
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
@@ -338,6 +350,7 @@ export interface RootRouteChildren {
   ReportesRoute: typeof ReportesRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
+  ContabilidadNuevoRoute: typeof ContabilidadNuevoRoute
   CotizacionesIdRoute: typeof CotizacionesIdRoute
   CotizacionesNuevaRoute: typeof CotizacionesNuevaRoute
   CxcNuevoRoute: typeof CxcNuevoRoute
@@ -439,6 +452,13 @@ declare module '@tanstack/react-router' {
       path: '/contabilidad'
       fullPath: '/contabilidad/'
       preLoaderRoute: typeof ContabilidadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabilidad/nuevo': {
+      id: '/contabilidad/nuevo'
+      path: '/contabilidad/nuevo'
+      fullPath: '/contabilidad/nuevo'
+      preLoaderRoute: typeof ContabilidadNuevoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cotizaciones/': {
@@ -546,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportesRoute: ReportesRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
+  ContabilidadNuevoRoute: ContabilidadNuevoRoute,
   CotizacionesIdRoute: CotizacionesIdRoute,
   CotizacionesNuevaRoute: CotizacionesNuevaRoute,
   CxcNuevoRoute: CxcNuevoRoute,
