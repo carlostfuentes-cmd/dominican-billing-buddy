@@ -229,10 +229,10 @@ function NuevoAsientoPage() {
               </p>
             </div>
             <div>
-              <Label>Departamento</Label>
+              <Label>Centro de costo</Label>
               <Select value={departamento} onValueChange={setDepartamento}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Sin departamento" />
+                  <SelectValue placeholder="Sin centro de costo" />
                 </SelectTrigger>
                 <SelectContent>
                   {(listas?.departamentos ?? []).map((d) => (
