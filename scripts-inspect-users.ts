@@ -1,4 +1,4 @@
-import { query } from "./src/lib/db/mysql.server";
+import { sql as query } from "./src/lib/db/mysql.server";
 const t = ["profiles","users","menues"];
 for (const x of t) {
   try {
