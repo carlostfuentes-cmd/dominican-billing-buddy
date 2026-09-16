@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS gl_accounts (
   PRIMARY KEY (account),
   KEY ix_gl_accounts_parent (parent_account),
   KEY ix_gl_accounts_detail (is_detail, status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS gl_periods (
   gl_period_id INT          NOT NULL AUTO_INCREMENT,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS gl_periods (
   status       VARCHAR(10)  NOT NULL DEFAULT 'ABIERTO',
   PRIMARY KEY (gl_period_id),
   UNIQUE KEY ux_gl_periods (year, month)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS gl_journal (
   journal_id     INT           NOT NULL AUTO_INCREMENT,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS gl_journal (
   KEY ix_gl_journal_period (year, month),
   KEY ix_gl_journal_entry (year, entry_no),
   KEY ix_gl_journal_legacy (legacy_entry_id, legacy_origen)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS gl_journal_detail (
   journal_detail_id INT           NOT NULL AUTO_INCREMENT,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS gl_journal_detail (
   KEY ix_gl_jd_journal (journal_id),
   KEY ix_gl_jd_account (account, date),
   KEY ix_gl_jd_department (department_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- ------------------------- Carga del catálogo -------------------------
 INSERT INTO gl_accounts
