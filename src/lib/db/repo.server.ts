@@ -1386,6 +1386,8 @@ export interface NuevoPedido {
   lineas: LineaEntrada[];
   /** Si es true, al guardar el pedido se convierte de inmediato en factura. */
   facturar?: boolean | undefined;
+  /** Cuentas contables a afectar al facturar (si no se envían, se toman de la clasificación). */
+  asiento?: LineaAsiento[] | undefined;
 }
 
 /** Reserva de forma atómica el siguiente NCF del tipo indicado. */
@@ -1508,7 +1510,7 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
       );
     }
 
-    if (entrada.facturar) return facturarPedido(orderId, entrada.tipo_ncf);
+    if (entrada.facturar) return facturarPedido(orderId, entrada.tipo_ncf, entrada.asiento);
 
     const creado = await obtenerFactura(orderId);
     if (!creado) throw new Error("No se pudo leer el pedido creado");
@@ -1541,7 +1543,7 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
     lineas,
   };
   d.facturas.push(pedido);
-  if (entrada.facturar) return facturarPedido(pedido.id, entrada.tipo_ncf);
+  if (entrada.facturar) return facturarPedido(pedido.id, entrada.tipo_ncf, entrada.asiento);
   return pedido;
 }
 
@@ -1549,7 +1551,11 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
  * Convierte un pedido en factura: reserva el NCF, crea el comprobante en
  * invoices y guarda el número de factura en orders.invoice_id.
  */
-export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factura> {
+export async function facturarPedido(
+  id: number,
+  tipo?: TipoNCF,
+  asiento?: LineaAsiento[],
+): Promise<Factura> {
   if (await usarMysql()) {
     const ordenes = await sql<{
       invoice_id: number | null;
@@ -1581,6 +1587,7 @@ export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factur
     await ejecutar("UPDATE orders SET invoice_id = ? WHERE order_id = ?", [inv.insertId, id]);
     const facturada = await obtenerFactura(id);
     if (!facturada) throw new Error("No se pudo leer la factura creada");
+    await contabilizarVenta(facturada, asiento);
     return facturada;
   }
 
