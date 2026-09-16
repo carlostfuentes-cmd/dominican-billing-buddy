@@ -61,6 +61,7 @@ export const Route = createFileRoute("/facturas/")({
 const TODOS = "todos";
 
 function Facturas() {
+  const { puedeAgregar } = usePermisoPantalla();
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
   const [desde, setDesde] = useState(inicioMes);
   const [hasta, setHasta] = useState(hoyISO());
