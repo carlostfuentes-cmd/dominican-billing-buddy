@@ -160,3 +160,9 @@ JOIN gl_journal j
  AND j.legacy_origen = COALESCE(NULLIF(d.origen, ''), 'ED')
  AND j.date = d.fecha
 WHERE NOT EXISTS (SELECT 1 FROM gl_journal_detail x WHERE x.journal_id = j.journal_id);
+
+-- Renumeración correlativa por año de los asientos migrados.
+UPDATE gl_journal j
+  JOIN (SELECT journal_id, ROW_NUMBER() OVER (PARTITION BY year ORDER BY date, journal_id) rn
+        FROM gl_journal) r ON r.journal_id = j.journal_id
+  SET j.entry_no = r.rn;
