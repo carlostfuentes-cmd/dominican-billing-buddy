@@ -181,7 +181,7 @@ function NuevoMovimientoInventarioPage() {
   const totalUnidades = round2(lineas.reduce((s, l) => s + cantidadLinea(l), 0));
 
   const guardar = useMutation({
-    mutationFn: () =>
+    mutationFn: (_imprimir: boolean) =>
       guardarDocumentoInventario({
         data: {
           operacion_id: Number(operacionId),
