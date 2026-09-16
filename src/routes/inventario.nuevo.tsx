@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Save } from "lucide-react";
+import { Plus, Printer, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -17,14 +17,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  guardarMovimientoInventario,
-  obtenerExistenciaProducto,
+  guardarDocumentoInventario,
   obtenerListasInventario,
+  obtenerProximoDocumentoInventario,
 } from "@/lib/inventario.functions";
 import { obtenerItems } from "@/lib/erp.functions";
-import { dop, hoyISO, round2 } from "@/lib/erp-types";
+import { dop, fechaCorta, hoyISO, round2 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/inventario/nuevo")({
   head: () => ({
@@ -33,12 +41,12 @@ export const Route = createFileRoute("/inventario/nuevo")({
       {
         name: "description",
         content:
-          "Registra entradas, salidas, ajustes y transferencias entre almacenes con costo, ubicación y seriales.",
+          "Registra documentos de entrada, salida, ajuste o transferencia con varias líneas de producto, costo, ubicación y seriales.",
       },
       { property: "og:title", content: "Nuevo movimiento de inventario — ERP Contable RD" },
       {
         property: "og:description",
-        content: "Entradas, salidas, ajustes y transferencias de almacén con costo y seriales.",
+        content: "Documentos de inventario con varias líneas, costo y seriales.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -49,23 +57,52 @@ export const Route = createFileRoute("/inventario/nuevo")({
 
 const SIN = "sin";
 
+type Linea = {
+  producto_id: string;
+  descripcion: string;
+  unidad: string;
+  cantidad: number;
+  costo_unitario: number;
+  costo_total: number;
+  ubicacion: string;
+  seriales: string;
+};
+
+const lineaVacia = (): Linea => ({
+  producto_id: "",
+  descripcion: "",
+  unidad: "",
+  cantidad: 1,
+  costo_unitario: 0,
+  costo_total: 0,
+  ubicacion: "",
+  seriales: "",
+});
+
+const serialesDe = (texto: string) =>
+  texto
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+const cantidadLinea = (l: Linea) => {
+  const n = serialesDe(l.seriales).length;
+  return n > 0 ? n : l.cantidad;
+};
+
 function NuevoMovimientoInventarioPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const [productoId, setProductoId] = useState("");
   const [operacionId, setOperacionId] = useState("");
   const [fecha, setFecha] = useState(hoyISO());
   const [almacenId, setAlmacenId] = useState("");
   const [almacenDestinoId, setAlmacenDestinoId] = useState("");
-  const [ubicacion, setUbicacion] = useState("");
-  const [documento, setDocumento] = useState("");
+  const [referencia, setReferencia] = useState("");
   const [departamentoId, setDepartamentoId] = useState(SIN);
-  const [cantidad, setCantidad] = useState(0);
-  const [costoTotal, setCostoTotal] = useState(0);
-  const [costoUnitario, setCostoUnitario] = useState(0);
-  const [seriales, setSeriales] = useState("");
   const [notas, setNotas] = useState("");
+  const [lineas, setLineas] = useState<Linea[]>([lineaVacia()]);
+  const [documentoGuardado, setDocumentoGuardado] = useState("");
 
   const { data: listas } = useQuery({
     queryKey: ["listas-inventario"],
@@ -77,7 +114,6 @@ function NuevoMovimientoInventarioPage() {
     queryFn: () => obtenerItems({ data: { busqueda: "" } }),
   });
 
-  // Primer almacén y primera transacción como valores iniciales.
   useEffect(() => {
     if (!listas) return;
     setAlmacenId((v) => v || (listas.almacenes[0]?.id ?? ""));
@@ -87,10 +123,11 @@ function NuevoMovimientoInventarioPage() {
   const operacion = (listas?.operaciones ?? []).find((o) => String(o.id) === operacionId);
   const transferencia = (operacion?.adicional ?? "") !== "";
 
-  const { data: existencia = 0 } = useQuery({
-    queryKey: ["inventario-existencia", productoId, almacenId],
-    queryFn: () => obtenerExistenciaProducto({ data: { productoId, almacenId } }),
-    enabled: productoId.length > 0 && almacenId.length > 0,
+  // Número que tomará el documento al guardar (consecutivo por tipo de transacción).
+  const { data: proximoDocumento = "" } = useQuery({
+    queryKey: ["inventario-proximo-doc", operacionId],
+    queryFn: () => obtenerProximoDocumentoInventario({ data: { operacionId: Number(operacionId) } }),
+    enabled: operacionId.length > 0,
   });
 
   const opcionesProductos = useMemo(
@@ -102,111 +139,155 @@ function NuevoMovimientoInventarioPage() {
       })),
     [items],
   );
-  const item = items.find((i) => i.codigo === productoId);
 
-  const listaSeriales = seriales
-    .split("\n")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const almacenNombre = (id: string) =>
+    (listas?.almacenes ?? []).find((a) => a.id === id)?.nombre ?? "";
 
-  const cambiarCantidad = (valor: number) => {
-    setCantidad(valor);
-    if (costoUnitario > 0) setCostoTotal(round2(valor * costoUnitario));
+  const actualizar = (indice: number, cambios: Partial<Linea>) =>
+    setLineas((prev) => prev.map((l, i) => (i === indice ? { ...l, ...cambios } : l)));
+
+  const elegirProducto = (indice: number, codigo: string) => {
+    const item = items.find((i) => i.codigo === codigo);
+    actualizar(indice, {
+      producto_id: codigo,
+      descripcion: item?.descripcion ?? "",
+      unidad: item?.unidad ?? "",
+      ...(item && item.costo ? { costo_unitario: round2(item.costo) } : {}),
+    });
   };
-  const cambiarCostoTotal = (valor: number) => {
-    setCostoTotal(valor);
-    if (cantidad > 0) setCostoUnitario(round2(valor / cantidad));
+
+  const cambiarCantidad = (indice: number, valor: number) => {
+    const l = lineas[indice];
+    if (!l) return;
+    actualizar(indice, {
+      cantidad: valor,
+      ...(l.costo_unitario > 0 ? { costo_total: round2(valor * l.costo_unitario) } : {}),
+    });
   };
-  const cambiarCostoUnitario = (valor: number) => {
-    setCostoUnitario(valor);
-    if (cantidad > 0) setCostoTotal(round2(valor * cantidad));
+  const cambiarCostoUnitario = (indice: number, valor: number) => {
+    const l = lineas[indice];
+    if (!l) return;
+    const c = cantidadLinea(l);
+    actualizar(indice, { costo_unitario: valor, costo_total: round2(valor * c) });
   };
+  const cambiarCostoTotal = (indice: number, valor: number) => {
+    const l = lineas[indice];
+    if (!l) return;
+    const c = cantidadLinea(l);
+    actualizar(indice, { costo_total: valor, costo_unitario: c > 0 ? round2(valor / c) : 0 });
+  };
+
+  const totalCosto = round2(lineas.reduce((s, l) => s + l.costo_total, 0));
+  const totalUnidades = round2(lineas.reduce((s, l) => s + cantidadLinea(l), 0));
 
   const guardar = useMutation({
     mutationFn: () =>
-      guardarMovimientoInventario({
+      guardarDocumentoInventario({
         data: {
-          producto_id: productoId,
           operacion_id: Number(operacionId),
           fecha,
           almacen_id: almacenId,
           ...(transferencia ? { almacen_destino_id: almacenDestinoId } : {}),
-          ubicacion,
-          documento,
+          referencia,
           ...(departamentoId !== SIN ? { departamento_id: departamentoId } : {}),
-          cantidad: listaSeriales.length ? listaSeriales.length : cantidad,
-          costo_total: costoTotal,
-          costo_unitario: costoUnitario,
-          ...(listaSeriales.length ? { seriales: listaSeriales } : {}),
           notas,
+          lineas: lineas
+            .filter((l) => l.producto_id && cantidadLinea(l) > 0)
+            .map((l) => ({
+              producto_id: l.producto_id,
+              descripcion: l.descripcion,
+              cantidad: cantidadLinea(l),
+              costo_total: l.costo_total,
+              costo_unitario: l.costo_unitario,
+              ubicacion: l.ubicacion,
+              ...(serialesDe(l.seriales).length ? { seriales: serialesDe(l.seriales) } : {}),
+            })),
         },
       }),
-    onSuccess: () => {
+    onSuccess: (r, imprimir) => {
       void qc.invalidateQueries({ queryKey: ["inventario-movimientos"] });
       void qc.invalidateQueries({ queryKey: ["inventario-existencias"] });
       void qc.invalidateQueries({ queryKey: ["inventario-existencia"] });
-      toast.success("Movimiento de inventario registrado");
-      void navigate({ to: "/inventario" });
+      void qc.invalidateQueries({ queryKey: ["inventario-proximo-doc"] });
+      toast.success(`Documento de inventario ${r.documento} registrado`);
+      setDocumentoGuardado(r.documento);
+      if (imprimir) {
+        setTimeout(() => {
+          window.print();
+          void navigate({ to: "/inventario" });
+        }, 250);
+      } else {
+        void navigate({ to: "/inventario" });
+      }
     },
     onError: (error: unknown) =>
       toast.error(error instanceof Error ? error.message : "No se pudo registrar el movimiento"),
   });
 
-  const enviar = () => {
-    if (!productoId) {
-      toast.error("Selecciona el producto");
-      return;
-    }
+  const validar = () => {
     if (!operacionId) {
       toast.error("Selecciona la transacción");
-      return;
+      return false;
     }
     if (transferencia && (!almacenDestinoId || almacenDestinoId === almacenId)) {
       toast.error("Selecciona un almacén de destino distinto al de origen");
-      return;
+      return false;
     }
-    const total = listaSeriales.length ? listaSeriales.length : cantidad;
-    if (total <= 0) {
-      toast.error("Indica la cantidad");
-      return;
+    const validas = lineas.filter((l) => l.producto_id && cantidadLinea(l) > 0);
+    if (!validas.length) {
+      toast.error("Agrega al menos una línea con producto y cantidad");
+      return false;
     }
-    guardar.mutate();
+    return true;
   };
+
+  const enviar = (imprimir: boolean) => {
+    if (!validar()) return;
+    guardar.mutate(imprimir);
+  };
+
+  const imprimirRevision = () => {
+    if (!lineas.some((l) => l.producto_id)) {
+      toast.error("Agrega al menos una línea para imprimir");
+      return;
+    }
+    window.print();
+  };
+
+  const numeroMostrado = documentoGuardado || proximoDocumento;
 
   return (
     <div>
-      <PageHeader
-        titulo="Nuevo movimiento de inventario"
-        descripcion="Entradas, salidas, ajustes y transferencias entre almacenes."
-        acciones={
-          <Button onClick={enviar} disabled={guardar.isPending}>
-            <Save className="size-4" /> Guardar movimiento
-          </Button>
-        }
-      />
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Datos del movimiento</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label>Producto</Label>
-              <SelectorBuscable
-                opciones={opcionesProductos}
-                valor={productoId}
-                onSeleccionar={setProductoId}
-                placeholder="Seleccionar producto"
-                placeholderBusqueda="Escribe código o descripción…"
-              />
-              {item ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {item.descripcion} · {item.unidad}
-                </p>
-              ) : null}
+      <div className="no-print">
+        <PageHeader
+          titulo="Nuevo documento de inventario"
+          descripcion="Entradas, salidas, ajustes y transferencias con varias líneas de producto."
+          acciones={
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={imprimirRevision}>
+                <Printer className="size-4" /> Imprimir (revisión)
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => enviar(true)}
+                disabled={guardar.isPending}
+              >
+                <Printer className="size-4" /> Imprimir y guardar
+              </Button>
+              <Button onClick={() => enviar(false)} disabled={guardar.isPending}>
+                <Save className="size-4" /> Guardar
+              </Button>
             </div>
+          }
+        />
+      </div>
 
+      <div className="no-print space-y-5">
+        <Card>
+          <CardHeader>
+            <CardTitle>Datos del documento</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
               <Label>Transacción</Label>
               <Select value={operacionId} onValueChange={setOperacionId}>
@@ -221,6 +302,20 @@ function NuevoMovimientoInventarioPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label htmlFor="documento">Documento No.</Label>
+              <Input
+                id="documento"
+                readOnly
+                value={numeroMostrado}
+                className="bg-muted/40 tabular-nums"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                {documentoGuardado
+                  ? "Número asignado al guardar."
+                  : "Consecutivo que tomará al guardar."}
+              </p>
             </div>
             <div>
               <Label htmlFor="fecha">Fecha</Label>
@@ -265,24 +360,13 @@ function NuevoMovimientoInventarioPage() {
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
-              <div>
-                <Label htmlFor="ubicacion">Ubicación</Label>
-                <Input
-                  id="ubicacion"
-                  value={ubicacion}
-                  onChange={(e) => setUbicacion(e.target.value)}
-                  placeholder="Pasillo, tramo, estante"
-                />
-              </div>
-            )}
-
+            ) : null}
             <div>
-              <Label htmlFor="documento">Documento</Label>
+              <Label htmlFor="referencia">Referencia</Label>
               <Input
-                id="documento"
-                value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
+                id="referencia"
+                value={referencia}
+                onChange={(e) => setReferencia(e.target.value)}
                 maxLength={10}
               />
             </div>
@@ -302,98 +386,193 @@ function NuevoMovimientoInventarioPage() {
                 </SelectContent>
               </Select>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <Label htmlFor="cantidad">Cantidad</Label>
-              <Input
-                id="cantidad"
-                type="number"
-                step="0.0001"
-                min="0"
-                value={listaSeriales.length ? listaSeriales.length : cantidad}
-                readOnly={listaSeriales.length > 0}
-                onChange={(e) => cambiarCantidad(Number(e.target.value))}
-              />
-              {listaSeriales.length > 0 ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  La cantidad la determinan los seriales digitados.
-                </p>
-              ) : null}
-            </div>
-            <div>
-              <Label htmlFor="existencia">Existencia actual</Label>
-              <Input
-                id="existencia"
-                readOnly
-                value={existencia.toLocaleString("es-DO")}
-                className="bg-muted/40 tabular-nums"
-              />
-            </div>
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-3">
+            <CardTitle>Líneas del documento</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLineas((p) => [...p, lineaVacia()])}
+            >
+              <Plus className="size-4" /> Agregar línea
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {lineas.map((l, i) => (
+              <div key={i} className="rounded-md border p-3">
+                <div className="grid gap-3 lg:grid-cols-12">
+                  <div className="lg:col-span-5">
+                    <Label>Producto</Label>
+                    <SelectorBuscable
+                      opciones={opcionesProductos}
+                      valor={l.producto_id}
+                      onSeleccionar={(v) => elegirProducto(i, v)}
+                      placeholder="Seleccionar producto"
+                      placeholderBusqueda="Escribe código o descripción…"
+                    />
+                    {l.descripcion ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {l.descripcion}
+                        {l.unidad ? ` · ${l.unidad}` : ""}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="lg:col-span-2">
+                    <Label>Cantidad</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      value={cantidadLinea(l)}
+                      readOnly={serialesDe(l.seriales).length > 0}
+                      onChange={(e) => cambiarCantidad(i, Number(e.target.value))}
+                      className="tabular-nums"
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <Label>Costo unitario</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      value={l.costo_unitario}
+                      onChange={(e) => cambiarCostoUnitario(i, Number(e.target.value))}
+                      className="tabular-nums"
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <Label>Costo total</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      value={l.costo_total}
+                      onChange={(e) => cambiarCostoTotal(i, Number(e.target.value))}
+                      className="tabular-nums"
+                    />
+                  </div>
+                  <div className="flex items-end lg:col-span-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Quitar línea"
+                      onClick={() =>
+                        setLineas((p) =>
+                          p.length > 1 ? p.filter((_, idx) => idx !== i) : [lineaVacia()],
+                        )
+                      }
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                  <div className="lg:col-span-4">
+                    <Label>Ubicación</Label>
+                    <Input
+                      value={l.ubicacion}
+                      onChange={(e) => actualizar(i, { ubicacion: e.target.value })}
+                      placeholder="Pasillo, tramo, estante"
+                      maxLength={20}
+                    />
+                  </div>
+                  <div className="lg:col-span-8">
+                    <Label>Seriales (uno por línea)</Label>
+                    <Textarea
+                      rows={2}
+                      value={l.seriales}
+                      onChange={(e) => actualizar(i, { seriales: e.target.value })}
+                      placeholder="Opcional: un serial por línea"
+                    />
+                    {serialesDe(l.seriales).length ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {serialesDe(l.seriales).length} seriales · la cantidad la determinan los
+                        seriales
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
 
-            <div>
-              <Label htmlFor="costo-total">Costo total</Label>
-              <Input
-                id="costo-total"
-                type="number"
-                step="0.0001"
-                min="0"
-                value={costoTotal}
-                onChange={(e) => cambiarCostoTotal(Number(e.target.value))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="costo-unitario">Costo unitario</Label>
-              <Input
-                id="costo-unitario"
-                type="number"
-                step="0.0001"
-                min="0"
-                value={costoUnitario}
-                onChange={(e) => cambiarCostoUnitario(Number(e.target.value))}
-              />
+            <div className="flex flex-wrap justify-end gap-6 border-t pt-3 text-sm">
+              <span className="text-muted-foreground">
+                Unidades: <span className="font-medium text-foreground tabular-nums">
+                  {totalUnidades.toLocaleString("es-DO")}
+                </span>
+              </span>
+              <span className="text-muted-foreground">
+                Costo total:{" "}
+                <span className="font-medium text-foreground tabular-nums">{dop(totalCosto)}</span>
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Seriales (uno por línea)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                rows={6}
-                value={seriales}
-                onChange={(e) => setSeriales(e.target.value)}
-                placeholder="Opcional: un serial por línea"
-              />
+        <Card>
+          <CardHeader>
+            <CardTitle>Observaciones</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea rows={4} value={notas} onChange={(e) => setNotas(e.target.value)} />
+            {transferencia ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                {listaSeriales.length
-                  ? `${listaSeriales.length} seriales · un movimiento por unidad`
-                  : "Sin seriales: se registra un solo movimiento."}
+                La transferencia registra la salida en el almacén de origen y la entrada en el de
+                destino con el mismo número de documento.
               </p>
-            </CardContent>
-          </Card>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Observaciones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea rows={5} value={notas} onChange={(e) => setNotas(e.target.value)} />
-              <p className="mt-3 text-sm text-muted-foreground">
-                Costo total del movimiento:{" "}
-                <span className="font-medium text-foreground">{dop(costoTotal)}</span>
-              </p>
-              {transferencia ? (
-                <p className="mt-2 text-xs text-muted-foreground">
-                  La transferencia registra la salida en el almacén de origen y la entrada en el de
-                  destino.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
+      {/* Impresión: solo se ve al imprimir */}
+      <div className="print-area hidden print:block">
+        <h1 className="text-xl font-semibold">
+          {operacion?.nombre ?? "Movimiento de inventario"}
+        </h1>
+        <p className="mt-1 text-sm">
+          Documento No. {numeroMostrado || "—"} · Fecha {fechaCorta(fecha)}
+          {documentoGuardado ? "" : " · BORRADOR PARA REVISIÓN"}
+        </p>
+        <p className="text-sm">
+          {transferencia
+            ? `Origen: ${almacenNombre(almacenId)} → Destino: ${almacenNombre(almacenDestinoId)}`
+            : `Almacén: ${almacenNombre(almacenId)}`}
+          {referencia ? ` · Referencia: ${referencia}` : ""}
+        </p>
+        <Table className="mt-4">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Código</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead className="text-right">Cantidad</TableHead>
+              <TableHead className="text-right">Costo unit.</TableHead>
+              <TableHead className="text-right">Costo total</TableHead>
+              <TableHead>Seriales</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {lineas
+              .filter((l) => l.producto_id)
+              .map((l, i) => (
+                <TableRow key={i}>
+                  <TableCell>{l.producto_id}</TableCell>
+                  <TableCell>{l.descripcion}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {cantidadLinea(l).toLocaleString("es-DO")}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{dop(l.costo_unitario)}</TableCell>
+                  <TableCell className="text-right tabular-nums">{dop(l.costo_total)}</TableCell>
+                  <TableCell className="text-xs">{serialesDe(l.seriales).join(", ")}</TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
+        </Table>
+        <p className="mt-3 text-right text-sm font-medium">
+          Unidades: {totalUnidades.toLocaleString("es-DO")} · Costo total: {dop(totalCosto)}
+        </p>
+        {notas ? <p className="mt-3 text-sm">Observaciones: {notas}</p> : null}
       </div>
     </div>
   );
