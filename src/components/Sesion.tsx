@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouterState } from "@tanstack/react-router";
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { Building2, Loader2, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Sesion } from "@/lib/db/usuarios.server";
 import { cerrarSesion, iniciarSesion, obtenerSesion } from "@/lib/usuarios.functions";
-import type { AccionPantalla } from "@/lib/pantallas";
+import { pantallaDeRuta, type AccionPantalla } from "@/lib/pantallas";
 
 type Contexto = {
   sesion: Sesion;
@@ -134,4 +135,23 @@ export function SesionProvider({ children }: { children: (ctx: Contexto) => Reac
   };
 
   return <SesionContext.Provider value={ctx}>{children(ctx)}</SesionContext.Provider>;
+}
+
+/** Permisos de la pantalla actual, según el perfil del usuario. */
+export function usePermisoPantalla() {
+  const { sesion, permite } = useSesion();
+  const ruta = useRouterState({ select: (s) => s.location.pathname });
+  const pantalla = pantallaDeRuta(ruta);
+  const puede = (accion: AccionPantalla) => {
+    if (sesion.administrador) return true;
+    if (!pantalla) return true;
+    return permite(pantalla.menu_id, accion);
+  };
+  return {
+    puedeAgregar: puede("agregar"),
+    puedeEditar: puede("editar"),
+    puedeEliminar: puede("eliminar"),
+    puedeImprimir: puede("imprimir"),
+    puedeExportar: puede("exportar"),
+  };
 }
