@@ -5,6 +5,7 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -224,14 +225,16 @@ function Items() {
         titulo="Productos"
         descripcion="Maestra de productos y servicios"
         acciones={
-          <Button
-            onClick={() => {
-              setForm(vacio);
-              setAbierto(true);
-            }}
-          >
-            <Plus className="size-4" /> Nuevo producto
-          </Button>
+          puedeAgregar ? (
+            <Button
+              onClick={() => {
+                setForm(vacio);
+                setAbierto(true);
+              }}
+            >
+              <Plus className="size-4" /> Nuevo producto
+            </Button>
+          ) : undefined
         }
       />
 

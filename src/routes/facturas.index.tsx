@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,11 +96,13 @@ function Facturas() {
         titulo="Pedidos y facturas"
         descripcion="Los pedidos sin NCF están pendientes de facturar"
         acciones={
-          <Button asChild>
-            <Link to="/facturas/nueva">
-              <Plus className="size-4" /> Nuevo pedido
-            </Link>
-          </Button>
+          puedeAgregar ? (
+            <Button asChild>
+              <Link to="/facturas/nueva">
+                <Plus className="size-4" /> Nuevo pedido
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

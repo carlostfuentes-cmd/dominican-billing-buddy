@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,11 +64,13 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
         titulo={cfg.plural}
         descripcion={cfg.descripcion}
         acciones={
-          <Button asChild>
-            <Link to={cfg.rutaNueva}>
-              <Plus className="size-4" /> {cfg.nuevo}
-            </Link>
-          </Button>
+          puedeAgregar ? (
+            <Button asChild>
+              <Link to={cfg.rutaNueva}>
+                <Plus className="size-4" /> {cfg.nuevo}
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

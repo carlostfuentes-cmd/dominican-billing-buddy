@@ -5,6 +5,7 @@ import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -146,14 +147,16 @@ function Clientes() {
         titulo="Clientes"
         descripcion="Datos generales, administración y condiciones comerciales"
         acciones={
-          <Button
-            onClick={() => {
-              setForm(vacio);
-              setAbierto(true);
-            }}
-          >
-            <Plus className="size-4" /> Nuevo cliente
-          </Button>
+          puedeAgregar ? (
+            <Button
+              onClick={() => {
+                setForm(vacio);
+                setAbierto(true);
+              }}
+            >
+              <Plus className="size-4" /> Nuevo cliente
+            </Button>
+          ) : undefined
         }
       />
 

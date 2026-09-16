@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
+import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,11 +98,13 @@ function CxCPage() {
         titulo="Cuentas por cobrar"
         descripcion="Balances pendientes por cliente y movimientos de cobro."
         acciones={
-          <Button asChild>
-            <Link to="/cxc/nuevo" search={{ cliente: "" }}>
-              <Plus className="size-4" /> Nuevo movimiento
-            </Link>
-          </Button>
+          puedeAgregar ? (
+            <Button asChild>
+              <Link to="/cxc/nuevo" search={{ cliente: "" }}>
+                <Plus className="size-4" /> Nuevo movimiento
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 
