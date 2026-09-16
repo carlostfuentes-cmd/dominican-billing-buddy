@@ -252,18 +252,25 @@ export async function existenciaProducto(
 
 /* --------------------------- Registro y anulación ------------------------ */
 
+interface Cabecera {
+  fecha: string;
+  documento: string;
+  referencia?: string | undefined;
+  departamento_id?: string | undefined;
+  notas?: string | undefined;
+}
+
 interface FilaInsert {
   operacionId: number;
   almacenId: number;
+  productoId: string;
   cantidad: number;
+  costoUnitario: number;
   serial: string;
+  ubicacion: string;
 }
 
-async function insertarFila(
-  entrada: NuevoMovimientoInventario,
-  fila: FilaInsert,
-  costoUnitario: number,
-): Promise<number> {
+async function insertarFila(cab: Cabecera, fila: FilaInsert): Promise<number> {
   const r = await ejecutar(
     `INSERT INTO inventory
        (date, time, quantity, value, cost, discount, taxes, source_app, source_doc,
@@ -271,26 +278,54 @@ async function insertarFila(
         inventory_location, department_id, notes)
      VALUES (?, CURTIME(), ?, 0, ?, 0, 0, 'INV', ?, ?, ?, 'A', ?, ?, ?, ?, ?, ?)`,
     [
-      entrada.fecha,
+      cab.fecha,
       fila.cantidad,
-      costoUnitario,
-      (entrada.documento ?? "").slice(0, 10),
-      (entrada.referencia ?? "").slice(0, 10),
+      fila.costoUnitario,
+      cab.documento.slice(0, 10),
+      (cab.referencia ?? "").slice(0, 10),
       fila.serial.slice(0, 50) || null,
       fila.operacionId,
       fila.almacenId,
-      entrada.producto_id,
-      (entrada.ubicacion ?? "").slice(0, 20) || null,
-      entrada.departamento_id ? Number(entrada.departamento_id) : null,
-      entrada.notas ?? "",
+      fila.productoId,
+      fila.ubicacion.slice(0, 20) || null,
+      cab.departamento_id ? Number(cab.departamento_id) : null,
+      cab.notas ?? "",
     ],
   );
   return r.insertId;
 }
 
-export async function crearMovimientoInventario(
-  entrada: NuevoMovimientoInventario,
-): Promise<{ ids: number[] }> {
+/** Operaciones que comparten el consecutivo (la transferencia usa un solo número). */
+function opsDelConsecutivo(operacionId: number): number[] {
+  return esTransferencia(operacionId)
+    ? [OP_TRANSFERENCIA_ENTRADA, OP_TRANSFERENCIA_SALIDA]
+    : [operacionId];
+}
+
+/** Próximo número de documento (source_doc) para el tipo de transacción. */
+export async function proximoDocumentoInventario(operacionId: number): Promise<string> {
+  if (!(await usarMysql()) || !operacionId) return "1";
+  const ops = opsDelConsecutivo(operacionId);
+  const filas = await sql<Record<string, unknown>>(
+    `SELECT COALESCE(MAX(CAST(source_doc AS UNSIGNED)), 0) AS ultimo
+     FROM inventory
+     WHERE inventory_op_id IN (${ops.map(() => "?").join(",")})
+       AND source_doc REGEXP '^[0-9]+$'`,
+    ops,
+  );
+  return String(num(filas[0]?.["ultimo"]) + 1);
+}
+
+function unidadesLinea(linea: LineaInventario): { cantidad: number; serial: string }[] {
+  const seriales = (linea.seriales ?? []).map((s) => s.trim()).filter(Boolean);
+  if (seriales.length) return seriales.map((s) => ({ cantidad: 1, serial: s }));
+  return [{ cantidad: Math.abs(linea.cantidad), serial: "" }];
+}
+
+/** Registra un documento de inventario con una o varias líneas de producto. */
+export async function crearDocumentoInventario(
+  entrada: NuevoDocumentoInventario,
+): Promise<{ ids: number[]; documento: string }> {
   if (!(await usarMysql())) {
     throw new Error(
       "Sin conexión a la base de datos: no se puede registrar el movimiento de inventario.",
@@ -305,11 +340,8 @@ export async function crearMovimientoInventario(
   if (!op) throw new Error("Tipo de transacción no válido.");
   const tipo = txt(op["type"]) === "S" ? "S" : "E";
 
-  const cantidad = Math.abs(entrada.cantidad);
-  if (cantidad <= 0) throw new Error("La cantidad debe ser mayor que cero.");
-  const costoUnitario = round2(
-    entrada.costo_unitario > 0 ? entrada.costo_unitario : entrada.costo_total / cantidad,
-  );
+  const lineas = entrada.lineas.filter((l) => l.producto_id && Math.abs(l.cantidad) > 0);
+  if (!lineas.length) throw new Error("Agrega al menos una línea con producto y cantidad.");
 
   const almacenOrigen = Number(entrada.almacen_id);
   const transferencia = esTransferencia(entrada.operacion_id);
@@ -320,54 +352,88 @@ export async function crearMovimientoInventario(
       throw new Error("El almacén de destino debe ser distinto al de origen.");
   }
 
-  const seriales = (entrada.seriales ?? []).map((s) => s.trim()).filter(Boolean);
-  const unidades: { cantidad: number; serial: string }[] = seriales.length
-    ? seriales.map((s) => ({ cantidad: 1, serial: s }))
-    : [{ cantidad, serial: "" }];
+  const documento =
+    (entrada.documento ?? "").trim() ||
+    (await proximoDocumentoInventario(entrada.operacion_id));
+
+  const cab: Cabecera = {
+    fecha: entrada.fecha,
+    documento,
+    referencia: entrada.referencia,
+    departamento_id: entrada.departamento_id,
+    notas: entrada.notas,
+  };
 
   const ids: number[] = [];
-  for (const u of unidades) {
-    if (transferencia) {
-      ids.push(
-        await insertarFila(
-          entrada,
-          {
+  for (const linea of lineas) {
+    const cantidadLinea = Math.abs(linea.cantidad);
+    const costoUnitario = round2(
+      linea.costo_unitario > 0 ? linea.costo_unitario : linea.costo_total / cantidadLinea,
+    );
+    const ubicacion = linea.ubicacion ?? "";
+    for (const u of unidadesLinea(linea)) {
+      const base = {
+        productoId: linea.producto_id,
+        costoUnitario,
+        serial: u.serial,
+        ubicacion,
+      };
+      if (transferencia) {
+        ids.push(
+          await insertarFila(cab, {
+            ...base,
             operacionId: OP_TRANSFERENCIA_SALIDA,
             almacenId: almacenOrigen,
             cantidad: -u.cantidad,
-            serial: u.serial,
-          },
-          costoUnitario,
-        ),
-      );
-      ids.push(
-        await insertarFila(
-          entrada,
-          {
+          }),
+        );
+        ids.push(
+          await insertarFila(cab, {
+            ...base,
             operacionId: OP_TRANSFERENCIA_ENTRADA,
             almacenId: almacenDestino,
             cantidad: u.cantidad,
-            serial: u.serial,
-          },
-          costoUnitario,
-        ),
-      );
-    } else {
-      ids.push(
-        await insertarFila(
-          entrada,
-          {
+          }),
+        );
+      } else {
+        ids.push(
+          await insertarFila(cab, {
+            ...base,
             operacionId: entrada.operacion_id,
             almacenId: almacenOrigen,
             cantidad: tipo === "S" ? -u.cantidad : u.cantidad,
-            serial: u.serial,
-          },
-          costoUnitario,
-        ),
-      );
+          }),
+        );
+      }
     }
   }
-  return { ids };
+  return { ids, documento };
+}
+
+/** Compatibilidad: un movimiento de un solo producto. */
+export async function crearMovimientoInventario(
+  entrada: NuevoMovimientoInventario,
+): Promise<{ ids: number[]; documento: string }> {
+  return crearDocumentoInventario({
+    operacion_id: entrada.operacion_id,
+    fecha: entrada.fecha,
+    almacen_id: entrada.almacen_id,
+    almacen_destino_id: entrada.almacen_destino_id,
+    documento: entrada.documento,
+    referencia: entrada.referencia,
+    departamento_id: entrada.departamento_id,
+    notas: entrada.notas,
+    lineas: [
+      {
+        producto_id: entrada.producto_id,
+        cantidad: entrada.cantidad,
+        costo_unitario: entrada.costo_unitario,
+        costo_total: entrada.costo_total,
+        ubicacion: entrada.ubicacion,
+        seriales: entrada.seriales,
+      },
+    ],
+  });
 }
 
 /** Anula un movimiento (status = 'I'): deja de contar para la existencia. */
