@@ -798,6 +798,8 @@ export interface NuevoDocumentoInventario {
   departamento_id?: string | undefined;
   notas?: string | undefined;
   lineas: LineaInventario[];
+  /** Cuentas contables a afectar (si no se envían, se toman de la clasificación). */
+  asiento?: LineaAsiento[] | undefined;
 }
 
 export interface FiltroInventario {
