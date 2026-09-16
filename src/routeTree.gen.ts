@@ -16,6 +16,7 @@ import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as FormatosRouteImport } from './routes/formatos'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as NcfRouteImport } from './routes/ncf'
+import { Route as PerfilesRouteImport } from './routes/perfiles'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
@@ -70,6 +71,11 @@ const ItemsRoute = ItemsRouteImport.update({
 const NcfRoute = NcfRouteImport.update({
   id: '/ncf',
   path: '/ncf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfilesRoute = PerfilesRouteImport.update({
+  id: '/perfiles',
+  path: '/perfiles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportesRoute = ReportesRouteImport.update({
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/conduces/$id': typeof ConducesIdRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/conduces/$id': typeof ConducesIdRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
+  '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/conduces/$id': typeof ConducesIdRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/formatos'
     | '/items'
     | '/ncf'
+    | '/perfiles'
     | '/reportes'
     | '/usuarios'
     | '/conduces/$id'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/formatos'
     | '/items'
     | '/ncf'
+    | '/perfiles'
     | '/reportes'
     | '/usuarios'
     | '/conduces/$id'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/formatos'
     | '/items'
     | '/ncf'
+    | '/perfiles'
     | '/reportes'
     | '/usuarios'
     | '/conduces/$id'
@@ -359,6 +371,7 @@ export interface RootRouteChildren {
   FormatosRoute: typeof FormatosRoute
   ItemsRoute: typeof ItemsRoute
   NcfRoute: typeof NcfRoute
+  PerfilesRoute: typeof PerfilesRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   ConducesIdRoute: typeof ConducesIdRoute
@@ -430,6 +443,13 @@ declare module '@tanstack/react-router' {
       path: '/ncf'
       fullPath: '/ncf'
       preLoaderRoute: typeof NcfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perfiles': {
+      id: '/perfiles'
+      path: '/perfiles'
+      fullPath: '/perfiles'
+      preLoaderRoute: typeof PerfilesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reportes': {
@@ -583,6 +603,7 @@ const rootRouteChildren: RootRouteChildren = {
   FormatosRoute: FormatosRoute,
   ItemsRoute: ItemsRoute,
   NcfRoute: NcfRoute,
+  PerfilesRoute: PerfilesRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   ConducesIdRoute: ConducesIdRoute,
