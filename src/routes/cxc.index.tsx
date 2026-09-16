@@ -59,6 +59,7 @@ export const Route = createFileRoute("/cxc/")({
 const TODOS = "todos";
 
 function CxCPage() {
+  const { puedeAgregar } = usePermisoPantalla();
   const inicioAno = `${hoyISO().slice(0, 4)}-01-01`;
   const [desde, setDesde] = useState(inicioAno);
   const [hasta, setHasta] = useState(hoyISO());

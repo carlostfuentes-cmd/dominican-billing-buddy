@@ -59,6 +59,7 @@ export const Route = createFileRoute("/inventario/")({
 const TODOS = "todos";
 
 function InventarioPage() {
+  const { puedeAgregar } = usePermisoPantalla();
   const inicioAno = `${hoyISO().slice(0, 4)}-01-01`;
   const [desde, setDesde] = useState(inicioAno);
   const [hasta, setHasta] = useState(hoyISO());

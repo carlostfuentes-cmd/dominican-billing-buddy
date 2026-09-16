@@ -102,6 +102,7 @@ const DATACREDITO = ["NORMAL", "ATRASO", "LEGAL", "CASTIGADO", "SALDADO"] as con
 const SIN_VALOR = "__sin__";
 
 function Clientes() {
+  const { puedeAgregar } = usePermisoPantalla();
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState(false);
   const [form, setForm] = useState<FormCliente>(vacio);

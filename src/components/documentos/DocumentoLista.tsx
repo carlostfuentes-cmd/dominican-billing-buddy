@@ -33,6 +33,7 @@ import { DOCUMENTOS, dop, fechaCorta, hoyISO, money, type TipoDocumento } from "
 const TODOS = "todos";
 
 export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
+  const { puedeAgregar } = usePermisoPantalla();
   const cfg = DOCUMENTOS[tipo];
   const inicioAno = `${hoyISO().slice(0, 4)}-01-01`;
   const [desde, setDesde] = useState(inicioAno);

@@ -118,6 +118,7 @@ const ETIQUETA_TASA: Record<number, string> = {
 const SIN = "__sin__";
 
 function Items() {
+  const { puedeAgregar } = usePermisoPantalla();
   const [busqueda, setBusqueda] = useState("");
   const [abierto, setAbierto] = useState(false);
   const [form, setForm] = useState<Formulario>(vacio);
