@@ -32,7 +32,9 @@ import {
   obtenerProximoDocumentoInventario,
 } from "@/lib/inventario.functions";
 import { obtenerItems } from "@/lib/erp.functions";
-import { dop, fechaCorta, hoyISO, round2 } from "@/lib/erp-types";
+import { obtenerPropuestaInventario } from "@/lib/cuentas.functions";
+import { AsientoContable } from "@/components/AsientoContable";
+import { dop, fechaCorta, hoyISO, round2, type LineaAsiento } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/inventario/nuevo")({
   head: () => ({
@@ -103,6 +105,7 @@ function NuevoMovimientoInventarioPage() {
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()]);
   const [documentoGuardado, setDocumentoGuardado] = useState("");
+  const [asiento, setAsiento] = useState<LineaAsiento[]>([]);
 
   const { data: listas } = useQuery({
     queryKey: ["listas-inventario"],
@@ -129,6 +132,32 @@ function NuevoMovimientoInventarioPage() {
     queryFn: () => obtenerProximoDocumentoInventario({ data: { operacionId: Number(operacionId) } }),
     enabled: operacionId.length > 0,
   });
+
+  // Cuentas propuestas por la clasificación de inventario del producto.
+  const lineasCosto = useMemo(
+    () =>
+      lineas
+        .filter((l) => l.producto_id && l.costo_total > 0)
+        .map((l) => ({
+          producto_id: l.producto_id,
+          cantidad: cantidadLinea(l),
+          costo_total: round2(l.costo_total),
+        })),
+    [lineas],
+  );
+
+  const { data: propuesta, isFetching: calculandoAsiento } = useQuery({
+    queryKey: ["propuesta-inventario", operacionId, JSON.stringify(lineasCosto)],
+    queryFn: () =>
+      obtenerPropuestaInventario({
+        data: { operacion_id: Number(operacionId), lineas: lineasCosto },
+      }),
+    enabled: operacionId.length > 0 && lineasCosto.length > 0,
+  });
+
+  useEffect(() => {
+    setAsiento(propuesta?.lineas ?? []);
+  }, [propuesta]);
 
   const opcionesProductos = useMemo(
     () =>
@@ -191,6 +220,7 @@ function NuevoMovimientoInventarioPage() {
           referencia,
           ...(departamentoId !== SIN ? { departamento_id: departamentoId } : {}),
           notas,
+          ...(asiento.length ? { asiento } : {}),
           lineas: lineas
             .filter((l) => l.producto_id && cantidadLinea(l) > 0)
             .map((l) => ({
