@@ -55,8 +55,8 @@ CREATE TABLE IF NOT EXISTS gl_journal (
   total_debit    DECIMAL(16,2) NOT NULL DEFAULT 0.00,
   total_credit   DECIMAL(16,2) NOT NULL DEFAULT 0.00,
   branch_id      INT           NULL,
-  entry_kind_id  INT           NULL,
-  department_id  INT           NULL,
+  entry_kind_id  INT(4)        NULL COMMENT 'Tipo de entrada contable (gl_entradas)',
+  department_id  INT(4) UNSIGNED ZEROFILL NULL COMMENT 'Centro de costo (gl_department)',
   posted         TINYINT(1)    NOT NULL DEFAULT 1,
   void           TINYINT(1)    NOT NULL DEFAULT 0,
   created_by     VARCHAR(50)   NULL,
@@ -68,7 +68,13 @@ CREATE TABLE IF NOT EXISTS gl_journal (
   KEY ix_gl_journal_date (date),
   KEY ix_gl_journal_period (year, month),
   KEY ix_gl_journal_entry (year, entry_no),
-  KEY ix_gl_journal_legacy (legacy_entry_id, legacy_origen)
+  KEY ix_gl_journal_legacy (legacy_entry_id, legacy_origen),
+  KEY ix_gl_journal_kind (entry_kind_id),
+  KEY ix_gl_journal_department (department_id),
+  CONSTRAINT fk_gl_journal_entry_kind FOREIGN KEY (entry_kind_id)
+    REFERENCES gl_entradas (entrada_id) ON UPDATE CASCADE ON DELETE SET NULL,
+  CONSTRAINT fk_gl_journal_department FOREIGN KEY (department_id)
+    REFERENCES gl_department (department_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS gl_journal_detail (
@@ -81,7 +87,7 @@ CREATE TABLE IF NOT EXISTS gl_journal_detail (
   amount_dop        DECIMAL(16,2) NOT NULL DEFAULT 0.00,
   description       VARCHAR(255)  NULL,
   reference         VARCHAR(50)   NULL,
-  department_id     INT           NULL,
+  department_id     INT(4) UNSIGNED ZEROFILL NULL COMMENT 'Centro de costo (gl_department)',
   project_id        INT           NULL,
   customer_id       VARCHAR(15)   NULL,
   supplier_id       VARCHAR(15)   NULL,
@@ -90,8 +96,13 @@ CREATE TABLE IF NOT EXISTS gl_journal_detail (
   PRIMARY KEY (journal_detail_id),
   KEY ix_gl_jd_journal (journal_id),
   KEY ix_gl_jd_account (account, date),
-  KEY ix_gl_jd_department (department_id)
+  KEY ix_gl_jd_department (department_id),
+  CONSTRAINT fk_gl_jd_journal FOREIGN KEY (journal_id)
+    REFERENCES gl_journal (journal_id) ON DELETE CASCADE,
+  CONSTRAINT fk_gl_jd_department FOREIGN KEY (department_id)
+    REFERENCES gl_department (department_id) ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 
 -- ------------------------- Carga del catálogo -------------------------
 INSERT INTO gl_accounts
