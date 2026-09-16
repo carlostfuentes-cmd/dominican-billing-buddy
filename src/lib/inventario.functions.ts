@@ -71,6 +71,16 @@ export const guardarMovimientoInventario = createServerFn({ method: "POST" })
     (await repo()).crearMovimientoInventario(data),
   );
 
+const lineaAsientoSchema = z.object({
+  cuenta: texto(15),
+  cuenta_nombre: texto(60).optional(),
+  departamento_id: texto(10).optional(),
+  descripcion: texto(200),
+  referencia: texto(50).optional(),
+  debito: z.number().min(0).max(999_999_999),
+  credito: z.number().min(0).max(999_999_999),
+});
+
 const lineaSchema = z.object({
   producto_id: texto(50).min(1, "Selecciona el producto"),
   descripcion: texto(200).optional(),
@@ -91,6 +101,7 @@ const documentoSchema = z.object({
   departamento_id: texto(10).optional(),
   notas: texto(1000).optional(),
   lineas: z.array(lineaSchema).min(1, "Agrega al menos una línea"),
+  asiento: z.array(lineaAsientoSchema).max(100).optional(),
 });
 
 export const obtenerProximoDocumentoInventario = createServerFn({ method: "GET" })

@@ -44,6 +44,16 @@ export const obtenerResumen = createServerFn({ method: "GET" }).handler(
 
 /* -------------------------------- Empresa -------------------------------- */
 
+const lineaAsientoSchema = z.object({
+  cuenta: texto(15),
+  cuenta_nombre: texto(60).optional(),
+  departamento_id: texto(10).optional(),
+  descripcion: texto(200),
+  referencia: texto(50).optional(),
+  debito: z.number().min(0).max(999_999_999),
+  credito: z.number().min(0).max(999_999_999),
+});
+
 const empresaSchema = z.object({
   nombre: texto(160).min(1, "Requerido"),
   rnc: texto(15).min(9, "RNC inválido"),
