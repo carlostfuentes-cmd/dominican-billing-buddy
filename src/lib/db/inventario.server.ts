@@ -407,7 +407,56 @@ export async function crearDocumentoInventario(
       }
     }
   }
+  await contabilizarDocumento(entrada, documento, tipo);
+
   return { ids, documento };
+}
+
+/**
+ * Registra el asiento contable del documento de inventario.
+ * Si el usuario no envía cuentas, se toman de la clasificación del producto.
+ * La transferencia entre almacenes no genera asiento.
+ */
+async function contabilizarDocumento(
+  entrada: NuevoDocumentoInventario,
+  documento: string,
+  tipo: "E" | "S",
+): Promise<void> {
+  if (esTransferencia(entrada.operacion_id)) return;
+
+  let lineas = (entrada.asiento ?? []).filter(
+    (l) => l.cuenta && (l.debito > 0 || l.credito > 0),
+  );
+  if (!lineas.length) {
+    const { propuestaInventario } = await import("./cuentas.server");
+    const propuesta = await propuestaInventario({
+      operacion_id: entrada.operacion_id,
+      lineas: entrada.lineas.map((l) => ({
+        producto_id: l.producto_id,
+        cantidad: Math.abs(l.cantidad),
+        costo_total: l.costo_total,
+      })),
+    });
+    lineas = propuesta.lineas;
+  }
+  if (lineas.length < 2) return;
+
+  const debito = round2(lineas.reduce((a, l) => a + l.debito, 0));
+  const credito = round2(lineas.reduce((a, l) => a + l.credito, 0));
+  if (debito <= 0 || Math.abs(debito - credito) > 0.01) return;
+
+  const { crearAsiento } = await import("./contabilidad.server");
+  const descripcion =
+    (entrada.notas ?? "").trim() ||
+    `${tipo === "E" ? "Entrada" : "Salida"} de inventario documento ${documento}`;
+  await crearAsiento({
+    fecha: entrada.fecha,
+    descripcion,
+    documento,
+    moneda: "DOP",
+    tasa_cambio: 1,
+    lineas,
+  });
 }
 
 /** Compatibilidad: un movimiento de un solo producto. */
