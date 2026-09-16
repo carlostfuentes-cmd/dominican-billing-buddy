@@ -30,6 +30,7 @@ import {
   type OpcionId,
 
 
+  type LineaAsiento,
   type LineaEntrada,
   type ListasNCF,
   type RangoNCF,
