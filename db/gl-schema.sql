@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS gl_journal (
   total_debit    DECIMAL(16,2) NOT NULL DEFAULT 0.00,
   total_credit   DECIMAL(16,2) NOT NULL DEFAULT 0.00,
   branch_id      INT           NULL,
+  entry_kind_id  INT           NULL,
   department_id  INT           NULL,
   posted         TINYINT(1)    NOT NULL DEFAULT 1,
   void           TINYINT(1)    NOT NULL DEFAULT 0,

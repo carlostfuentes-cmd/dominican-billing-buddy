@@ -21,6 +21,7 @@ import {
   type LineaBalance,
   type LineaMayor,
   type ListasContabilidad,
+  type MayorGeneral,
   type Moneda,
   type NuevoAsiento,
   type OpcionId,
