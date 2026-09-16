@@ -67,8 +67,42 @@ const movimientoSchema = z.object({
 
 export const guardarMovimientoInventario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => movimientoSchema.parse(d))
-  .handler(async ({ data }): Promise<{ ids: number[] }> =>
+  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> =>
     (await repo()).crearMovimientoInventario(data),
+  );
+
+const lineaSchema = z.object({
+  producto_id: texto(50).min(1, "Selecciona el producto"),
+  descripcion: texto(200).optional(),
+  cantidad: z.number().min(0.0001, "La cantidad debe ser mayor que cero").max(9_999_999),
+  costo_total: z.number().min(0).max(999_999_999),
+  costo_unitario: z.number().min(0).max(999_999_999),
+  ubicacion: texto(20).optional(),
+  seriales: z.array(texto(50)).max(500).optional(),
+});
+
+const documentoSchema = z.object({
+  operacion_id: z.number().int().min(1, "Selecciona la transacción"),
+  fecha,
+  almacen_id: texto(10).min(1, "Selecciona el almacén"),
+  almacen_destino_id: texto(10).optional(),
+  documento: texto(10).optional(),
+  referencia: texto(10).optional(),
+  departamento_id: texto(10).optional(),
+  notas: texto(1000).optional(),
+  lineas: z.array(lineaSchema).min(1, "Agrega al menos una línea"),
+});
+
+export const obtenerProximoDocumentoInventario = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) => z.object({ operacionId: z.number().int().min(1) }).parse(d))
+  .handler(async ({ data }): Promise<string> =>
+    (await repo()).proximoDocumentoInventario(data.operacionId),
+  );
+
+export const guardarDocumentoInventario = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => documentoSchema.parse(d))
+  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> =>
+    (await repo()).crearDocumentoInventario(data),
   );
 
 export const anularMovimientoInventario = createServerFn({ method: "POST" })
