@@ -1611,6 +1611,49 @@ export async function facturarPedido(
   return pedido;
 }
 
+/**
+ * Registra el asiento contable de la venta al convertir el pedido en factura.
+ * Si no se envían cuentas, se toman de la clasificación de inventario del producto.
+ */
+async function contabilizarVenta(factura: Factura, asiento?: LineaAsiento[]): Promise<void> {
+  try {
+    let lineas = (asiento ?? []).filter((l) => l.cuenta && (l.debito > 0 || l.credito > 0));
+    if (!lineas.length) {
+      const { propuestaPedido } = await import("./cuentas.server");
+      const propuesta = await propuestaPedido({
+        cliente_id: factura.cliente_id,
+        moneda: factura.moneda,
+        tasa_cambio: factura.tasa_cambio,
+        lineas: factura.lineas.map((l) => ({
+          producto_id: l.codigo,
+          cantidad: l.cantidad,
+          precio: l.precio,
+          descuento: round2(l.cantidad * l.precio - l.subtotal),
+          itbis: l.itbis,
+        })),
+      });
+      lineas = propuesta.lineas;
+    }
+    if (lineas.length < 2) return;
+    const debito = round2(lineas.reduce((a, l) => a + l.debito, 0));
+    const credito = round2(lineas.reduce((a, l) => a + l.credito, 0));
+    if (debito <= 0 || Math.abs(debito - credito) > 0.01) return;
+
+    const { crearAsiento } = await import("./contabilidad.server");
+    await crearAsiento({
+      fecha: factura.fecha,
+      descripcion: `Factura ${factura.ncf} — ${factura.cliente_nombre}`,
+      documento: factura.ncf || String(factura.id),
+      moneda: factura.moneda,
+      tasa_cambio: factura.tasa_cambio,
+      lineas,
+    });
+  } catch (error) {
+    // La factura ya está emitida: el asiento no debe impedir la facturación.
+    console.error("No se pudo registrar el asiento de la factura", error);
+  }
+}
+
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {
   if (await usarMysql()) {
     if (estado === "pagada") {

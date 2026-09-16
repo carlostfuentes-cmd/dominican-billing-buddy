@@ -317,6 +317,7 @@ const nuevaFacturaSchema = z.object({
     )
     .min(1, "Agrega al menos una línea"),
   facturar: z.boolean().optional(),
+  asiento: z.array(lineaAsientoSchema).max(100).optional(),
 });
 
 export const guardarPedido = createServerFn({ method: "POST" })
@@ -326,10 +327,16 @@ export const guardarPedido = createServerFn({ method: "POST" })
 /** Convierte un pedido existente en factura (asigna NCF y número de factura). */
 export const facturarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ id: z.number().int().positive(), tipo_ncf: tipoNCF.optional() }).parse(d),
+    z
+      .object({
+        id: z.number().int().positive(),
+        tipo_ncf: tipoNCF.optional(),
+        asiento: z.array(lineaAsientoSchema).max(100).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }): Promise<Factura> =>
-    (await repo()).facturarPedido(data.id, data.tipo_ncf),
+    (await repo()).facturarPedido(data.id, data.tipo_ncf, data.asiento),
   );
 
 
