@@ -776,6 +776,30 @@ export interface NuevoMovimientoInventario {
   notas?: string | undefined;
 }
 
+/** Una línea (producto) del documento de inventario. */
+export interface LineaInventario {
+  producto_id: string;
+  descripcion?: string | undefined;
+  cantidad: number;
+  costo_unitario: number;
+  costo_total: number;
+  ubicacion?: string | undefined;
+  seriales?: string[] | undefined;
+}
+
+/** Documento de inventario: una transacción con varias líneas de producto. */
+export interface NuevoDocumentoInventario {
+  operacion_id: number;
+  fecha: string;
+  almacen_id: string;
+  almacen_destino_id?: string | undefined;
+  documento?: string | undefined;
+  referencia?: string | undefined;
+  departamento_id?: string | undefined;
+  notas?: string | undefined;
+  lineas: LineaInventario[];
+}
+
 export interface FiltroInventario {
   desde?: string | undefined;
   hasta?: string | undefined;
