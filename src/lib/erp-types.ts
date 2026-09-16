@@ -798,6 +798,8 @@ export interface NuevoDocumentoInventario {
   departamento_id?: string | undefined;
   notas?: string | undefined;
   lineas: LineaInventario[];
+  /** Cuentas contables a afectar (si no se envían, se toman de la clasificación). */
+  asiento?: LineaAsiento[] | undefined;
 }
 
 export interface FiltroInventario {
@@ -831,6 +833,12 @@ export interface LineaAsiento {
   referencia?: string | undefined;
   debito: number;
   credito: number;
+}
+
+/** Asiento propuesto automáticamente a partir de la clasificación de inventario. */
+export interface PropuestaAsiento {
+  lineas: LineaAsiento[];
+  advertencias: string[];
 }
 
 export interface AsientoContable {

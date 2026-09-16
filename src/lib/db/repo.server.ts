@@ -30,6 +30,7 @@ import {
   type OpcionId,
 
 
+  type LineaAsiento,
   type LineaEntrada,
   type ListasNCF,
   type RangoNCF,
@@ -1386,6 +1387,8 @@ export interface NuevoPedido {
   lineas: LineaEntrada[];
   /** Si es true, al guardar el pedido se convierte de inmediato en factura. */
   facturar?: boolean | undefined;
+  /** Cuentas contables a afectar al facturar (si no se envían, se toman de la clasificación). */
+  asiento?: LineaAsiento[] | undefined;
 }
 
 /** Reserva de forma atómica el siguiente NCF del tipo indicado. */
@@ -1508,7 +1511,7 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
       );
     }
 
-    if (entrada.facturar) return facturarPedido(orderId, entrada.tipo_ncf);
+    if (entrada.facturar) return facturarPedido(orderId, entrada.tipo_ncf, entrada.asiento);
 
     const creado = await obtenerFactura(orderId);
     if (!creado) throw new Error("No se pudo leer el pedido creado");
@@ -1541,7 +1544,7 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
     lineas,
   };
   d.facturas.push(pedido);
-  if (entrada.facturar) return facturarPedido(pedido.id, entrada.tipo_ncf);
+  if (entrada.facturar) return facturarPedido(pedido.id, entrada.tipo_ncf, entrada.asiento);
   return pedido;
 }
 
@@ -1549,7 +1552,11 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
  * Convierte un pedido en factura: reserva el NCF, crea el comprobante en
  * invoices y guarda el número de factura en orders.invoice_id.
  */
-export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factura> {
+export async function facturarPedido(
+  id: number,
+  tipo?: TipoNCF,
+  asiento?: LineaAsiento[],
+): Promise<Factura> {
   if (await usarMysql()) {
     const ordenes = await sql<{
       invoice_id: number | null;
@@ -1581,6 +1588,7 @@ export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factur
     await ejecutar("UPDATE orders SET invoice_id = ? WHERE order_id = ?", [inv.insertId, id]);
     const facturada = await obtenerFactura(id);
     if (!facturada) throw new Error("No se pudo leer la factura creada");
+    await contabilizarVenta(facturada, asiento);
     return facturada;
   }
 
@@ -1601,6 +1609,49 @@ export async function facturarPedido(id: number, tipo?: TipoNCF): Promise<Factur
   pedido.facturado = true;
   pedido.estado = "emitida";
   return pedido;
+}
+
+/**
+ * Registra el asiento contable de la venta al convertir el pedido en factura.
+ * Si no se envían cuentas, se toman de la clasificación de inventario del producto.
+ */
+async function contabilizarVenta(factura: Factura, asiento?: LineaAsiento[]): Promise<void> {
+  try {
+    let lineas = (asiento ?? []).filter((l) => l.cuenta && (l.debito > 0 || l.credito > 0));
+    if (!lineas.length) {
+      const { propuestaPedido } = await import("./cuentas.server");
+      const propuesta = await propuestaPedido({
+        cliente_id: factura.cliente_id,
+        moneda: factura.moneda,
+        tasa_cambio: factura.tasa_cambio,
+        lineas: factura.lineas.map((l) => ({
+          producto_id: l.codigo,
+          cantidad: l.cantidad,
+          precio: l.precio,
+          descuento: round2(l.cantidad * l.precio - l.subtotal),
+          itbis: l.itbis,
+        })),
+      });
+      lineas = propuesta.lineas;
+    }
+    if (lineas.length < 2) return;
+    const debito = round2(lineas.reduce((a, l) => a + l.debito, 0));
+    const credito = round2(lineas.reduce((a, l) => a + l.credito, 0));
+    if (debito <= 0 || Math.abs(debito - credito) > 0.01) return;
+
+    const { crearAsiento } = await import("./contabilidad.server");
+    await crearAsiento({
+      fecha: factura.fecha,
+      descripcion: `Factura ${factura.ncf} — ${factura.cliente_nombre}`,
+      documento: factura.ncf || String(factura.id),
+      moneda: factura.moneda,
+      tasa_cambio: factura.tasa_cambio,
+      lineas,
+    });
+  } catch (error) {
+    // La factura ya está emitida: el asiento no debe impedir la facturación.
+    console.error("No se pudo registrar el asiento de la factura", error);
+  }
 }
 
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {

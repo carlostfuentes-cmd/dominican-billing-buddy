@@ -44,6 +44,16 @@ export const obtenerResumen = createServerFn({ method: "GET" }).handler(
 
 /* -------------------------------- Empresa -------------------------------- */
 
+const lineaAsientoSchema = z.object({
+  cuenta: texto(15),
+  cuenta_nombre: texto(60).optional(),
+  departamento_id: texto(10).optional(),
+  descripcion: texto(200),
+  referencia: texto(50).optional(),
+  debito: z.number().min(0).max(999_999_999),
+  credito: z.number().min(0).max(999_999_999),
+});
+
 const empresaSchema = z.object({
   nombre: texto(160).min(1, "Requerido"),
   rnc: texto(15).min(9, "RNC inválido"),
@@ -317,6 +327,7 @@ const nuevaFacturaSchema = z.object({
     )
     .min(1, "Agrega al menos una línea"),
   facturar: z.boolean().optional(),
+  asiento: z.array(lineaAsientoSchema).max(100).optional(),
 });
 
 export const guardarPedido = createServerFn({ method: "POST" })
@@ -326,10 +337,16 @@ export const guardarPedido = createServerFn({ method: "POST" })
 /** Convierte un pedido existente en factura (asigna NCF y número de factura). */
 export const facturarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z.object({ id: z.number().int().positive(), tipo_ncf: tipoNCF.optional() }).parse(d),
+    z
+      .object({
+        id: z.number().int().positive(),
+        tipo_ncf: tipoNCF.optional(),
+        asiento: z.array(lineaAsientoSchema).max(100).optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }): Promise<Factura> =>
-    (await repo()).facturarPedido(data.id, data.tipo_ncf),
+    (await repo()).facturarPedido(data.id, data.tipo_ncf, data.asiento),
   );
 
 
