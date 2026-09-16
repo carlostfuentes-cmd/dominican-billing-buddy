@@ -833,6 +833,12 @@ export interface LineaAsiento {
   credito: number;
 }
 
+/** Asiento propuesto automáticamente a partir de la clasificación de inventario. */
+export interface PropuestaAsiento {
+  lineas: LineaAsiento[];
+  advertencias: string[];
+}
+
 export interface AsientoContable {
   id: number;
   numero: number;
