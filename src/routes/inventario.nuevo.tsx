@@ -540,6 +540,16 @@ function NuevoMovimientoInventarioPage() {
           </CardContent>
         </Card>
 
+        {transferencia ? null : (
+          <AsientoContable
+            lineas={asiento}
+            onCambiar={setAsiento}
+            advertencias={propuesta?.advertencias ?? []}
+            cargando={calculandoAsiento}
+            nota="Cuentas tomadas de la clasificación del producto. Puedes cambiarlas antes de guardar."
+          />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Observaciones</CardTitle>
