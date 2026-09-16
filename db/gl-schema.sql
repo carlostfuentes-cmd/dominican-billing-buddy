@@ -114,7 +114,7 @@ ON DUPLICATE KEY UPDATE
   is_detail = VALUES(is_detail), currency = VALUES(currency);
 
 -- ------------------------- Períodos contables -------------------------
-INSERT INTO gl_periods (year, month, date_from, date_to, status)
+INSERT IGNORE INTO gl_periods (year, month, date_from, date_to, status)
 SELECT y.year, m.month,
        DATE(CONCAT(y.year, '-', LPAD(m.month, 2, '0'), '-01')),
        LAST_DAY(DATE(CONCAT(y.year, '-', LPAD(m.month, 2, '0'), '-01'))),
@@ -123,8 +123,7 @@ FROM (SELECT 2021 AS year UNION SELECT 2022 UNION SELECT 2023 UNION SELECT 2024
       UNION SELECT 2025 UNION SELECT 2026 UNION SELECT 2027) y
 CROSS JOIN (SELECT 1 AS month UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
             UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
-            UNION SELECT 11 UNION SELECT 12) m
-ON DUPLICATE KEY UPDATE date_to = VALUES(date_to);
+            UNION SELECT 11 UNION SELECT 12) m;
 
 -- ---------------- Migración del histórico desde `diario` ----------------
 -- Un asiento por (entry_id, fecha, origen); el detalle conserva cada línea.
