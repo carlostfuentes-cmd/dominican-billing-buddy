@@ -20,6 +20,7 @@ import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
 import { Route as ConducesIdRouteImport } from './routes/conduces.$id'
 import { Route as ConducesNuevaRouteImport } from './routes/conduces.nueva'
+import { Route as ContabilidadIndexRouteImport } from './routes/contabilidad.index'
 import { Route as CotizacionesIndexRouteImport } from './routes/cotizaciones.index'
 import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
@@ -87,6 +88,11 @@ const ConducesIdRoute = ConducesIdRouteImport.update({
 const ConducesNuevaRoute = ConducesNuevaRouteImport.update({
   id: '/conduces/nueva',
   path: '/conduces/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContabilidadIndexRoute = ContabilidadIndexRouteImport.update({
+  id: '/contabilidad/',
+  path: '/contabilidad/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CotizacionesIndexRoute = CotizacionesIndexRouteImport.update({
@@ -175,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
+  '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces': typeof ConducesIndexRoute
+  '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
   '/cxc': typeof CxcIndexRoute
   '/devoluciones': typeof DevolucionesIndexRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/conduces/': typeof ConducesIndexRoute
+  '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces/'
+    | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
     | '/devoluciones/'
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces'
+    | '/contabilidad'
     | '/cotizaciones'
     | '/cxc'
     | '/devoluciones'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/facturas/nueva'
     | '/inventario/nuevo'
     | '/conduces/'
+    | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
     | '/devoluciones/'
@@ -335,6 +347,7 @@ export interface RootRouteChildren {
   FacturasNuevaRoute: typeof FacturasNuevaRoute
   InventarioNuevoRoute: typeof InventarioNuevoRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
+  ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
   CxcIndexRoute: typeof CxcIndexRoute
   DevolucionesIndexRoute: typeof DevolucionesIndexRoute
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/conduces/nueva'
       fullPath: '/conduces/nueva'
       preLoaderRoute: typeof ConducesNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contabilidad/': {
+      id: '/contabilidad/'
+      path: '/contabilidad'
+      fullPath: '/contabilidad/'
+      preLoaderRoute: typeof ContabilidadIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cotizaciones/': {
@@ -535,6 +555,7 @@ const rootRouteChildren: RootRouteChildren = {
   FacturasNuevaRoute: FacturasNuevaRoute,
   InventarioNuevoRoute: InventarioNuevoRoute,
   ConducesIndexRoute: ConducesIndexRoute,
+  ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
   CxcIndexRoute: CxcIndexRoute,
   DevolucionesIndexRoute: DevolucionesIndexRoute,
