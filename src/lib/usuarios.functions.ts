@@ -8,6 +8,8 @@ import type {
   Usuario,
 } from "@/lib/db/usuarios.server";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/usuarios.server");
 const ses = () => import("@/lib/db/sesion.server");
 
@@ -40,11 +42,13 @@ export const iniciarSesion = createServerFn({ method: "POST" })
     const sesion = await (await repo()).autenticar(data.login, data.clave);
     if (!sesion) throw new Error("Usuario o clave incorrectos");
     await (await ses()).escribirSesion(sesion);
+    await auditar({ tipo: "A", accion: `Inicio de sesión de ${sesion.login}` });
     return sesion;
   });
 
 export const cerrarSesion = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ ok: true }> => {
+    await auditar({ tipo: "A", accion: "Cierre de sesión" });
     await (await ses()).borrarSesion();
     return { ok: true };
   },
@@ -65,6 +69,12 @@ export const cambiarMiClave = createServerFn({ method: "POST" })
     if (!(await r.verificarClave(sesion.usuario_id, data.actual)))
       throw new Error("La clave actual no es correcta");
     await r.cambiarClave(sesion.usuario_id, data.nueva);
+    await auditar({
+      menu_id: "4.01.05",
+      tipo: "E",
+      accion: `${sesion.login} cambió su propia clave`,
+      referencia: sesion.usuario_id,
+    });
     return { ok: true };
   });
 
@@ -108,7 +118,16 @@ export const guardarUsuarioSistema = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ id: number }> => {
     await exigirAdministrador();
-    return (await repo()).guardarUsuario(data);
+    const r = await (await repo()).guardarUsuario(data);
+    const { clave: _clave, ...sinClave } = data;
+    await auditar({
+      menu_id: "4.01.05",
+      tipo: data.id ? "E" : "A",
+      accion: `Usuario: ${data.login} (perfil ${data.perfil_id})${data.clave ? " — clave actualizada" : ""}`,
+      referencia: r.id,
+      cambios: sinClave,
+    });
+    return r;
   });
 
 export const guardarPerfilSistema = createServerFn({ method: "POST" })
@@ -125,7 +144,15 @@ export const guardarPerfilSistema = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ id: number }> => {
     await exigirAdministrador();
-    return (await repo()).guardarPerfil(data);
+    const r = await (await repo()).guardarPerfil(data);
+    await auditar({
+      menu_id: "4.01.03",
+      tipo: data.id ? "E" : "A",
+      accion: `Perfil: ${data.nombre}`,
+      referencia: r.id,
+      cambios: data,
+    });
+    return r;
   });
 
 export const eliminarPerfilSistema = createServerFn({ method: "POST" })
@@ -133,6 +160,12 @@ export const eliminarPerfilSistema = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await exigirAdministrador();
     await (await repo()).eliminarPerfil(data.perfil_id);
+    await auditar({
+      menu_id: "4.01.03",
+      tipo: "B",
+      accion: `Eliminó el perfil No. ${data.perfil_id}`,
+      referencia: data.perfil_id,
+    });
     return { ok: true };
   });
 
@@ -160,5 +193,12 @@ export const guardarPermisos = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await exigirAdministrador();
     await (await repo()).guardarPermisosPerfil(data.perfil_id, data.permisos);
+    await auditar({
+      menu_id: "4.01.03",
+      tipo: "E",
+      accion: `Cambió los permisos del perfil No. ${data.perfil_id}`,
+      referencia: data.perfil_id,
+      cambios: data.permisos,
+    });
     return { ok: true };
   });
