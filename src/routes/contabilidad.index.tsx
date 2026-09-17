@@ -580,3 +580,188 @@ function ContabilidadPage() {
     </div>
   );
 }
+
+/* ------------------------- Formulario de cuenta -------------------------- */
+
+type PropsFormularioCuenta = {
+  abierto: boolean;
+  cuenta: CuentaCatalogo | null;
+  cuentas: CuentaCatalogo[];
+  monedas: Moneda[];
+  onCerrar: (guardado: boolean) => void;
+};
+
+function FormularioCuenta({ abierto, cuenta, cuentas, monedas, onCerrar }: PropsFormularioCuenta) {
+  const editando = cuenta !== null;
+  const [codigo, setCodigo] = useState(cuenta?.cuenta ?? "");
+  const [nombre, setNombre] = useState(cuenta?.nombre ?? "");
+  const [padre, setPadre] = useState(cuenta?.padre ?? "");
+  const [clasificacion, setClasificacion] = useState(cuenta?.clasificacion ?? "NO DEFINIDO");
+  const [naturaleza, setNaturaleza] = useState<"D" | "C">(cuenta?.naturaleza ?? "D");
+  const [tipoCuenta, setTipoCuenta] = useState(cuenta?.detalle === false ? "grupo" : "detalle");
+  const [moneda, setMoneda] = useState(cuenta?.moneda ?? "");
+  const [activa, setActiva] = useState(cuenta?.status !== "I");
+
+  const opcionesPadre = useMemo(
+    () =>
+      cuentas
+        .filter((c) => c.cuenta !== codigo)
+        .map((c) => ({
+          valor: c.cuenta,
+          etiqueta: `${c.cuenta} — ${c.nombre}`,
+          detalle: c.detalle ? "Detalle" : "Grupo",
+        })),
+    [cuentas, codigo],
+  );
+
+  const guardar = useMutation({
+    mutationFn: () =>
+      guardarCuenta({
+        data: {
+          cuenta: codigo.trim(),
+          nombre: nombre.trim(),
+          ...(padre ? { padre } : {}),
+          clasificacion,
+          naturaleza,
+          detalle: tipoCuenta === "detalle",
+          ...(moneda ? { moneda } : {}),
+          status: activa ? "A" : "I",
+        },
+      }),
+    onSuccess: () => {
+      toast.success(editando ? "Cuenta actualizada." : "Cuenta creada.");
+      onCerrar(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar(false)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{editando ? "Editar cuenta" : "Nueva cuenta"}</DialogTitle>
+          <DialogDescription>
+            El nivel se calcula automáticamente a partir de la cuenta padre.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="fc-cuenta">Cuenta</Label>
+            <Input
+              id="fc-cuenta"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              readOnly={editando}
+              className={editando ? "bg-muted font-mono" : "font-mono"}
+              placeholder="Ej. 110501"
+            />
+          </div>
+          <div>
+            <Label htmlFor="fc-nombre">Nombre</Label>
+            <Input
+              id="fc-nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Nombre de la cuenta"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Cuenta padre (grupo al que pertenece)</Label>
+            <SelectorBuscable
+              opciones={opcionesPadre}
+              valor={padre}
+              onSeleccionar={setPadre}
+              placeholder="Sin padre (nivel 1)"
+              vacio="Sin cuentas"
+            />
+            {padre ? (
+              <button
+                type="button"
+                className="mt-1 text-xs text-muted-foreground underline"
+                onClick={() => setPadre("")}
+              >
+                Quitar padre
+              </button>
+            ) : null}
+          </div>
+          <div>
+            <Label>Clasificación</Label>
+            <Select value={clasificacion} onValueChange={setClasificacion}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLASIFICACIONES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Naturaleza</Label>
+            <Select value={naturaleza} onValueChange={(v) => setNaturaleza(v as "D" | "C")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="D">Débito</SelectItem>
+                <SelectItem value="C">Crédito</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipoCuenta} onValueChange={setTipoCuenta}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="detalle">Detalle (recibe movimientos)</SelectItem>
+                <SelectItem value="grupo">Grupo (solo agrupa)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Moneda</Label>
+            <Select value={moneda || "__todas__"} onValueChange={(v) => setMoneda(v === "__todas__" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todas__">Todas las monedas</SelectItem>
+                {monedas.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.id} — {m.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 pt-5 text-sm">
+            <input
+              type="checkbox"
+              checked={activa}
+              onChange={(e) => setActiva(e.target.checked)}
+              className="size-4 accent-primary"
+            />
+            Cuenta activa
+          </label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onCerrar(false)}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={guardar.isPending || !codigo.trim() || nombre.trim().length < 2}
+            onClick={() => guardar.mutate()}
+          >
+            {guardar.isPending ? "Guardando…" : "Guardar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
