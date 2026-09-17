@@ -39,6 +39,7 @@ import { Route as FacturasNuevaRouteImport } from './routes/facturas.nueva'
 import { Route as InventarioIndexRouteImport } from './routes/inventario.index'
 import { Route as InventarioNuevoRouteImport } from './routes/inventario.nuevo'
 import { Route as NotasCreditoIndexRouteImport } from './routes/notas-credito.index'
+import { Route as NotasCreditoNuevaRouteImport } from './routes/notas-credito.nueva'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -190,6 +191,11 @@ const NotasCreditoIndexRoute = NotasCreditoIndexRouteImport.update({
   path: '/notas-credito/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotasCreditoNuevaRoute = NotasCreditoNuevaRouteImport.update({
+  id: '/notas-credito/nueva',
+  path: '/notas-credito/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
+  '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
+  '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/conduces': typeof ConducesIndexRoute
   '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/facturas/$id': typeof FacturasIdRoute
   '/facturas/nueva': typeof FacturasNuevaRoute
   '/inventario/nuevo': typeof InventarioNuevoRoute
+  '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/inventario/nuevo'
+    | '/notas-credito/nueva'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/inventario/nuevo'
+    | '/notas-credito/nueva'
     | '/conduces'
     | '/contabilidad'
     | '/cotizaciones'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/facturas/$id'
     | '/facturas/nueva'
     | '/inventario/nuevo'
+    | '/notas-credito/nueva'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -410,6 +422,7 @@ export interface RootRouteChildren {
   FacturasIdRoute: typeof FacturasIdRoute
   FacturasNuevaRoute: typeof FacturasNuevaRoute
   InventarioNuevoRoute: typeof InventarioNuevoRoute
+  NotasCreditoNuevaRoute: typeof NotasCreditoNuevaRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
@@ -632,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotasCreditoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notas-credito/nueva': {
+      id: '/notas-credito/nueva'
+      path: '/notas-credito/nueva'
+      fullPath: '/notas-credito/nueva'
+      preLoaderRoute: typeof NotasCreditoNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -658,6 +678,7 @@ const rootRouteChildren: RootRouteChildren = {
   FacturasIdRoute: FacturasIdRoute,
   FacturasNuevaRoute: FacturasNuevaRoute,
   InventarioNuevoRoute: InventarioNuevoRoute,
+  NotasCreditoNuevaRoute: NotasCreditoNuevaRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
