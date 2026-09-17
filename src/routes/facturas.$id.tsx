@@ -367,6 +367,13 @@ function DetalleFactura() {
               </Button>
             </>
           )}
+          {(factura.estado === "emitida" || factura.estado === "pagada") && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/notas-credito/nueva" search={{ pedido: factura.id }}>
+                <RotateCcw className="size-4" /> Nota de crédito
+              </Link>
+            </Button>
+          )}
           {factura.estado === "emitida" && (
             <>
               <Button size="sm" onClick={() => cambiar.mutate("pagada")}>
