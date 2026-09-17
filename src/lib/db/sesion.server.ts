@@ -19,7 +19,15 @@ function config() {
     maxAge: 60 * 60 * 12,
     // La vista previa se muestra dentro de un marco de otro dominio: la cookie
     // necesita SameSite=None y Secure para que el navegador la conserve.
-    cookie: { sameSite: "none" as const, secure: true, httpOnly: true, path: "/" },
+    cookie: {
+      sameSite: "none" as const,
+      secure: true,
+      httpOnly: true,
+      path: "/",
+      // La vista previa vive dentro de un marco de lovable.dev. Los navegadores
+      // modernos aíslan estas cookies por sitio superior (CHIPS).
+      partitioned: true,
+    },
   };
 }
 
