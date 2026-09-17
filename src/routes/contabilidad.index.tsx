@@ -1,13 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,13 +36,29 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  eliminarCuenta,
+  guardarCuenta,
   obtenerAsientos,
   obtenerBalanceComprobacion,
   obtenerCatalogo,
   obtenerListasContabilidad,
   obtenerMayor,
 } from "@/lib/contabilidad.functions";
-import { dop, fechaCorta, hoyISO } from "@/lib/erp-types";
+import { dop, fechaCorta, hoyISO, type CuentaCatalogo } from "@/lib/erp-types";
+
+const CLASIFICACIONES = [
+  "NO DEFINIDO",
+  "ACTIVOS CORRIENTES",
+  "ACTIVOS FIJOS",
+  "OTROS ACTIVOS",
+  "PASIVO CORRIENTE",
+  "CAPITAL Y RESERVAS",
+  "INGRESOS",
+  "OTROS INGRESOS",
+  "COSTO DE VENTAS",
+  "GASTOS ADMINISTRATIVOS",
+  "GASTOS FINANCIEROS",
+];
 
 export const Route = createFileRoute("/contabilidad/")({
   head: () => ({
