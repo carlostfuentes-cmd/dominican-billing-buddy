@@ -364,3 +364,85 @@ export async function propuestaInventario(
 
   return finalizar(acum, advertencias);
 }
+
+/* ---------------------------- Notas de crédito --------------------------- */
+
+export interface LineaNotaCreditoCuentas {
+  producto_id: string;
+  cantidad: number;
+  /** Precio unitario en la moneda del documento (sin ITBIS). */
+  precio: number;
+  descuento: number;
+  itbis: number;
+}
+
+export interface EntradaPropuestaNotaCredito {
+  cliente_id: string;
+  moneda?: string | undefined;
+  tasa_cambio?: number | undefined;
+  /** Cuando la mercancía regresa al inventario se revierte también el costo. */
+  reponer_inventario?: boolean | undefined;
+  lineas: LineaNotaCreditoCuentas[];
+}
+
+/**
+ * Asiento propuesto de una nota de crédito (inverso de la venta):
+ *   Débito  Mercancía devuelta (o Ventas brutas si no está configurada)
+ *   Débito  ITBIS por pagar
+ *   Crédito Cuentas por cobrar (total con ITBIS)
+ *   Crédito Descuentos concedidos (se revierte la parte proporcional)
+ *   Si repone inventario: Débito Inventario / Crédito Costo mercancía devuelta
+ */
+export async function propuestaNotaCredito(
+  entrada: EntradaPropuestaNotaCredito,
+): Promise<{ lineas: LineaAsiento[]; advertencias: string[] }> {
+  if (!(await usarMysql())) return { lineas: [], advertencias: [] };
+  const advertencias: string[] = [];
+  const tasa = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+  const lineas = entrada.lineas.filter((l) => l.producto_id && l.cantidad > 0);
+  if (!lineas.length) return { lineas: [], advertencias: [] };
+
+  const [res, prods, cxc] = await Promise.all([
+    resolver(),
+    productos(lineas.map((l) => l.producto_id)),
+    cuentaCliente(entrada.cliente_id),
+  ]);
+
+  const acum: Acum = new Map();
+  let total = 0;
+
+  for (const l of lineas) {
+    const p = prods.get(l.producto_id);
+    const grupo = p?.grupo ?? "";
+    const dep = res.departamento(grupo);
+    const bruto = round2(l.cantidad * l.precio);
+    const descuento = round2(l.descuento);
+    const itbis = round2(l.itbis);
+    total = round2(total + bruto - descuento + itbis);
+
+    const devuelta = res.cuenta(grupo, PROPOSITO.devolucion) || res.cuenta(grupo, PROPOSITO.ventas);
+    acumular(acum, devuelta, "Mercancía devuelta", bruto, 0, dep);
+    if (descuento > 0)
+      acumular(acum, res.cuenta(grupo, PROPOSITO.descuentos), "Descuentos", 0, descuento, dep);
+    if (itbis > 0)
+      acumular(acum, res.cuenta(grupo, PROPOSITO.itbis), "ITBIS por pagar", itbis, 0, "");
+
+    if (entrada.reponer_inventario && p && !p.servicio && p.costo > 0) {
+      const costo = round2((l.cantidad * p.costo) / tasa);
+      const contra =
+        res.cuenta(grupo, PROPOSITO.costoDevolucion) || res.cuenta(grupo, PROPOSITO.costo);
+      acumular(acum, res.cuenta(grupo, PROPOSITO.inventario), "Mercancía devuelta", costo, 0, dep);
+      acumular(acum, contra, "Mercancía devuelta", 0, costo, dep);
+    }
+
+    if (!devuelta)
+      advertencias.push(
+        `El producto ${l.producto_id} no tiene cuenta de mercancía devuelta ni de ventas en su clasificación.`,
+      );
+  }
+
+  if (cxc) acumular(acum, cxc, "Cuentas por cobrar", 0, total, "");
+  else advertencias.push("El cliente no tiene cuenta por cobrar configurada en su clase.");
+
+  return finalizar(acum, advertencias);
+}
