@@ -55,7 +55,7 @@ const nuevaSchema = z.object({
   fecha,
   motivo_id: z.number().int().min(0).optional(),
   notas: texto(500),
-  reponer_inventario: z.boolean(),
+  reponer_inventario: z.boolean().optional().default(true),
   almacen_id: texto(10).optional(),
   lineas: z
     .array(
