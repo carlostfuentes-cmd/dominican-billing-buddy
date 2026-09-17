@@ -92,7 +92,7 @@ function NuevaNotaCredito() {
   const [pedidoId, setPedidoId] = useState(pedido ? String(pedido) : "");
   const [fecha, setFecha] = useState(hoyISO());
   const [motivo, setMotivo] = useState(SIN_MOTIVO);
-  const [reponer, setReponer] = useState(true);
+  const reponer = true;
   const [notas, setNotas] = useState("");
   const [filas, setFilas] = useState<Fila[]>([]);
   const [asiento, setAsiento] = useState<LineaAsiento[]>([]);
@@ -401,18 +401,10 @@ function NuevaNotaCredito() {
               <CardTitle>Mercancía e información</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <label className="flex items-center gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="size-4 accent-primary"
-                  checked={reponer}
-                  onChange={(e) => setReponer(e.target.checked)}
-                />
-                Devolver la mercancía al inventario
-                {info.factura.almacen ? (
-                  <span className="text-muted-foreground">({info.factura.almacen})</span>
-                ) : null}
-              </label>
+              <p className="text-sm text-muted-foreground">
+                La mercancía vuelve automáticamente al inventario
+                {info.factura.almacen ? ` (${info.factura.almacen})` : ""}.
+              </p>
               <div>
                 <Label htmlFor="notas">Concepto / notas</Label>
                 <Textarea
