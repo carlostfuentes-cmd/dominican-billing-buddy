@@ -22,6 +22,8 @@ import type {
   TipoNCF,
 } from "@/lib/erp-types";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/repo.server");
 
 const tipoNCF = z.enum([
@@ -68,7 +70,17 @@ export const obtenerEmpresa = createServerFn({ method: "GET" }).handler(
 
 export const guardarEmpresa = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => empresaSchema.parse(d))
-  .handler(async ({ data }): Promise<Empresa> => (await repo()).guardarEmpresa(data));
+  .handler(async ({ data }): Promise<Empresa> => {
+    const empresa = await (await repo()).guardarEmpresa(data);
+    await auditar({
+      menu_id: "4.51",
+      tipo: "E",
+      accion: `Empresa: ${empresa.nombre}`,
+      referencia: empresa.rnc,
+      cambios: data,
+    });
+    return empresa;
+  });
 
 /* -------------------------------- Clientes ------------------------------- */
 
@@ -125,7 +137,17 @@ export const obtenerListasCliente = createServerFn({ method: "GET" }).handler(
 
 export const guardarCliente = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => clienteSchema.parse(d))
-  .handler(async ({ data }): Promise<Cliente> => (await repo()).guardarCliente(data));
+  .handler(async ({ data }): Promise<Cliente> => {
+    const cliente = await (await repo()).guardarCliente(data);
+    await auditar({
+      menu_id: "1.03.11",
+      tipo: data.id ? "E" : "A",
+      accion: `Cliente: ${cliente.id} — ${cliente.nombre}`,
+      referencia: cliente.id,
+      cambios: data,
+    });
+    return cliente;
+  });
 
 
 /* --------------------------------- Ítems --------------------------------- */
@@ -197,7 +219,17 @@ export const obtenerListasItem = createServerFn({ method: "GET" }).handler(
 
 export const guardarItem = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => itemSchema.parse(d))
-  .handler(async ({ data }): Promise<Item> => (await repo()).guardarItem(data));
+  .handler(async ({ data }): Promise<Item> => {
+    const item = await (await repo()).guardarItem(data);
+    await auditar({
+      menu_id: "1.02.05",
+      tipo: data.id ? "E" : "A",
+      accion: `Ítem: ${item.codigo} — ${item.descripcion}`,
+      referencia: item.id,
+      cambios: data,
+    });
+    return item;
+  });
 
 
 /* ------------------------------ Secuencias ------------------------------- */
@@ -217,7 +249,17 @@ export const obtenerSecuencias = createServerFn({ method: "GET" }).handler(
 
 export const guardarSecuencia = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => secuenciaSchema.parse(d))
-  .handler(async ({ data }): Promise<SecuenciaNCF> => (await repo()).guardarSecuencia(data));
+  .handler(async ({ data }): Promise<SecuenciaNCF> => {
+    const secuencia = await (await repo()).guardarSecuencia(data);
+    await auditar({
+      menu_id: "4.55.03",
+      tipo: "E",
+      accion: `Secuencia NCF ${data.tipo_ncf}: ${data.desde}-${data.hasta}`,
+      referencia: data.tipo_ncf,
+      cambios: data,
+    });
+    return secuencia;
+  });
 
 /* ------------------- Comprobantes fiscales (rangos) ---------------------- */
 
@@ -245,12 +287,28 @@ export const obtenerListasNCF = createServerFn({ method: "GET" }).handler(
 
 export const guardarRangoNCF = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => rangoSchema.parse(d))
-  .handler(async ({ data }): Promise<RangoNCF> => (await repo()).guardarRangoNCF(data));
+  .handler(async ({ data }): Promise<RangoNCF> => {
+    const rango = await (await repo()).guardarRangoNCF(data);
+    await auditar({
+      menu_id: "4.55.03",
+      tipo: data.id ? "E" : "A",
+      accion: `Comprobantes ${data.prefijo}: rango ${data.desde}-${data.hasta}`,
+      referencia: rango.id,
+      cambios: data,
+    });
+    return rango;
+  });
 
 export const eliminarRangoNCF = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).eliminarRangoNCF(data.id);
+    await auditar({
+      menu_id: "4.55.03",
+      tipo: "B",
+      accion: `Eliminó el rango de comprobantes No. ${data.id}`,
+      referencia: data.id,
+    });
     return { ok: true };
   });
 
@@ -258,6 +316,12 @@ export const activarRangoNCF = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).activarRangoNCF(data.id);
+    await auditar({
+      menu_id: "4.55.03",
+      tipo: "E",
+      accion: `Activó el rango de comprobantes No. ${data.id}`,
+      referencia: data.id,
+    });
     return { ok: true };
   });
 
@@ -332,7 +396,19 @@ const nuevaFacturaSchema = z.object({
 
 export const guardarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => nuevaFacturaSchema.parse(d))
-  .handler(async ({ data }): Promise<Factura> => (await repo()).crearPedido(data));
+  .handler(async ({ data }): Promise<Factura> => {
+    const factura = await (await repo()).crearPedido(data);
+    await auditar({
+      menu_id: "2.01.02",
+      tipo: "A",
+      accion: factura.ncf
+        ? `Pedido: ${factura.id} | Factura: ${factura.numero_factura ?? ""} | NCF: ${factura.ncf}`
+        : `Pedido: ${factura.id} — ${factura.cliente_nombre}`,
+      referencia: factura.id,
+      cambios: data,
+    });
+    return factura;
+  });
 
 /** Convierte un pedido existente en factura (asigna NCF y número de factura). */
 export const facturarPedido = createServerFn({ method: "POST" })
@@ -345,9 +421,17 @@ export const facturarPedido = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<Factura> =>
-    (await repo()).facturarPedido(data.id, data.tipo_ncf, data.asiento),
-  );
+  .handler(async ({ data }): Promise<Factura> => {
+    const factura = await (await repo()).facturarPedido(data.id, data.tipo_ncf, data.asiento);
+    await auditar({
+      menu_id: "2.01.02",
+      tipo: "E",
+      accion: `Facturó el pedido ${data.id} | Factura: ${factura.numero_factura ?? ""} | NCF: ${factura.ncf ?? ""}`,
+      referencia: data.id,
+      cambios: data,
+    });
+    return factura;
+  });
 
 
 export const cambiarEstadoFactura = createServerFn({ method: "POST" })
@@ -356,6 +440,13 @@ export const cambiarEstadoFactura = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).cambiarEstadoFactura(data.id, data.estado as EstadoFactura);
+    await auditar({
+      menu_id: "2.01.02",
+      tipo: data.estado === "anulada" ? "X" : "E",
+      accion: `Cambió el estado del documento ${data.id} a ${data.estado}`,
+      referencia: data.id,
+      cambios: data,
+    });
     return { ok: true };
   });
 
@@ -402,14 +493,28 @@ export const obtenerFormatosImpresion = createServerFn({ method: "GET" }).handle
 
 export const guardarFormatoImpresion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => formatoSchema.parse(d))
-  .handler(async ({ data }): Promise<FormatoImpresion> =>
-    (await repo()).guardarFormatoImpresion(data),
-  );
+  .handler(async ({ data }): Promise<FormatoImpresion> => {
+    const formato = await (await repo()).guardarFormatoImpresion(data);
+    await auditar({
+      menu_id: "4.51",
+      tipo: "E",
+      accion: `Formato de impresión de la empresa ${data.empresa_id}`,
+      referencia: data.empresa_id,
+      cambios: data,
+    });
+    return formato;
+  });
 
 export const eliminarFormatoImpresion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ empresaId: texto(20).min(1) }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).eliminarFormatoImpresion(data.empresaId);
+    await auditar({
+      menu_id: "4.51",
+      tipo: "B",
+      accion: `Eliminó el formato de impresión de la empresa ${data.empresaId}`,
+      referencia: data.empresaId,
+    });
     return { ok: true };
   });
 
