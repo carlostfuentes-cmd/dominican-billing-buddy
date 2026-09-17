@@ -8,6 +8,8 @@ import type {
   MovimientoCxC,
 } from "@/lib/erp-types";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/cxc.server");
 
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
@@ -71,4 +73,14 @@ const movimientoSchema = z.object({
 
 export const guardarMovimientoCxC = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => movimientoSchema.parse(d))
-  .handler(async ({ data }): Promise<MovimientoCxC> => (await repo()).crearMovimiento(data));
+  .handler(async ({ data }): Promise<MovimientoCxC> => {
+    const mov = await (await repo()).crearMovimiento(data);
+    await auditar({
+      menu_id: "2.03.01",
+      tipo: "A",
+      accion: `Cuentas por cobrar: tipo ${data.tipo_id}, cliente ${data.cliente_id}, ${data.moneda} ${data.monto.toFixed(2)}`,
+      referencia: mov.id,
+      cambios: data,
+    });
+    return mov;
+  });

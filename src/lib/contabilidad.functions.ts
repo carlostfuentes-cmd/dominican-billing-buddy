@@ -9,6 +9,8 @@ import type {
   MayorGeneral,
 } from "@/lib/erp-types";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/contabilidad.server");
 
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
@@ -94,9 +96,17 @@ const asientoSchema = z.object({
 
 export const guardarAsiento = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => asientoSchema.parse(d))
-  .handler(async ({ data }): Promise<{ id: number; numero: number }> =>
-    (await repo()).crearAsiento(data),
-  );
+  .handler(async ({ data }): Promise<{ id: number; numero: number }> => {
+    const r = await (await repo()).crearAsiento(data);
+    await auditar({
+      menu_id: "2.09.01",
+      tipo: "A",
+      accion: `Asiento contable No. ${r.numero} (${data.lineas.length} línea(s))`,
+      referencia: r.numero,
+      cambios: data,
+    });
+    return r;
+  });
 
 const cuentaSchema = z.object({
   cuenta: texto(15).min(1, "El número de cuenta es obligatorio"),
@@ -111,10 +121,25 @@ const cuentaSchema = z.object({
 
 export const guardarCuenta = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => cuentaSchema.parse(d))
-  .handler(async ({ data }): Promise<void> => (await repo()).guardarCuentaCatalogo(data));
+  .handler(async ({ data }): Promise<void> => {
+    await (await repo()).guardarCuentaCatalogo(data);
+    await auditar({
+      menu_id: "2.09.01",
+      tipo: "E",
+      accion: `Cuenta del catálogo ${data.cuenta} — ${data.nombre}`,
+      referencia: data.cuenta,
+      cambios: data,
+    });
+  });
 
 export const eliminarCuenta = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ cuenta: texto(15).min(1) }).parse(d))
-  .handler(async ({ data }): Promise<void> =>
-    (await repo()).eliminarCuentaCatalogo(data.cuenta),
-  );
+  .handler(async ({ data }): Promise<void> => {
+    await (await repo()).eliminarCuentaCatalogo(data.cuenta);
+    await auditar({
+      menu_id: "2.09.01",
+      tipo: "B",
+      accion: `Eliminó la cuenta del catálogo ${data.cuenta}`,
+      referencia: data.cuenta,
+    });
+  });

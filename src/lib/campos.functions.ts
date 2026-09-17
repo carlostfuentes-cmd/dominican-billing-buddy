@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import type { CampoPersonalizado, ProcesoCampo, ValorCampo } from "@/lib/db/campos.server";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/campos.server");
 
 const proceso = z.enum(["PEDIDOS", "COTIZACIONES", "CONDUCES", "DEVOLUCIONES"]);
@@ -35,21 +37,35 @@ export const guardarCampoPersonalizado = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<{ id: number }> => ({
-    id: await (await repo()).guardarCampo({
+  .handler(async ({ data }): Promise<{ id: number }> => {
+    const id = await (await repo()).guardarCampo({
       ...(data.id ? { id: data.id } : {}),
       nombre: data.nombre,
       tipo: data.tipo,
       longitud: data.longitud,
       decimales: data.decimales,
       proceso: data.proceso as ProcesoCampo,
-    }),
-  }));
+    });
+    await auditar({
+      menu_id: "4.81",
+      tipo: data.id ? "E" : "A",
+      accion: `Campo personalizado (${data.proceso}): ${data.nombre}`,
+      referencia: id,
+      cambios: data,
+    });
+    return { id };
+  });
 
 export const eliminarCampoPersonalizado = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).eliminarCampo(data.id);
+    await auditar({
+      menu_id: "4.81",
+      tipo: "B",
+      accion: `Eliminó el campo personalizado No. ${data.id}`,
+      referencia: data.id,
+    });
     return { ok: true };
   });
 
