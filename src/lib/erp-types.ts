@@ -1010,3 +1010,107 @@ export interface FiltroNotasCredito {
   clienteId?: string | undefined;
   pedidoId?: number | undefined;
 }
+
+/* ------------------------- Facturación recurrente ------------------------- */
+
+/** Frecuencia de repetición: días, meses o años. */
+export type FrecuenciaRecurrente = "D" | "M" | "A";
+
+export const FRECUENCIAS: { id: FrecuenciaRecurrente; nombre: string }[] = [
+  { id: "D", nombre: "Días" },
+  { id: "M", nombre: "Meses" },
+  { id: "A", nombre: "Años" },
+];
+
+export const ETIQUETA_FRECUENCIA: Record<FrecuenciaRecurrente, string> = {
+  D: "Días",
+  M: "Meses",
+  A: "Años",
+};
+
+export interface LineaRecurrente {
+  item_id: string;
+  codigo: string;
+  descripcion: string;
+  /** Texto del detalle; admite las marcas <INICIO_MES> y <FIN_MES>. */
+  detalle: string;
+  cantidad: number;
+  precio: number;
+  descuento_pct: number;
+  tasa_itbis: number;
+}
+
+export interface PlantillaRecurrente {
+  id: number;
+  activa: boolean;
+  /** Concepto de la facturación (recursive_invoices.name). */
+  nombre: string;
+  cliente_id: string;
+  cliente_nombre: string;
+  cliente_rnc: string;
+  moneda: string;
+  cada: number;
+  frecuencia: FrecuenciaRecurrente;
+  inicio: string;
+  fin?: string | undefined;
+  sin_fin: boolean;
+  repeticiones: number;
+  /** Vacío cuando nunca se ha emitido. */
+  ultima_emision?: string | undefined;
+  /** Fecha del próximo documento; vacío cuando la plantilla ya terminó. */
+  proxima?: string | undefined;
+  /** La próxima emisión ya está vencida (hoy o antes). */
+  vencida: boolean;
+  /** Emisiones realizadas y las que restan según las repeticiones. */
+  emitidas: number;
+  notificar: string;
+  notas: string;
+  /** Condiciones tomadas del cliente al momento de emitir. */
+  dias_credito: number;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  lineas: LineaRecurrente[];
+}
+
+export interface NuevaPlantillaRecurrente {
+  id?: number | undefined;
+  activa: boolean;
+  nombre: string;
+  cliente_id: string;
+  moneda: string;
+  cada: number;
+  frecuencia: FrecuenciaRecurrente;
+  inicio: string;
+  fin?: string | undefined;
+  sin_fin: boolean;
+  repeticiones: number;
+  notificar: string;
+  notas: string;
+  lineas: LineaRecurrente[];
+}
+
+/** Resultado de emitir una plantilla. */
+export interface EmisionRecurrente {
+  plantilla_id: number;
+  nombre: string;
+  cliente: string;
+  fecha: string;
+  pedido_id?: number | undefined;
+  ncf?: string | undefined;
+  total?: number | undefined;
+  moneda?: string | undefined;
+  error?: string | undefined;
+}
+
+/** Sustituye las marcas del detalle por las fechas del período facturado. */
+export function textoRecurrente(texto: string, fechaISO: string): string {
+  const inicio = `${fechaISO.slice(0, 7)}-01`;
+  const [a, m] = [Number(fechaISO.slice(0, 4)), Number(fechaISO.slice(5, 7))];
+  const ultimo = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  const fin = `${fechaISO.slice(0, 7)}-${String(ultimo).padStart(2, "0")}`;
+  return texto
+    .replaceAll("<INICIO_MES>", fechaCorta(inicio))
+    .replaceAll("<FIN_MES>", fechaCorta(fin));
+}
