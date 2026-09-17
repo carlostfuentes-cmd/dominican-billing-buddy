@@ -127,6 +127,7 @@ function mapearCuenta(f: Record<string, unknown>): CuentaCatalogo {
     padre: txt(f["padre"]) || undefined,
     clasificacion: txt(f["clasificacion"]) || undefined,
     moneda: txt(f["moneda"]) || undefined,
+    status: txt(f["estado"]) || "A",
   };
 }
 
