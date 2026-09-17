@@ -23,6 +23,7 @@ import {
   type ListasContabilidad,
   type MayorGeneral,
   type Moneda,
+  type NuevaCuentaCatalogo,
   type NuevoAsiento,
   type OpcionId,
 } from "@/lib/erp-types";
