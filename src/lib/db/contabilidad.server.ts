@@ -143,7 +143,7 @@ export async function listarCatalogo(busqueda?: string): Promise<CuentaCatalogo[
   const filas = await sql<Record<string, unknown>>(
     `SELECT account AS cuenta, name AS nombre, level AS nivel, nature AS naturaleza,
             kind AS clasificacion, COALESCE(currency,'') AS moneda,
-            COALESCE(parent_account,'') AS padre, is_detail AS detalle
+            COALESCE(parent_account,'') AS padre, is_detail AS detalle, status AS estado
      FROM gl_accounts
      WHERE ${cond}
      ORDER BY account
@@ -402,6 +402,99 @@ export async function crearAsiento(entrada: NuevoAsiento): Promise<{ id: number;
 export async function anularAsiento(id: number): Promise<void> {
   if (!(await usarMysql())) throw new Error("Sin conexión a la base de datos.");
   await ejecutar(`UPDATE gl_journal SET void = 1, posted = 0 WHERE journal_id = ?`, [id]);
+}
+
+/* --------------------------- Catálogo de cuentas ------------------------- */
+
+const CLASIFICACION_POR_DEFECTO = "NO DEFINIDO";
+
+/** Crea o actualiza una cuenta del catálogo. El nivel se deriva del padre. */
+export async function guardarCuentaCatalogo(entrada: NuevaCuentaCatalogo): Promise<void> {
+  if (!(await usarMysql())) throw new Error("Sin conexión a la base de datos.");
+  const cuenta = entrada.cuenta.trim();
+  if (!cuenta) throw new Error("El número de cuenta es obligatorio.");
+  if (!entrada.nombre.trim()) throw new Error("El nombre de la cuenta es obligatorio.");
+  if (entrada.padre && entrada.padre === cuenta)
+    throw new Error("Una cuenta no puede ser su propio grupo.");
+
+  let nivel = 1;
+  let padre: string | null = null;
+  if (entrada.padre?.trim()) {
+    padre = entrada.padre.trim();
+    const padres = await sql<Record<string, unknown>>(
+      `SELECT level FROM gl_accounts WHERE account = ?`,
+      [padre],
+    );
+    if (padres.length === 0) throw new Error(`La cuenta padre ${padre} no existe.`);
+    nivel = num(padres[0]?.["level"]) + 1;
+  }
+
+  const existe = await sql<Record<string, unknown>>(
+    `SELECT account FROM gl_accounts WHERE account = ?`,
+    [cuenta],
+  );
+  if (existe.length > 0) {
+    await ejecutar(
+      `UPDATE gl_accounts SET name = ?, parent_account = ?, level = ?, kind = ?,
+              nature = ?, is_detail = ?, currency = ?, status = ?
+       WHERE account = ?`,
+      [
+        entrada.nombre.trim(),
+        padre,
+        nivel,
+        entrada.clasificacion?.trim() || CLASIFICACION_POR_DEFECTO,
+        entrada.naturaleza,
+        entrada.detalle ? 1 : 0,
+        entrada.moneda?.trim() || null,
+        entrada.status === "I" ? "I" : "A",
+        cuenta,
+      ],
+    );
+  } else {
+    await ejecutar(
+      `INSERT INTO gl_accounts
+         (account, name, parent_account, level, kind, nature, is_detail, currency, status)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [
+        cuenta,
+        entrada.nombre.trim(),
+        padre,
+        nivel,
+        entrada.clasificacion?.trim() || CLASIFICACION_POR_DEFECTO,
+        entrada.naturaleza,
+        entrada.detalle ? 1 : 0,
+        entrada.moneda?.trim() || null,
+        entrada.status === "I" ? "I" : "A",
+      ],
+    );
+  }
+
+  // Si se marcó como detalle pero tiene hijas, mantenerla como grupo.
+  await ejecutar(
+    `UPDATE gl_accounts p
+       JOIN gl_accounts h ON h.parent_account = p.account
+      SET p.is_detail = 0
+    WHERE p.account = ? AND p.is_detail = 1`,
+    [cuenta],
+  );
+}
+
+/** Elimina una cuenta sin hijas y sin movimientos en el diario. */
+export async function eliminarCuentaCatalogo(cuenta: string): Promise<void> {
+  if (!(await usarMysql())) throw new Error("Sin conexión a la base de datos.");
+  const hijas = await sql<Record<string, unknown>>(
+    `SELECT account FROM gl_accounts WHERE parent_account = ? LIMIT 1`,
+    [cuenta],
+  );
+  if (hijas.length > 0)
+    throw new Error("La cuenta tiene subcuentas; elimina o reubica primero las hijas.");
+  const movimientos = await sql<Record<string, unknown>>(
+    `SELECT journal_detail_id FROM gl_journal_detail WHERE account = ? LIMIT 1`,
+    [cuenta],
+  );
+  if (movimientos.length > 0)
+    throw new Error("La cuenta tiene movimientos en el diario; no se puede eliminar.");
+  await ejecutar(`DELETE FROM gl_accounts WHERE account = ?`, [cuenta]);
 }
 
 /* ----------------------------- Mayor general ----------------------------- */
