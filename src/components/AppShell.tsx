@@ -6,6 +6,7 @@ import {
   Boxes,
   Building2,
   FileText,
+  FileMinus,
   FileSpreadsheet,
   Hash,
   LayoutDashboard,
