@@ -129,6 +129,33 @@ function ContabilidadPage() {
     queryFn: () => obtenerCatalogo({ data: { busqueda: busquedaCuenta } }),
   });
 
+  const [dialogoCuenta, setDialogoCuenta] = useState(false);
+  const [cuentaEditando, setCuentaEditando] = useState<CuentaCatalogo | null>(null);
+
+  const queryClient = useQueryClient();
+  const refrescarCatalogo = () => {
+    void queryClient.invalidateQueries({ queryKey: ["contabilidad", "catalogo"] });
+    void queryClient.invalidateQueries({ queryKey: ["contabilidad", "listas"] });
+  };
+
+  const eliminar = useMutation({
+    mutationFn: (cuenta: string) => eliminarCuenta({ data: { cuenta } }),
+    onSuccess: () => {
+      toast.success("Cuenta eliminada.");
+      refrescarCatalogo();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const abrirNueva = () => {
+    setCuentaEditando(null);
+    setDialogoCuenta(true);
+  };
+  const abrirEdicion = (c: CuentaCatalogo) => {
+    setCuentaEditando(c);
+    setDialogoCuenta(true);
+  };
+
   const opcionesCuentas = useMemo(
     () =>
       (listas?.cuentas ?? []).map((c) => ({
