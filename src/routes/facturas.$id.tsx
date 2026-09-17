@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { ArrowLeft, Ban, CheckCircle2, FileText, Printer } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, FileText, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
