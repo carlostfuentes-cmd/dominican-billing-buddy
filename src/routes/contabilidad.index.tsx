@@ -468,20 +468,25 @@ function ContabilidadPage() {
         <TabsContent value="catalogo">
           <Card className="overflow-hidden">
             <CardContent className="px-0 pb-0 pt-0">
-              <div className="border-b bg-muted/20 px-5 py-4">
-                <Label htmlFor="buscar">Buscar cuenta</Label>
-                <Input
-                  id="buscar"
-                  value={busquedaCuenta}
-                  onChange={(e) => setBusquedaCuenta(e.target.value)}
-                  placeholder="Número o nombre de la cuenta…"
-                />
+              <div className="flex flex-wrap items-end gap-3 border-b bg-muted/20 px-5 py-4">
+                <div className="min-w-56 flex-1">
+                  <Label htmlFor="buscar">Buscar cuenta</Label>
+                  <Input
+                    id="buscar"
+                    value={busquedaCuenta}
+                    onChange={(e) => setBusquedaCuenta(e.target.value)}
+                    placeholder="Número o nombre de la cuenta…"
+                  />
+                </div>
+                <Button type="button" onClick={abrirNueva}>
+                  <Plus className="mr-1.5 size-4" /> Nueva cuenta
+                </Button>
               </div>
               <p className="border-b bg-muted/30 px-5 py-3 text-sm text-muted-foreground">
                 {catalogo.length} cuentas
               </p>
               <div className="overflow-x-auto">
-                <Table className="min-w-[820px]">
+                <Table className="min-w-[880px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Cuenta</TableHead>
@@ -490,12 +495,14 @@ function ContabilidadPage() {
                       <TableHead>Clasificación</TableHead>
                       <TableHead>Naturaleza</TableHead>
                       <TableHead>Tipo</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="w-24 text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {catalogo.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                           Sin cuentas para la búsqueda.
                         </TableCell>
                       </TableRow>
@@ -514,6 +521,41 @@ function ContabilidadPage() {
                               {c.detalle ? "Detalle" : "Grupo"}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={c.status === "I" ? "secondary" : "default"}>
+                              {c.status === "I" ? "Inactiva" : "Activa"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Editar cuenta"
+                                onClick={() => abrirEdicion(c)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Eliminar cuenta"
+                                disabled={eliminar.isPending}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `¿Eliminar la cuenta ${c.cuenta} — ${c.nombre}?`,
+                                    )
+                                  )
+                                    eliminar.mutate(c.cuenta);
+                                }}
+                              >
+                                <Trash2 className="size-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -522,6 +564,17 @@ function ContabilidadPage() {
               </div>
             </CardContent>
           </Card>
+          <FormularioCuenta
+            key={cuentaEditando?.cuenta ?? "nueva"}
+            abierto={dialogoCuenta}
+            cuenta={cuentaEditando}
+            cuentas={catalogo}
+            monedas={listas?.monedas ?? []}
+            onCerrar={(guardado) => {
+              setDialogoCuenta(false);
+              if (guardado) refrescarCatalogo();
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
