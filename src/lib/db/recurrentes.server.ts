@@ -23,9 +23,10 @@ import {
   type LineaRecurrente,
   type NuevaPlantillaRecurrente,
   type PlantillaRecurrente,
+  type TipoNCF,
 } from "@/lib/erp-types";
 import { ejecutar, sql } from "./mysql.server";
-import { crearPedido, obtenerCliente, usarMysql } from "./repo.server";
+import { crearPedido, usarMysql } from "./repo.server";
 
 /** Valor guardado en last_release cuando la plantilla nunca se ha emitido. */
 const SIN_EMISION = "1900-01-01";
@@ -389,6 +390,33 @@ export async function eliminarRecurrente(id: number): Promise<void> {
 
 /* --------------------------------- Emisión -------------------------------- */
 
+/** Datos del cliente necesarios para emitir (condiciones, vendedor, secuencia). */
+async function clienteDe(id: string): Promise<{
+  nombre: string;
+  dias_credito: number;
+  vendedor_id: number;
+  tipo_ncf: TipoNCF;
+} | null> {
+  const filas = await sql<{
+    name: string | null;
+    credit_days: number | null;
+    salesman_id: number | null;
+    ncf_id: number | null;
+  }>(
+    "SELECT name, credit_days, salesman_id, ncf_id FROM customers WHERE customer_id = ?",
+    [id],
+  );
+  const f = filas[0];
+  if (!f) return null;
+  const tipos: Record<number, TipoNCF> = { 1: "B01", 2: "B02", 14: "B14", 15: "B15" };
+  return {
+    nombre: txt(f.name),
+    dias_credito: num(f.credit_days),
+    vendedor_id: num(f.salesman_id),
+    tipo_ncf: tipos[num(f.ncf_id)] ?? "B02",
+  };
+}
+
 /** Tasa de cambio vigente de la moneda a la fecha indicada (1 para la local). */
 async function tasaCambio(moneda: string, fecha: string): Promise<number> {
   if (!moneda || moneda.toUpperCase() === "DOP") return 1;
@@ -474,7 +502,7 @@ export async function emitirRecurrentes(op: OpcionesEmision): Promise<EmisionRec
 
     try {
       const fecha = p.proxima;
-      const cliente = await obtenerCliente(p.cliente_id);
+      const cliente = await clienteDe(p.cliente_id);
       if (!cliente) throw new Error("Cliente no encontrado");
       const tasa = await tasaCambio(p.moneda, fecha);
       const pedido: Factura = await crearPedido({
