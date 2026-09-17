@@ -119,6 +119,20 @@ export async function registrarAuditoria(entrada: EntradaAuditoria): Promise<voi
 
 const TITULOS = new Map(PANTALLAS.map((p) => [p.menu_id, p.titulo]));
 
+/** El sistema anterior guarda los menús con sufijos ("2.01.02.0"). */
+function tituloPantalla(menu: string | null, nombre: string | null): string {
+  if (!menu) return "Sistema";
+  let clave = menu;
+  while (clave) {
+    const titulo = TITULOS.get(clave);
+    if (titulo) return titulo;
+    const corte = clave.lastIndexOf(".");
+    if (corte < 0) break;
+    clave = clave.slice(0, corte);
+  }
+  return nombre ?? menu;
+}
+
 function mapear(f: Record<string, unknown>): RegistroAuditoria {
   const menu = txt(f["menu_id"]);
   const tipo = (txt(f["kind"]) ?? "") as TipoAuditoria;
@@ -127,7 +141,7 @@ function mapear(f: Record<string, unknown>): RegistroAuditoria {
     fecha: txt(f["date"]) ?? "",
     usuario_id: Number(f["user_id"] ?? 0),
     usuario: txt(f["usuario"]) || `Usuario ${Number(f["user_id"] ?? 0)}`,
-    pantalla: (menu ? TITULOS.get(menu) : undefined) ?? txt(f["menu_nombre"]) ?? menu ?? "Sistema",
+    pantalla: tituloPantalla(menu, txt(f["menu_nombre"])),
     menu_id: menu,
     tipo,
     tipo_nombre: TIPOS_AUDITORIA[tipo] ?? "Otro",
