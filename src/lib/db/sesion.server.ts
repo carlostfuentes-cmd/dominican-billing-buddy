@@ -17,7 +17,9 @@ function config() {
     password,
     name: "erp_sesion",
     maxAge: 60 * 60 * 12,
-    cookie: { sameSite: "lax" as const, httpOnly: true, path: "/" },
+    // La vista previa se muestra dentro de un marco de otro dominio: la cookie
+    // necesita SameSite=None y Secure para que el navegador la conserve.
+    cookie: { sameSite: "none" as const, secure: true, httpOnly: true, path: "/" },
   };
 }
 
