@@ -41,6 +41,7 @@ import { Route as InventarioNuevoRouteImport } from './routes/inventario.nuevo'
 import { Route as NotasCreditoIndexRouteImport } from './routes/notas-credito.index'
 import { Route as NotasCreditoIdRouteImport } from './routes/notas-credito.$id'
 import { Route as NotasCreditoNuevaRouteImport } from './routes/notas-credito.nueva'
+import { Route as RecurrentesNuevaRouteImport } from './routes/recurrentes.nueva'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -202,6 +203,11 @@ const NotasCreditoNuevaRoute = NotasCreditoNuevaRouteImport.update({
   path: '/notas-credito/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecurrentesNuevaRoute = RecurrentesNuevaRouteImport.update({
+  id: '/recurrentes/nueva',
+  path: '/recurrentes/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -228,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/notas-credito/$id': typeof NotasCreditoIdRoute
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
+  '/recurrentes/nueva': typeof RecurrentesNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/notas-credito/$id': typeof NotasCreditoIdRoute
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
+  '/recurrentes/nueva': typeof RecurrentesNuevaRoute
   '/conduces': typeof ConducesIndexRoute
   '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/inventario/nuevo': typeof InventarioNuevoRoute
   '/notas-credito/$id': typeof NotasCreditoIdRoute
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
+  '/recurrentes/nueva': typeof RecurrentesNuevaRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/inventario/nuevo'
     | '/notas-credito/$id'
     | '/notas-credito/nueva'
+    | '/recurrentes/nueva'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -367,6 +377,7 @@ export interface FileRouteTypes {
     | '/inventario/nuevo'
     | '/notas-credito/$id'
     | '/notas-credito/nueva'
+    | '/recurrentes/nueva'
     | '/conduces'
     | '/contabilidad'
     | '/cotizaciones'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/inventario/nuevo'
     | '/notas-credito/$id'
     | '/notas-credito/nueva'
+    | '/recurrentes/nueva'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -436,6 +448,7 @@ export interface RootRouteChildren {
   InventarioNuevoRoute: typeof InventarioNuevoRoute
   NotasCreditoIdRoute: typeof NotasCreditoIdRoute
   NotasCreditoNuevaRoute: typeof NotasCreditoNuevaRoute
+  RecurrentesNuevaRoute: typeof RecurrentesNuevaRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
@@ -672,6 +685,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotasCreditoNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recurrentes/nueva': {
+      id: '/recurrentes/nueva'
+      path: '/recurrentes/nueva'
+      fullPath: '/recurrentes/nueva'
+      preLoaderRoute: typeof RecurrentesNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -700,6 +720,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventarioNuevoRoute: InventarioNuevoRoute,
   NotasCreditoIdRoute: NotasCreditoIdRoute,
   NotasCreditoNuevaRoute: NotasCreditoNuevaRoute,
+  RecurrentesNuevaRoute: RecurrentesNuevaRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
