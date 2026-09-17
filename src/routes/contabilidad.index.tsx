@@ -44,7 +44,7 @@ import {
   obtenerListasContabilidad,
   obtenerMayor,
 } from "@/lib/contabilidad.functions";
-import { dop, fechaCorta, hoyISO, type CuentaCatalogo } from "@/lib/erp-types";
+import { dop, fechaCorta, hoyISO, type CuentaCatalogo, type Moneda } from "@/lib/erp-types";
 
 const CLASIFICACIONES = [
   "NO DEFINIDO",
