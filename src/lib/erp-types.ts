@@ -938,3 +938,75 @@ export interface LineaBalance {
   credito: number;
   saldo: number;
 }
+
+/* ---------------------------- Notas de crédito ---------------------------- */
+
+/** Línea de una nota de crédito con el control de lo ya acreditado. */
+export interface LineaNotaCredito {
+  item_id: string | null;
+  codigo: string;
+  descripcion: string;
+  cantidad: number;
+  precio: number;
+  descuento_pct: number;
+  tasa_itbis: number;
+  /** Cantidad de la factura original y cantidad ya acreditada en otras notas. */
+  cantidad_facturada: number;
+  cantidad_acreditada: number;
+}
+
+export interface NotaCredito {
+  id: number;
+  fecha: string;
+  ncf: string;
+  /** Número de factura (invoices.invoice_id) y pedido (orders.order_id) de origen. */
+  factura_id?: number | undefined;
+  pedido_id?: number | undefined;
+  factura_ncf?: string | undefined;
+  cliente_id: string;
+  cliente_nombre: string;
+  cliente_rnc: string;
+  cliente_direccion?: string | undefined;
+  cliente_telefono?: string | undefined;
+  moneda: string;
+  tasa_cambio: number;
+  motivo_id?: number | undefined;
+  motivo: string;
+  notas: string;
+  almacen_id?: string | undefined;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  anulada: boolean;
+  lineas: LineaFactura[];
+}
+
+/** Factura con su disponible para emitir notas de crédito. */
+export interface FacturaAcreditable {
+  factura: Factura;
+  acreditado: number;
+  disponible: number;
+  notas: NotaCredito[];
+  lineas: LineaNotaCredito[];
+}
+
+export interface NuevaNotaCredito {
+  /** Pedido (orders.order_id) ya facturado. */
+  pedido_id: number;
+  fecha: string;
+  motivo_id?: number | undefined;
+  notas: string;
+  /** Devuelve la mercancía al inventario. */
+  reponer_inventario: boolean;
+  almacen_id?: string | undefined;
+  lineas: LineaEntrada[];
+  asiento?: LineaAsiento[] | undefined;
+}
+
+export interface FiltroNotasCredito {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  clienteId?: string | undefined;
+  pedidoId?: number | undefined;
+}

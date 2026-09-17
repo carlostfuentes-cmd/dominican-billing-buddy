@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { ArrowLeft, Ban, CheckCircle2, FileText, Printer } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, FileText, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
@@ -366,6 +366,13 @@ function DetalleFactura() {
                 <Printer className="size-4" /> Imprimir y guardar factura
               </Button>
             </>
+          )}
+          {(factura.estado === "emitida" || factura.estado === "pagada") && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/notas-credito/nueva" search={{ pedido: factura.id }}>
+                <RotateCcw className="size-4" /> Nota de crédito
+              </Link>
+            </Button>
           )}
           {factura.estado === "emitida" && (
             <>

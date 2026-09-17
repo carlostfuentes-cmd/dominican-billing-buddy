@@ -17,6 +17,7 @@ export const PANTALLAS: Pantalla[] = [
   { ruta: "/cotizaciones", menu_id: "2.01.01", titulo: "Cotizaciones" },
   { ruta: "/conduces", menu_id: "2.01.01.5", titulo: "Conduces" },
   { ruta: "/devoluciones", menu_id: "2.01.04", titulo: "Devoluciones" },
+  { ruta: "/notas-credito", menu_id: "2.01.04", titulo: "Notas de crédito" },
   { ruta: "/inventario", menu_id: "2.02.01", titulo: "Inventario" },
   { ruta: "/cxc", menu_id: "2.03.01", titulo: "Cuentas por cobrar" },
   { ruta: "/clientes", menu_id: "1.03.11", titulo: "Clientes" },
