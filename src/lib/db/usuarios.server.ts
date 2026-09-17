@@ -337,7 +337,7 @@ export async function guardarUsuario(entrada: NuevoUsuario): Promise<{ id: numbe
   await ejecutar(
     `INSERT INTO users (user_id, login, first_name, last_name, password, password2, policy,
         language, main_email, birthdate, status, is_supervisor, profile_id, max_discount, mail_html)
-     VALUES (?, ?, ?, ?, '', ?, 0, 'SP', ?, ?, ?, ?, ?, 0)`,
+     VALUES (?, ?, ?, ?, '', ?, 0, 'SP', ?, ?, ?, ?, ?, ?, 0)`,
     [
       id,
       entrada.login,
