@@ -107,7 +107,7 @@ export async function registrarAuditoria(entrada: EntradaAuditoria): Promise<voi
         entrada.referencia === null || entrada.referencia === undefined
           ? null
           : String(entrada.referencia).slice(0, 50),
-        (entrada.ip ?? ipActual()).slice(0, 15),
+        (entrada.ip ?? (await ipActual())).slice(0, 15),
         (entrada.equipo ?? ORIGEN).slice(0, 25),
         entrada.usuario_id,
       ],
