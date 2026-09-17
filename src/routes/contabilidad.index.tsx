@@ -1,13 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,13 +36,29 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  eliminarCuenta,
+  guardarCuenta,
   obtenerAsientos,
   obtenerBalanceComprobacion,
   obtenerCatalogo,
   obtenerListasContabilidad,
   obtenerMayor,
 } from "@/lib/contabilidad.functions";
-import { dop, fechaCorta, hoyISO } from "@/lib/erp-types";
+import { dop, fechaCorta, hoyISO, type CuentaCatalogo, type Moneda } from "@/lib/erp-types";
+
+const CLASIFICACIONES = [
+  "NO DEFINIDO",
+  "ACTIVOS CORRIENTES",
+  "ACTIVOS FIJOS",
+  "OTROS ACTIVOS",
+  "PASIVO CORRIENTE",
+  "CAPITAL Y RESERVAS",
+  "INGRESOS",
+  "OTROS INGRESOS",
+  "COSTO DE VENTAS",
+  "GASTOS ADMINISTRATIVOS",
+  "GASTOS FINANCIEROS",
+];
 
 export const Route = createFileRoute("/contabilidad/")({
   head: () => ({
@@ -103,6 +128,33 @@ function ContabilidadPage() {
     queryKey: ["contabilidad", "catalogo", busquedaCuenta],
     queryFn: () => obtenerCatalogo({ data: { busqueda: busquedaCuenta } }),
   });
+
+  const [dialogoCuenta, setDialogoCuenta] = useState(false);
+  const [cuentaEditando, setCuentaEditando] = useState<CuentaCatalogo | null>(null);
+
+  const queryClient = useQueryClient();
+  const refrescarCatalogo = () => {
+    void queryClient.invalidateQueries({ queryKey: ["contabilidad", "catalogo"] });
+    void queryClient.invalidateQueries({ queryKey: ["contabilidad", "listas"] });
+  };
+
+  const eliminar = useMutation({
+    mutationFn: (cuenta: string) => eliminarCuenta({ data: { cuenta } }),
+    onSuccess: () => {
+      toast.success("Cuenta eliminada.");
+      refrescarCatalogo();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const abrirNueva = () => {
+    setCuentaEditando(null);
+    setDialogoCuenta(true);
+  };
+  const abrirEdicion = (c: CuentaCatalogo) => {
+    setCuentaEditando(c);
+    setDialogoCuenta(true);
+  };
 
   const opcionesCuentas = useMemo(
     () =>
@@ -416,20 +468,25 @@ function ContabilidadPage() {
         <TabsContent value="catalogo">
           <Card className="overflow-hidden">
             <CardContent className="px-0 pb-0 pt-0">
-              <div className="border-b bg-muted/20 px-5 py-4">
-                <Label htmlFor="buscar">Buscar cuenta</Label>
-                <Input
-                  id="buscar"
-                  value={busquedaCuenta}
-                  onChange={(e) => setBusquedaCuenta(e.target.value)}
-                  placeholder="Número o nombre de la cuenta…"
-                />
+              <div className="flex flex-wrap items-end gap-3 border-b bg-muted/20 px-5 py-4">
+                <div className="min-w-56 flex-1">
+                  <Label htmlFor="buscar">Buscar cuenta</Label>
+                  <Input
+                    id="buscar"
+                    value={busquedaCuenta}
+                    onChange={(e) => setBusquedaCuenta(e.target.value)}
+                    placeholder="Número o nombre de la cuenta…"
+                  />
+                </div>
+                <Button type="button" onClick={abrirNueva}>
+                  <Plus className="mr-1.5 size-4" /> Nueva cuenta
+                </Button>
               </div>
               <p className="border-b bg-muted/30 px-5 py-3 text-sm text-muted-foreground">
                 {catalogo.length} cuentas
               </p>
               <div className="overflow-x-auto">
-                <Table className="min-w-[820px]">
+                <Table className="min-w-[880px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Cuenta</TableHead>
@@ -438,12 +495,14 @@ function ContabilidadPage() {
                       <TableHead>Clasificación</TableHead>
                       <TableHead>Naturaleza</TableHead>
                       <TableHead>Tipo</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="w-24 text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {catalogo.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <TableCell colSpan={8} className="py-8 text-center text-muted-foreground">
                           Sin cuentas para la búsqueda.
                         </TableCell>
                       </TableRow>
@@ -462,6 +521,41 @@ function ContabilidadPage() {
                               {c.detalle ? "Detalle" : "Grupo"}
                             </Badge>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={c.status === "I" ? "secondary" : "default"}>
+                              {c.status === "I" ? "Inactiva" : "Activa"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Editar cuenta"
+                                onClick={() => abrirEdicion(c)}
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                title="Eliminar cuenta"
+                                disabled={eliminar.isPending}
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `¿Eliminar la cuenta ${c.cuenta} — ${c.nombre}?`,
+                                    )
+                                  )
+                                    eliminar.mutate(c.cuenta);
+                                }}
+                              >
+                                <Trash2 className="size-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -470,8 +564,204 @@ function ContabilidadPage() {
               </div>
             </CardContent>
           </Card>
+          <FormularioCuenta
+            key={cuentaEditando?.cuenta ?? "nueva"}
+            abierto={dialogoCuenta}
+            cuenta={cuentaEditando}
+            cuentas={catalogo}
+            monedas={listas?.monedas ?? []}
+            onCerrar={(guardado) => {
+              setDialogoCuenta(false);
+              if (guardado) refrescarCatalogo();
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+/* ------------------------- Formulario de cuenta -------------------------- */
+
+type PropsFormularioCuenta = {
+  abierto: boolean;
+  cuenta: CuentaCatalogo | null;
+  cuentas: CuentaCatalogo[];
+  monedas: Moneda[];
+  onCerrar: (guardado: boolean) => void;
+};
+
+function FormularioCuenta({ abierto, cuenta, cuentas, monedas, onCerrar }: PropsFormularioCuenta) {
+  const editando = cuenta !== null;
+  const [codigo, setCodigo] = useState(cuenta?.cuenta ?? "");
+  const [nombre, setNombre] = useState(cuenta?.nombre ?? "");
+  const [padre, setPadre] = useState(cuenta?.padre ?? "");
+  const [clasificacion, setClasificacion] = useState(cuenta?.clasificacion ?? "NO DEFINIDO");
+  const [naturaleza, setNaturaleza] = useState<"D" | "C">(cuenta?.naturaleza ?? "D");
+  const [tipoCuenta, setTipoCuenta] = useState(cuenta?.detalle === false ? "grupo" : "detalle");
+  const [moneda, setMoneda] = useState(cuenta?.moneda ?? "");
+  const [activa, setActiva] = useState(cuenta?.status !== "I");
+
+  const opcionesPadre = useMemo(
+    () =>
+      cuentas
+        .filter((c) => c.cuenta !== codigo)
+        .map((c) => ({
+          valor: c.cuenta,
+          etiqueta: `${c.cuenta} — ${c.nombre}`,
+          detalle: c.detalle ? "Detalle" : "Grupo",
+        })),
+    [cuentas, codigo],
+  );
+
+  const guardar = useMutation({
+    mutationFn: () =>
+      guardarCuenta({
+        data: {
+          cuenta: codigo.trim(),
+          nombre: nombre.trim(),
+          ...(padre ? { padre } : {}),
+          clasificacion,
+          naturaleza,
+          detalle: tipoCuenta === "detalle",
+          ...(moneda ? { moneda } : {}),
+          status: activa ? "A" : "I",
+        },
+      }),
+    onSuccess: () => {
+      toast.success(editando ? "Cuenta actualizada." : "Cuenta creada.");
+      onCerrar(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open={abierto} onOpenChange={(v) => !v && onCerrar(false)}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{editando ? "Editar cuenta" : "Nueva cuenta"}</DialogTitle>
+          <DialogDescription>
+            El nivel se calcula automáticamente a partir de la cuenta padre.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="fc-cuenta">Cuenta</Label>
+            <Input
+              id="fc-cuenta"
+              value={codigo}
+              onChange={(e) => setCodigo(e.target.value)}
+              readOnly={editando}
+              className={editando ? "bg-muted font-mono" : "font-mono"}
+              placeholder="Ej. 110501"
+            />
+          </div>
+          <div>
+            <Label htmlFor="fc-nombre">Nombre</Label>
+            <Input
+              id="fc-nombre"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Nombre de la cuenta"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Cuenta padre (grupo al que pertenece)</Label>
+            <SelectorBuscable
+              opciones={opcionesPadre}
+              valor={padre}
+              onSeleccionar={setPadre}
+              placeholder="Sin padre (nivel 1)"
+              vacio="Sin cuentas"
+            />
+            {padre ? (
+              <button
+                type="button"
+                className="mt-1 text-xs text-muted-foreground underline"
+                onClick={() => setPadre("")}
+              >
+                Quitar padre
+              </button>
+            ) : null}
+          </div>
+          <div>
+            <Label>Clasificación</Label>
+            <Select value={clasificacion} onValueChange={setClasificacion}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLASIFICACIONES.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Naturaleza</Label>
+            <Select value={naturaleza} onValueChange={(v) => setNaturaleza(v as "D" | "C")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="D">Débito</SelectItem>
+                <SelectItem value="C">Crédito</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Select value={tipoCuenta} onValueChange={setTipoCuenta}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="detalle">Detalle (recibe movimientos)</SelectItem>
+                <SelectItem value="grupo">Grupo (solo agrupa)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Moneda</Label>
+            <Select value={moneda || "__todas__"} onValueChange={(v) => setMoneda(v === "__todas__" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__todas__">Todas las monedas</SelectItem>
+                {monedas.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.id} — {m.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <label className="flex items-center gap-2 pt-5 text-sm">
+            <input
+              type="checkbox"
+              checked={activa}
+              onChange={(e) => setActiva(e.target.checked)}
+              className="size-4 accent-primary"
+            />
+            Cuenta activa
+          </label>
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onCerrar(false)}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            disabled={guardar.isPending || !codigo.trim() || nombre.trim().length < 2}
+            onClick={() => guardar.mutate()}
+          >
+            {guardar.isPending ? "Guardando…" : "Guardar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

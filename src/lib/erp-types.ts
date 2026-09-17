@@ -822,6 +822,18 @@ export interface CuentaCatalogo {
   padre?: string | undefined;
   clasificacion?: string | undefined;
   moneda?: string | undefined;
+  status?: string | undefined;
+}
+
+export interface NuevaCuentaCatalogo {
+  cuenta: string;
+  nombre: string;
+  padre?: string | undefined;
+  clasificacion?: string | undefined;
+  naturaleza: "D" | "C";
+  detalle: boolean;
+  moneda?: string | undefined;
+  status?: string | undefined;
 }
 
 export interface LineaAsiento {

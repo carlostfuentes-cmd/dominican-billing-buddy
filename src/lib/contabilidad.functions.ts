@@ -97,3 +97,24 @@ export const guardarAsiento = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ id: number; numero: number }> =>
     (await repo()).crearAsiento(data),
   );
+
+const cuentaSchema = z.object({
+  cuenta: texto(15).min(1, "El número de cuenta es obligatorio"),
+  nombre: texto(150).min(2, "Escribe el nombre de la cuenta"),
+  padre: texto(15).optional(),
+  clasificacion: texto(30).optional(),
+  naturaleza: z.enum(["D", "C"]),
+  detalle: z.boolean(),
+  moneda: texto(5).optional(),
+  status: texto(1).optional(),
+});
+
+export const guardarCuenta = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => cuentaSchema.parse(d))
+  .handler(async ({ data }): Promise<void> => (await repo()).guardarCuentaCatalogo(data));
+
+export const eliminarCuenta = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ cuenta: texto(15).min(1) }).parse(d))
+  .handler(async ({ data }): Promise<void> =>
+    (await repo()).eliminarCuentaCatalogo(data.cuenta),
+  );
