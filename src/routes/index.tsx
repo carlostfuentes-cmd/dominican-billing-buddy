@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { obtenerResumen } from "@/lib/erp.functions";
+import { obtenerRecurrentes } from "@/lib/recurrentes.functions";
 import { dop, fechaCorta } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/")({
@@ -48,6 +49,11 @@ function Panel() {
   const { data, isLoading } = useQuery({
     queryKey: ["resumen"],
     queryFn: () => obtenerResumen(),
+  });
+
+  const { data: pendientes = [] } = useQuery({
+    queryKey: ["recurrentes", { estado: "vencidas" }],
+    queryFn: () => obtenerRecurrentes({ data: { estado: "vencidas" as const } }),
   });
 
   const alertas = (data?.alertasNCF ?? []).filter((a) => a.restantes <= 20);
@@ -107,6 +113,25 @@ function Panel() {
             ))}
             <Button asChild variant="outline" size="sm" className="mt-3">
               <Link to="/ncf">Administrar secuencias</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {pendientes.length > 0 && (
+        <Card className="mt-6 border-warning/30 bg-warning/8">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm text-warning-foreground">
+              <AlertTriangle className="size-4" /> Facturación recurrente pendiente
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-warning-foreground">
+            <p>
+              {pendientes.length} plantilla{pendientes.length === 1 ? "" : "s"} lista
+              {pendientes.length === 1 ? "" : "s"} para facturar.
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link to="/recurrentes">Ver facturas recurrentes</Link>
             </Button>
           </CardContent>
         </Card>
