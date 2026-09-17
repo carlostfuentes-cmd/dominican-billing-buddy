@@ -62,11 +62,10 @@ export function describirCambios(datos: unknown, antes?: unknown): string {
   return cuerpo.length > 60000 ? `${cuerpo.slice(0, 60000)}…` : cuerpo;
 }
 
-function ipActual(): string {
+async function ipActual(): Promise<string> {
   try {
-    // Importación diferida: solo existe dentro de una petición del servidor.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return "";
+    const { getRequestIP } = await import("@tanstack/react-start/server");
+    return getRequestIP({ xForwardedFor: true }) ?? "";
   } catch {
     return "";
   }
