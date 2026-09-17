@@ -402,7 +402,7 @@ export const guardarPedido = createServerFn({ method: "POST" })
       menu_id: "2.01.02",
       tipo: "A",
       accion: factura.ncf
-        ? `Pedido: ${factura.id} | Factura: ${factura.numero_factura ?? ""} | NCF: ${factura.ncf}`
+        ? `Pedido: ${factura.id} | Factura: ${factura.invoice_id ?? ""} | NCF: ${factura.ncf}`
         : `Pedido: ${factura.id} — ${factura.cliente_nombre}`,
       referencia: factura.id,
       cambios: data,
@@ -426,7 +426,7 @@ export const facturarPedido = createServerFn({ method: "POST" })
     await auditar({
       menu_id: "2.01.02",
       tipo: "E",
-      accion: `Facturó el pedido ${data.id} | Factura: ${factura.numero_factura ?? ""} | NCF: ${factura.ncf ?? ""}`,
+      accion: `Facturó el pedido ${data.id} | Factura: ${factura.invoice_id ?? ""} | NCF: ${factura.ncf ?? ""}`,
       referencia: data.id,
       cambios: data,
     });
