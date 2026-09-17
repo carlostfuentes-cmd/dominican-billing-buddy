@@ -8,6 +8,8 @@ import type {
   TipoDocumento,
 } from "@/lib/erp-types";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/documentos.server");
 
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
@@ -83,12 +85,38 @@ const nuevoDocumentoSchema = z.object({
 
 export const guardarDocumento = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => nuevoDocumentoSchema.parse(d))
-  .handler(async ({ data }): Promise<Documento> => (await repo()).crearDocumento(data));
+  .handler(async ({ data }): Promise<Documento> => {
+    const doc = await (await repo()).crearDocumento(data);
+    const menus: Record<string, string> = {
+      cotizacion: "2.01.01",
+      conduce: "2.01.01.5",
+      devolucion: "2.01.04",
+    };
+    const nombres: Record<string, string> = {
+      cotizacion: "Cotización",
+      conduce: "Conduce",
+      devolucion: "Devolución",
+    };
+    await auditar({
+      menu_id: menus[data.tipo] ?? null,
+      tipo: "A",
+      accion: `${nombres[data.tipo] ?? "Documento"}: ${doc.id} — ${doc.cliente_nombre}`,
+      referencia: doc.id,
+      cambios: data,
+    });
+    return doc;
+  });
 
 export const anularCotizacion = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).anularCotizacion(data.id);
+    await auditar({
+      menu_id: "2.01.01",
+      tipo: "X",
+      accion: `Anuló la cotización ${data.id}`,
+      referencia: data.id,
+    });
     return { ok: true };
   });
 

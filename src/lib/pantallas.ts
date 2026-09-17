@@ -29,6 +29,7 @@ export const PANTALLAS: Pantalla[] = [
   { ruta: "/configuracion", menu_id: "4.51", titulo: "Configuración", soloAdmin: true },
   { ruta: "/perfiles", menu_id: "4.01.03", titulo: "Perfiles", soloAdmin: true },
   { ruta: "/usuarios", menu_id: "4.01.05", titulo: "Usuarios", soloAdmin: true },
+  { ruta: "/auditoria", menu_id: "4.57", titulo: "Auditoría", soloAdmin: true },
 ];
 
 /** Rutas visibles siempre para cualquier usuario con sesión iniciada. */

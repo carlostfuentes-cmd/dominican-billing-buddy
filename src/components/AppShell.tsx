@@ -15,6 +15,7 @@ import {
   Printer,
   RotateCcw,
   Settings,
+  ScrollText,
   ShieldCheck,
   Truck,
   UserCog,
@@ -46,6 +47,7 @@ const NAV = [
   { to: "/campos", label: "Campos personalizados", icon: ListPlus, grupo: "sistema" },
   { to: "/usuarios", label: "Usuarios", icon: UserCog, grupo: "sistema" },
   { to: "/perfiles", label: "Perfiles y permisos", icon: ShieldCheck, grupo: "sistema" },
+  { to: "/auditoria", label: "Auditoría", icon: ScrollText, grupo: "sistema" },
   { to: "/configuracion", label: "Configuración", icon: Settings, grupo: "sistema" },
 ] as const;
 

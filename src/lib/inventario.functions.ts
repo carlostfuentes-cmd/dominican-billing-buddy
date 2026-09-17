@@ -7,6 +7,8 @@ import type {
   MovimientoInventario,
 } from "@/lib/erp-types";
 
+import { auditar } from "@/lib/auditoria.functions";
+
 const repo = () => import("@/lib/db/inventario.server");
 
 const fecha = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida");
@@ -67,9 +69,17 @@ const movimientoSchema = z.object({
 
 export const guardarMovimientoInventario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => movimientoSchema.parse(d))
-  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> =>
-    (await repo()).crearMovimientoInventario(data),
-  );
+  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> => {
+    const r = await (await repo()).crearMovimientoInventario(data);
+    await auditar({
+      menu_id: "2.02.01",
+      tipo: "A",
+      accion: `Movimiento de inventario ${r.documento} (transacción ${data.operacion_id})`,
+      referencia: r.documento,
+      cambios: data,
+    });
+    return r;
+  });
 
 const lineaAsientoSchema = z.object({
   cuenta: texto(15),
@@ -112,13 +122,27 @@ export const obtenerProximoDocumentoInventario = createServerFn({ method: "GET" 
 
 export const guardarDocumentoInventario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => documentoSchema.parse(d))
-  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> =>
-    (await repo()).crearDocumentoInventario(data),
-  );
+  .handler(async ({ data }): Promise<{ ids: number[]; documento: string }> => {
+    const r = await (await repo()).crearDocumentoInventario(data);
+    await auditar({
+      menu_id: "2.02.01",
+      tipo: "A",
+      accion: `Documento de inventario ${r.documento} (transacción ${data.operacion_id}, ${data.lineas.length} línea(s))`,
+      referencia: r.documento,
+      cambios: data,
+    });
+    return r;
+  });
 
 export const anularMovimientoInventario = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => z.object({ id: z.number().int().min(1) }).parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     await (await repo()).anularMovimientoInventario(data.id);
+    await auditar({
+      menu_id: "2.02.01",
+      tipo: "X",
+      accion: `Anuló el movimiento de inventario No. ${data.id}`,
+      referencia: data.id,
+    });
     return { ok: true };
   });
