@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Banknote,
   BarChart3,
   BookOpen,
   Boxes,
@@ -19,6 +20,7 @@ import {
   Settings,
   ScrollText,
   ShieldCheck,
+  ShoppingCart,
   Truck,
   UserCog,
   Users,
