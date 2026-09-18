@@ -32,6 +32,8 @@ import { Route as CotizacionesIdRouteImport } from './routes/cotizaciones.$id'
 import { Route as CotizacionesNuevaRouteImport } from './routes/cotizaciones.nueva'
 import { Route as CxcIndexRouteImport } from './routes/cxc.index'
 import { Route as CxcNuevoRouteImport } from './routes/cxc.nuevo'
+import { Route as CxpIndexRouteImport } from './routes/cxp.index'
+import { Route as CxpNuevaRouteImport } from './routes/cxp.nueva'
 import { Route as DevolucionesIndexRouteImport } from './routes/devoluciones.index'
 import { Route as DevolucionesIdRouteImport } from './routes/devoluciones.$id'
 import { Route as DevolucionesNuevaRouteImport } from './routes/devoluciones.nueva'
@@ -164,6 +166,16 @@ const CxcNuevoRoute = CxcNuevoRouteImport.update({
   path: '/cxc/nuevo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CxpIndexRoute = CxpIndexRouteImport.update({
+  id: '/cxp/',
+  path: '/cxp/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CxpNuevaRoute = CxpNuevaRouteImport.update({
+  id: '/cxp/nueva',
+  path: '/cxp/nueva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevolucionesIndexRoute = DevolucionesIndexRouteImport.update({
   id: '/devoluciones/',
   path: '/devoluciones/',
@@ -264,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
+  '/cxp/nueva': typeof CxpNuevaRoute
   '/devoluciones/$id': typeof DevolucionesIdRoute
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
@@ -278,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
+  '/cxp/': typeof CxpIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
   '/facturas/': typeof FacturasIndexRoute
   '/inventario/': typeof InventarioIndexRoute
@@ -305,6 +319,7 @@ export interface FileRoutesByTo {
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
+  '/cxp/nueva': typeof CxpNuevaRoute
   '/devoluciones/$id': typeof DevolucionesIdRoute
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
@@ -319,6 +334,7 @@ export interface FileRoutesByTo {
   '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
   '/cxc': typeof CxcIndexRoute
+  '/cxp': typeof CxpIndexRoute
   '/devoluciones': typeof DevolucionesIndexRoute
   '/facturas': typeof FacturasIndexRoute
   '/inventario': typeof InventarioIndexRoute
@@ -347,6 +363,7 @@ export interface FileRoutesById {
   '/cotizaciones/$id': typeof CotizacionesIdRoute
   '/cotizaciones/nueva': typeof CotizacionesNuevaRoute
   '/cxc/nuevo': typeof CxcNuevoRoute
+  '/cxp/nueva': typeof CxpNuevaRoute
   '/devoluciones/$id': typeof DevolucionesIdRoute
   '/devoluciones/nueva': typeof DevolucionesNuevaRoute
   '/facturas/$id': typeof FacturasIdRoute
@@ -361,6 +378,7 @@ export interface FileRoutesById {
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
   '/cxc/': typeof CxcIndexRoute
+  '/cxp/': typeof CxpIndexRoute
   '/devoluciones/': typeof DevolucionesIndexRoute
   '/facturas/': typeof FacturasIndexRoute
   '/inventario/': typeof InventarioIndexRoute
@@ -390,6 +408,7 @@ export interface FileRouteTypes {
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
+    | '/cxp/nueva'
     | '/devoluciones/$id'
     | '/devoluciones/nueva'
     | '/facturas/$id'
@@ -404,6 +423,7 @@ export interface FileRouteTypes {
     | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
+    | '/cxp/'
     | '/devoluciones/'
     | '/facturas/'
     | '/inventario/'
@@ -431,6 +451,7 @@ export interface FileRouteTypes {
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
+    | '/cxp/nueva'
     | '/devoluciones/$id'
     | '/devoluciones/nueva'
     | '/facturas/$id'
@@ -445,6 +466,7 @@ export interface FileRouteTypes {
     | '/contabilidad'
     | '/cotizaciones'
     | '/cxc'
+    | '/cxp'
     | '/devoluciones'
     | '/facturas'
     | '/inventario'
@@ -472,6 +494,7 @@ export interface FileRouteTypes {
     | '/cotizaciones/$id'
     | '/cotizaciones/nueva'
     | '/cxc/nuevo'
+    | '/cxp/nueva'
     | '/devoluciones/$id'
     | '/devoluciones/nueva'
     | '/facturas/$id'
@@ -486,6 +509,7 @@ export interface FileRouteTypes {
     | '/contabilidad/'
     | '/cotizaciones/'
     | '/cxc/'
+    | '/cxp/'
     | '/devoluciones/'
     | '/facturas/'
     | '/inventario/'
@@ -514,6 +538,7 @@ export interface RootRouteChildren {
   CotizacionesIdRoute: typeof CotizacionesIdRoute
   CotizacionesNuevaRoute: typeof CotizacionesNuevaRoute
   CxcNuevoRoute: typeof CxcNuevoRoute
+  CxpNuevaRoute: typeof CxpNuevaRoute
   DevolucionesIdRoute: typeof DevolucionesIdRoute
   DevolucionesNuevaRoute: typeof DevolucionesNuevaRoute
   FacturasIdRoute: typeof FacturasIdRoute
@@ -528,6 +553,7 @@ export interface RootRouteChildren {
   ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
   CxcIndexRoute: typeof CxcIndexRoute
+  CxpIndexRoute: typeof CxpIndexRoute
   DevolucionesIndexRoute: typeof DevolucionesIndexRoute
   FacturasIndexRoute: typeof FacturasIndexRoute
   InventarioIndexRoute: typeof InventarioIndexRoute
@@ -700,6 +726,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CxcNuevoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cxp/': {
+      id: '/cxp/'
+      path: '/cxp'
+      fullPath: '/cxp/'
+      preLoaderRoute: typeof CxpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cxp/nueva': {
+      id: '/cxp/nueva'
+      path: '/cxp/nueva'
+      fullPath: '/cxp/nueva'
+      preLoaderRoute: typeof CxpNuevaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/devoluciones/': {
       id: '/devoluciones/'
       path: '/devoluciones'
@@ -834,6 +874,7 @@ const rootRouteChildren: RootRouteChildren = {
   CotizacionesIdRoute: CotizacionesIdRoute,
   CotizacionesNuevaRoute: CotizacionesNuevaRoute,
   CxcNuevoRoute: CxcNuevoRoute,
+  CxpNuevaRoute: CxpNuevaRoute,
   DevolucionesIdRoute: DevolucionesIdRoute,
   DevolucionesNuevaRoute: DevolucionesNuevaRoute,
   FacturasIdRoute: FacturasIdRoute,
@@ -848,6 +889,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
   CxcIndexRoute: CxcIndexRoute,
+  CxpIndexRoute: CxpIndexRoute,
   DevolucionesIndexRoute: DevolucionesIndexRoute,
   FacturasIndexRoute: FacturasIndexRoute,
   InventarioIndexRoute: InventarioIndexRoute,

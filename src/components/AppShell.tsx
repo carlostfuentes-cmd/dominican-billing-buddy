@@ -36,6 +36,8 @@ const NAV = [
   { to: "/", label: "Panel", icon: LayoutDashboard, grupo: "principal" },
   { to: "/facturas", label: "Pedidos y facturas", icon: FileText, grupo: "principal" },
   { to: "/cxc", label: "Cuentas por cobrar", icon: Wallet, grupo: "principal" },
+  { to: "/compras", label: "Órdenes de compra", icon: ShoppingCart, grupo: "principal" },
+  { to: "/cxp", label: "Cuentas por pagar", icon: Banknote, grupo: "principal" },
   { to: "/cotizaciones", label: "Cotizaciones", icon: FileSpreadsheet, grupo: "operaciones" },
   { to: "/conduces", label: "Conduces", icon: Truck, grupo: "operaciones" },
   { to: "/devoluciones", label: "Devoluciones", icon: RotateCcw, grupo: "operaciones" },
