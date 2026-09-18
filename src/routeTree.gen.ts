@@ -46,6 +46,8 @@ import { Route as NotasCreditoNuevaRouteImport } from './routes/notas-credito.nu
 import { Route as RecurrentesIndexRouteImport } from './routes/recurrentes.index'
 import { Route as RecurrentesIdRouteImport } from './routes/recurrentes.$id'
 import { Route as RecurrentesNuevaRouteImport } from './routes/recurrentes.nueva'
+import { Route as ComprasIdIndexRouteImport } from './routes/compras.$id.index'
+import { Route as ComprasIdRecepcionRouteImport } from './routes/compras.$id.recepcion'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -232,6 +234,16 @@ const RecurrentesNuevaRoute = RecurrentesNuevaRouteImport.update({
   path: '/recurrentes/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComprasIdIndexRoute = ComprasIdIndexRouteImport.update({
+  id: '/compras/$id/',
+  path: '/compras/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasIdRecepcionRoute = ComprasIdRecepcionRouteImport.update({
+  id: '/compras/$id/recepcion',
+  path: '/compras/$id/recepcion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -271,6 +283,8 @@ export interface FileRoutesByFullPath {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id/': typeof ComprasIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -310,6 +324,8 @@ export interface FileRoutesByTo {
   '/inventario': typeof InventarioIndexRoute
   '/notas-credito': typeof NotasCreditoIndexRoute
   '/recurrentes': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id': typeof ComprasIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -350,6 +366,8 @@ export interface FileRoutesById {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id/': typeof ComprasIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -391,6 +409,8 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/compras/$id/recepcion'
+    | '/compras/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -430,6 +450,8 @@ export interface FileRouteTypes {
     | '/inventario'
     | '/notas-credito'
     | '/recurrentes'
+    | '/compras/$id/recepcion'
+    | '/compras/$id'
   id:
     | '__root__'
     | '/'
@@ -469,6 +491,8 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/compras/$id/recepcion'
+    | '/compras/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -509,6 +533,8 @@ export interface RootRouteChildren {
   InventarioIndexRoute: typeof InventarioIndexRoute
   NotasCreditoIndexRoute: typeof NotasCreditoIndexRoute
   RecurrentesIndexRoute: typeof RecurrentesIndexRoute
+  ComprasIdRecepcionRoute: typeof ComprasIdRecepcionRoute
+  ComprasIdIndexRoute: typeof ComprasIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -772,6 +798,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecurrentesNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compras/$id/': {
+      id: '/compras/$id/'
+      path: '/compras/$id'
+      fullPath: '/compras/$id/'
+      preLoaderRoute: typeof ComprasIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras/$id/recepcion': {
+      id: '/compras/$id/recepcion'
+      path: '/compras/$id/recepcion'
+      fullPath: '/compras/$id/recepcion'
+      preLoaderRoute: typeof ComprasIdRecepcionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -813,6 +853,8 @@ const rootRouteChildren: RootRouteChildren = {
   InventarioIndexRoute: InventarioIndexRoute,
   NotasCreditoIndexRoute: NotasCreditoIndexRoute,
   RecurrentesIndexRoute: RecurrentesIndexRoute,
+  ComprasIdRecepcionRoute: ComprasIdRecepcionRoute,
+  ComprasIdIndexRoute: ComprasIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
