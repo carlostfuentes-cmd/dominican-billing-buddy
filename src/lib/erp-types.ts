@@ -1114,3 +1114,253 @@ export function textoRecurrente(texto: string, fechaISO: string): string {
     .replaceAll("<INICIO_MES>", fechaCorta(inicio))
     .replaceAll("<FIN_MES>", fechaCorta(fin));
 }
+
+/* ------------------------- Compras y cuentas por pagar ------------------- */
+
+export type EstadoOrdenCompra = "A" | "I" | "N";
+
+export const ETIQUETA_ESTADO_COMPRA: Record<EstadoOrdenCompra, string> = {
+  A: "Autorizada",
+  I: "No autorizada",
+  N: "Anulada",
+};
+
+export type EstadoRecepcion = "pendiente" | "parcial" | "completa";
+
+export const ETIQUETA_RECEPCION: Record<EstadoRecepcion, string> = {
+  pendiente: "Pendiente",
+  parcial: "Recibida parcial",
+  completa: "Recibida completa",
+};
+
+export interface LineaCompra {
+  id?: number | undefined;
+  producto_id: string;
+  codigo: string;
+  descripcion: string;
+  cantidad: number;
+  /** Cantidad ya recibida (purchases_detail.receipt). */
+  recibida: number;
+  precio: number;
+  descuento_pct: number;
+  tasa_itbis: number;
+  subtotal: number;
+  itbis: number;
+  total: number;
+  notas: string;
+  serial: string;
+}
+
+export interface OrdenCompra {
+  id: number;
+  fecha: string;
+  suplidor_id: string;
+  suplidor: string;
+  suplidor_rnc: string;
+  suplidor_direccion: string;
+  suplidor_telefono: string;
+  moneda: string;
+  tasa_cambio: number;
+  sucursal_id: string;
+  almacen_id: string;
+  almacen: string;
+  destino: string;
+  lugar: string;
+  uso: string;
+  cotizacion: string;
+  requisicion: string;
+  fecha_requisicion: string;
+  dias_credito: number;
+  descuento_pct: number;
+  solicitante_id: string;
+  proyecto_id: string;
+  departamento_id: string;
+  forma_pago_id: string;
+  notas: string;
+  estado: EstadoOrdenCompra;
+  recepcion: EstadoRecepcion;
+  /** Factura del suplidor cuando la recepción se hizo en contabilidad. */
+  factura_suplidor: string;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  lineas: LineaCompra[];
+}
+
+export interface NuevaOrdenCompra {
+  id?: number | undefined;
+  suplidor_id: string;
+  fecha: string;
+  moneda: string;
+  tasa_cambio: number;
+  sucursal_id?: string | undefined;
+  almacen_id?: string | undefined;
+  destino?: string | undefined;
+  lugar?: string | undefined;
+  uso?: string | undefined;
+  cotizacion?: string | undefined;
+  requisicion?: string | undefined;
+  fecha_requisicion?: string | undefined;
+  dias_credito: number;
+  descuento_pct: number;
+  solicitante_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  departamento_id?: string | undefined;
+  forma_pago_id?: string | undefined;
+  notas?: string | undefined;
+  sin_valor?: boolean | undefined;
+  estado: EstadoOrdenCompra;
+  lineas: {
+    producto_id: string;
+    descripcion: string;
+    cantidad: number;
+    precio: number;
+    descuento_pct: number;
+    tasa_itbis: number;
+    notas?: string | undefined;
+  }[];
+}
+
+export interface FiltroCompras {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  suplidorId?: string | undefined;
+  estado?: EstadoOrdenCompra | undefined;
+  recepcion?: EstadoRecepcion | undefined;
+  busqueda?: string | undefined;
+}
+
+export interface ListasCompras {
+  suplidores: OpcionId[];
+  almacenes: OpcionId[];
+  sucursales: OpcionId[];
+  departamentos: OpcionId[];
+  proyectos: OpcionId[];
+  formas: OpcionId[];
+  monedas: Moneda[];
+  gastos: OpcionId[];
+  retenciones: { id: string; nombre: string; tasa: number }[];
+  comprobantes: OpcionId[];
+  tipos_cxp: OpcionId[];
+}
+
+/** Datos fiscales de la factura del suplidor (recepción en contabilidad o captura directa). */
+export interface DatosFacturaSuplidor {
+  numero: string;
+  ncf: string;
+  fecha: string;
+  vencimiento: string;
+  dias_credito: number;
+  moneda: string;
+  tasa_cambio: number;
+  comprobante_id: string;
+  gasto_id: string;
+  forma_pago_id: string;
+  bienes: number;
+  servicios: number;
+  propina: number;
+  isc: number;
+  otros_impuestos: number;
+  itbis: number;
+  itbis_retenido: number;
+  isr_id: string;
+  isr_retenido: number;
+  itbis_costo: number;
+  itbis_proporcional: number;
+  conduce: boolean;
+  informal: boolean;
+  gasto_menor: boolean;
+  sucursal_id: string;
+  uso: string;
+  notas: string;
+}
+
+export interface NuevaRecepcion {
+  orden_id: number;
+  /** "almacen" solo afecta inventario; "contabilidad" crea además la factura. */
+  modalidad: "almacen" | "contabilidad";
+  fecha: string;
+  almacen_id: string;
+  descuento_pct: number;
+  notas: string;
+  lineas: { linea_id: number; producto_id: string; recibida: number; precio: number }[];
+  factura?: DatosFacturaSuplidor | undefined;
+  asiento?: LineaAsiento[] | undefined;
+}
+
+export interface ResultadoRecepcion {
+  orden_id: number;
+  documento_inventario: string;
+  ap_id?: number | undefined;
+  factura?: string | undefined;
+  recepcion: EstadoRecepcion;
+}
+
+export interface MovimientoCxP {
+  id: number;
+  fecha: string;
+  vencimiento: string;
+  documento: string;
+  ncf: string;
+  tipo_id: string;
+  tipo: string;
+  signo: "D" | "C";
+  suplidor_id: string;
+  suplidor: string;
+  moneda: string;
+  tasa_cambio: number;
+  monto: number;
+  balance: number;
+  descripcion: string;
+  gasto: string;
+  orden_id: string;
+}
+
+export interface BalanceSuplidorCxP {
+  suplidor_id: string;
+  suplidor: string;
+  moneda: string;
+  balance: number;
+  documentos: number;
+  mas_antiguo: string;
+}
+
+export interface FiltroCxP {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  suplidorId?: string | undefined;
+  tipoId?: string | undefined;
+  ncf?: string | undefined;
+}
+
+export interface NuevaFacturaSuplidor {
+  suplidor_id: string;
+  tipo_id: string;
+  factura: DatosFacturaSuplidor;
+  orden_id?: number | undefined;
+  asiento?: LineaAsiento[] | undefined;
+}
+
+/** Total de la factura del suplidor en su moneda. */
+export function totalFacturaSuplidor(f: {
+  bienes: number;
+  servicios: number;
+  propina: number;
+  isc: number;
+  otros_impuestos: number;
+  itbis: number;
+  itbis_retenido: number;
+  isr_retenido: number;
+}): number {
+  return round2(
+    f.bienes +
+      f.servicios +
+      f.propina +
+      f.isc +
+      f.otros_impuestos +
+      f.itbis -
+      f.itbis_retenido -
+      f.isr_retenido,
+  );
+}
