@@ -184,8 +184,6 @@ export async function obtenerMovimientoCxP(id: number): Promise<
   );
   const f = filas[0];
   if (!f) return null;
-  const [cab] = await listarMovimientosCxP({});
-  void cab;
   const det = await sql<Record<string, unknown>>(
     `SELECT d.catalog_account AS cuenta, COALESCE(c.name, '') AS nombre,
             COALESCE(d.debit, 0) AS debito, COALESCE(d.credit, 0) AS credito
