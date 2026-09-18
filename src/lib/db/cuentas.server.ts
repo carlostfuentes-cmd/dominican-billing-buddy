@@ -446,3 +446,185 @@ export async function propuestaNotaCredito(
 
   return finalizar(acum, advertencias);
 }
+
+/* ------------------------- Compras y cuentas por pagar ------------------- */
+
+/** Cuentas por defecto cuando el suplidor no las tiene configuradas. */
+export const CUENTA_ITBIS_COMPRAS = "131202";
+export const CUENTA_ITBIS_RETENIDO_CXP = "2149";
+export const CUENTA_ISR_RETENIDO_CXP = "2162";
+export const CUENTA_CXP_SUPLIDORES = "2120102";
+
+export interface CuentasSuplidor {
+  /** Cuenta por pagar del suplidor (suppliers.credit_account). */
+  cxp: string;
+  /** Cuenta del ITBIS adelantado (suppliers.itbis_account). */
+  itbis: string;
+  /** Cuenta de gasto o costo por defecto (suppliers.debit_account). */
+  gasto: string;
+}
+
+export async function cuentasSuplidor(suplidorId: string): Promise<CuentasSuplidor> {
+  if (!(await usarMysql()) || !suplidorId)
+    return { cxp: CUENTA_CXP_SUPLIDORES, itbis: CUENTA_ITBIS_COMPRAS, gasto: "" };
+  const filas = await sql<Record<string, unknown>>(
+    `SELECT COALESCE(credit_account,'') AS cxp, COALESCE(itbis_account,'') AS itbis,
+            COALESCE(debit_account,'') AS gasto
+     FROM suppliers WHERE supplier_id = ? LIMIT 1`,
+    [Number(suplidorId)],
+  );
+  const f = filas[0];
+  return {
+    cxp: txt(f?.["cxp"]) || CUENTA_CXP_SUPLIDORES,
+    itbis: txt(f?.["itbis"]) || CUENTA_ITBIS_COMPRAS,
+    gasto: txt(f?.["gasto"]),
+  };
+}
+
+export interface LineaRecibida {
+  producto_id: string;
+  cantidad: number;
+  /** Costo total de la línea en la moneda del documento. */
+  costo_total: number;
+}
+
+export interface EntradaPropuestaCompra {
+  suplidor_id: string;
+  lineas: LineaRecibida[];
+  /** ITBIS adelantado de la factura (0 cuando recibe almacén). */
+  itbis?: number | undefined;
+  /** Parte del ITBIS que se lleva al costo. */
+  itbis_costo?: number | undefined;
+  itbis_retenido?: number | undefined;
+  isr_retenido?: number | undefined;
+  /** ISC, propina y otros impuestos que aumentan el costo. */
+  otros?: number | undefined;
+}
+
+/**
+ * Asiento propuesto de una recepción de compra:
+ *   Débito  Inventario (por clasificación del producto)
+ *   Débito  ITBIS adelantado
+ *   Crédito Cuentas por pagar del suplidor
+ *   Crédito ITBIS retenido / ISR retenido
+ */
+export async function propuestaCompra(
+  entrada: EntradaPropuestaCompra,
+): Promise<{ lineas: LineaAsiento[]; advertencias: string[] }> {
+  if (!(await usarMysql())) return { lineas: [], advertencias: [] };
+  const advertencias: string[] = [];
+  const lineas = entrada.lineas.filter((l) => l.producto_id && l.costo_total > 0);
+  if (!lineas.length) return { lineas: [], advertencias: [] };
+
+  const [res, prods, ct] = await Promise.all([
+    resolver(),
+    productos(lineas.map((l) => l.producto_id)),
+    cuentasSuplidor(entrada.suplidor_id),
+  ]);
+
+  const acum: Acum = new Map();
+  let costo = 0;
+
+  for (const l of lineas) {
+    const grupo = prods.get(l.producto_id)?.grupo ?? "";
+    const dep = res.departamento(grupo);
+    const monto = round2(l.costo_total);
+    const inventario = res.cuenta(grupo, PROPOSITO.inventario);
+    if (!inventario)
+      advertencias.push(
+        `El producto ${l.producto_id} no tiene cuenta de inventario en su clasificación.`,
+      );
+    acumular(acum, inventario, "Compra de mercancía", monto, 0, dep);
+    costo = round2(costo + monto);
+  }
+
+  const otros = round2(entrada.otros ?? 0);
+  const itbisCosto = round2(entrada.itbis_costo ?? 0);
+  if (otros + itbisCosto > 0) {
+    const grupo = prods.get(lineas[0]?.producto_id ?? "")?.grupo ?? "";
+    acumular(
+      acum,
+      res.cuenta(grupo, PROPOSITO.inventario),
+      "Otros costos de la compra",
+      round2(otros + itbisCosto),
+      0,
+      res.departamento(grupo),
+    );
+  }
+
+  const itbis = round2(Math.max((entrada.itbis ?? 0) - itbisCosto, 0));
+  if (itbis > 0) acumular(acum, ct.itbis, "ITBIS adelantado en compras", itbis, 0, "");
+
+  const itbisRet = round2(entrada.itbis_retenido ?? 0);
+  const isrRet = round2(entrada.isr_retenido ?? 0);
+  if (itbisRet > 0)
+    acumular(acum, CUENTA_ITBIS_RETENIDO_CXP, "ITBIS retenido al suplidor", 0, itbisRet, "");
+  if (isrRet > 0)
+    acumular(acum, CUENTA_ISR_RETENIDO_CXP, "ISR retenido al suplidor", 0, isrRet, "");
+
+  const porPagar = round2(costo + otros + itbisCosto + itbis - itbisRet - isrRet);
+  if (porPagar > 0) acumular(acum, ct.cxp, "Cuentas por pagar suplidor", 0, porPagar, "");
+
+  return finalizar(acum, advertencias);
+}
+
+export interface EntradaPropuestaFacturaSuplidor {
+  suplidor_id: string;
+  bienes: number;
+  servicios: number;
+  propina?: number | undefined;
+  isc?: number | undefined;
+  otros_impuestos?: number | undefined;
+  itbis?: number | undefined;
+  itbis_costo?: number | undefined;
+  itbis_retenido?: number | undefined;
+  isr_retenido?: number | undefined;
+  /** Cuenta de gasto elegida por el usuario; si falta se usa la del suplidor. */
+  cuenta_gasto?: string | undefined;
+}
+
+/**
+ * Asiento propuesto de una factura de suplidor sin orden de compra:
+ *   Débito  Gasto o costo (bienes, servicios y otros cargos)
+ *   Débito  ITBIS adelantado
+ *   Crédito Cuentas por pagar del suplidor
+ *   Crédito ITBIS retenido / ISR retenido
+ */
+export async function propuestaFacturaSuplidor(
+  entrada: EntradaPropuestaFacturaSuplidor,
+): Promise<{ lineas: LineaAsiento[]; advertencias: string[] }> {
+  if (!(await usarMysql())) return { lineas: [], advertencias: [] };
+  const advertencias: string[] = [];
+  const ct = await cuentasSuplidor(entrada.suplidor_id);
+  const gasto = entrada.cuenta_gasto || ct.gasto;
+
+  const itbisCosto = round2(entrada.itbis_costo ?? 0);
+  const cargo = round2(
+    entrada.bienes +
+      entrada.servicios +
+      (entrada.propina ?? 0) +
+      (entrada.isc ?? 0) +
+      (entrada.otros_impuestos ?? 0) +
+      itbisCosto,
+  );
+  const itbis = round2(Math.max((entrada.itbis ?? 0) - itbisCosto, 0));
+  const itbisRet = round2(entrada.itbis_retenido ?? 0);
+  const isrRet = round2(entrada.isr_retenido ?? 0);
+  if (cargo <= 0) return { lineas: [], advertencias: [] };
+
+  const acum: Acum = new Map();
+  if (gasto) acumular(acum, gasto, "Factura del suplidor", cargo, 0, "");
+  else
+    advertencias.push(
+      "El suplidor no tiene cuenta de gasto configurada: elige la cuenta del asiento antes de guardar.",
+    );
+  if (itbis > 0) acumular(acum, ct.itbis, "ITBIS adelantado en compras", itbis, 0, "");
+  if (itbisRet > 0)
+    acumular(acum, CUENTA_ITBIS_RETENIDO_CXP, "ITBIS retenido al suplidor", 0, itbisRet, "");
+  if (isrRet > 0)
+    acumular(acum, CUENTA_ISR_RETENIDO_CXP, "ISR retenido al suplidor", 0, isrRet, "");
+  const porPagar = round2(cargo + itbis - itbisRet - isrRet);
+  if (porPagar > 0) acumular(acum, ct.cxp, "Cuentas por pagar suplidor", 0, porPagar, "");
+
+  return finalizar(acum, advertencias);
+}

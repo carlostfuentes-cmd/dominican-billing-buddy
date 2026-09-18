@@ -20,6 +20,8 @@ import { Route as NcfRouteImport } from './routes/ncf'
 import { Route as PerfilesRouteImport } from './routes/perfiles'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as ComprasIndexRouteImport } from './routes/compras.index'
+import { Route as ComprasNuevaRouteImport } from './routes/compras.nueva'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
 import { Route as ConducesIdRouteImport } from './routes/conduces.$id'
 import { Route as ConducesNuevaRouteImport } from './routes/conduces.nueva'
@@ -44,6 +46,8 @@ import { Route as NotasCreditoNuevaRouteImport } from './routes/notas-credito.nu
 import { Route as RecurrentesIndexRouteImport } from './routes/recurrentes.index'
 import { Route as RecurrentesIdRouteImport } from './routes/recurrentes.$id'
 import { Route as RecurrentesNuevaRouteImport } from './routes/recurrentes.nueva'
+import { Route as ComprasIdIndexRouteImport } from './routes/compras.$id.index'
+import { Route as ComprasIdRecepcionRouteImport } from './routes/compras.$id.recepcion'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -98,6 +102,16 @@ const ReportesRoute = ReportesRouteImport.update({
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasIndexRoute = ComprasIndexRouteImport.update({
+  id: '/compras/',
+  path: '/compras/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasNuevaRoute = ComprasNuevaRouteImport.update({
+  id: '/compras/nueva',
+  path: '/compras/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConducesIndexRoute = ConducesIndexRouteImport.update({
@@ -220,6 +234,16 @@ const RecurrentesNuevaRoute = RecurrentesNuevaRouteImport.update({
   path: '/recurrentes/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ComprasIdIndexRoute = ComprasIdIndexRouteImport.update({
+  id: '/compras/$id/',
+  path: '/compras/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComprasIdRecepcionRoute = ComprasIdRecepcionRouteImport.update({
+  id: '/compras/$id/recepcion',
+  path: '/compras/$id/recepcion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -233,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
@@ -248,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/compras/': typeof ComprasIndexRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -257,6 +283,8 @@ export interface FileRoutesByFullPath {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id/': typeof ComprasIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -270,6 +298,7 @@ export interface FileRoutesByTo {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
@@ -285,6 +314,7 @@ export interface FileRoutesByTo {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/compras': typeof ComprasIndexRoute
   '/conduces': typeof ConducesIndexRoute
   '/contabilidad': typeof ContabilidadIndexRoute
   '/cotizaciones': typeof CotizacionesIndexRoute
@@ -294,6 +324,8 @@ export interface FileRoutesByTo {
   '/inventario': typeof InventarioIndexRoute
   '/notas-credito': typeof NotasCreditoIndexRoute
   '/recurrentes': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id': typeof ComprasIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -308,6 +340,7 @@ export interface FileRoutesById {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
   '/contabilidad/nuevo': typeof ContabilidadNuevoRoute
@@ -323,6 +356,7 @@ export interface FileRoutesById {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/compras/': typeof ComprasIndexRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
   '/cotizaciones/': typeof CotizacionesIndexRoute
@@ -332,6 +366,8 @@ export interface FileRoutesById {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
+  '/compras/$id/': typeof ComprasIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -347,6 +383,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
     | '/contabilidad/nuevo'
@@ -362,6 +399,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/compras/'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -371,6 +409,8 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/compras/$id/recepcion'
+    | '/compras/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -384,6 +424,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
     | '/contabilidad/nuevo'
@@ -399,6 +440,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/compras'
     | '/conduces'
     | '/contabilidad'
     | '/cotizaciones'
@@ -408,6 +450,8 @@ export interface FileRouteTypes {
     | '/inventario'
     | '/notas-credito'
     | '/recurrentes'
+    | '/compras/$id/recepcion'
+    | '/compras/$id'
   id:
     | '__root__'
     | '/'
@@ -421,6 +465,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
     | '/contabilidad/nuevo'
@@ -436,6 +481,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/compras/'
     | '/conduces/'
     | '/contabilidad/'
     | '/cotizaciones/'
@@ -445,6 +491,8 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/compras/$id/recepcion'
+    | '/compras/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -459,6 +507,7 @@ export interface RootRouteChildren {
   PerfilesRoute: typeof PerfilesRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
+  ComprasNuevaRoute: typeof ComprasNuevaRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
   ContabilidadNuevoRoute: typeof ContabilidadNuevoRoute
@@ -474,6 +523,7 @@ export interface RootRouteChildren {
   NotasCreditoNuevaRoute: typeof NotasCreditoNuevaRoute
   RecurrentesIdRoute: typeof RecurrentesIdRoute
   RecurrentesNuevaRoute: typeof RecurrentesNuevaRoute
+  ComprasIndexRoute: typeof ComprasIndexRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   ContabilidadIndexRoute: typeof ContabilidadIndexRoute
   CotizacionesIndexRoute: typeof CotizacionesIndexRoute
@@ -483,6 +533,8 @@ export interface RootRouteChildren {
   InventarioIndexRoute: typeof InventarioIndexRoute
   NotasCreditoIndexRoute: typeof NotasCreditoIndexRoute
   RecurrentesIndexRoute: typeof RecurrentesIndexRoute
+  ComprasIdRecepcionRoute: typeof ComprasIdRecepcionRoute
+  ComprasIdIndexRoute: typeof ComprasIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -562,6 +614,20 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras/': {
+      id: '/compras/'
+      path: '/compras'
+      fullPath: '/compras/'
+      preLoaderRoute: typeof ComprasIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras/nueva': {
+      id: '/compras/nueva'
+      path: '/compras/nueva'
+      fullPath: '/compras/nueva'
+      preLoaderRoute: typeof ComprasNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/conduces/': {
@@ -732,6 +798,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecurrentesNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compras/$id/': {
+      id: '/compras/$id/'
+      path: '/compras/$id'
+      fullPath: '/compras/$id/'
+      preLoaderRoute: typeof ComprasIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compras/$id/recepcion': {
+      id: '/compras/$id/recepcion'
+      path: '/compras/$id/recepcion'
+      fullPath: '/compras/$id/recepcion'
+      preLoaderRoute: typeof ComprasIdRecepcionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -747,6 +827,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilesRoute: PerfilesRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
+  ComprasNuevaRoute: ComprasNuevaRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
   ContabilidadNuevoRoute: ContabilidadNuevoRoute,
@@ -762,6 +843,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotasCreditoNuevaRoute: NotasCreditoNuevaRoute,
   RecurrentesIdRoute: RecurrentesIdRoute,
   RecurrentesNuevaRoute: RecurrentesNuevaRoute,
+  ComprasIndexRoute: ComprasIndexRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   ContabilidadIndexRoute: ContabilidadIndexRoute,
   CotizacionesIndexRoute: CotizacionesIndexRoute,
@@ -771,6 +853,8 @@ const rootRouteChildren: RootRouteChildren = {
   InventarioIndexRoute: InventarioIndexRoute,
   NotasCreditoIndexRoute: NotasCreditoIndexRoute,
   RecurrentesIndexRoute: RecurrentesIndexRoute,
+  ComprasIdRecepcionRoute: ComprasIdRecepcionRoute,
+  ComprasIdIndexRoute: ComprasIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
