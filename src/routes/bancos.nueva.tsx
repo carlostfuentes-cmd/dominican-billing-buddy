@@ -647,10 +647,7 @@ function NuevaOperacionPage() {
                           step="0.01"
                           value={aplicaciones[p.referencia] ?? 0}
                           onChange={(e) =>
-                            setAplicaciones((prev) => ({
-                              ...prev,
-                              [p.referencia]: Math.abs(Number(e.target.value) || 0),
-                            }))
+                            fijarAplicacion(p.referencia, p.balance, Number(e.target.value))
                           }
                         />
                       </TableCell>
