@@ -447,7 +447,6 @@ function NuevaOperacionPage() {
                 <TableRow>
                   <TableHead>Documento</TableHead>
                   <TableHead>Fecha</TableHead>
-                  <TableHead>Vencimiento</TableHead>
                   <TableHead className="text-right">Pendiente</TableHead>
                   <TableHead className="text-right">Aplicar</TableHead>
                 </TableRow>
@@ -455,29 +454,28 @@ function NuevaOperacionPage() {
               <TableBody>
                 {pendientes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
+                    <TableCell colSpan={4} className="text-muted-foreground">
                       Este suplidor no tiene documentos pendientes.
                     </TableCell>
                   </TableRow>
                 ) : (
                   pendientes.map((p) => (
-                    <TableRow key={p.documento}>
-                      <TableCell className="font-medium">{p.documento}</TableCell>
+                    <TableRow key={p.referencia}>
+                      <TableCell className="font-medium">{p.referencia}</TableCell>
                       <TableCell>{fechaCorta(p.fecha)}</TableCell>
-                      <TableCell>{p.vencimiento ? fechaCorta(p.vencimiento) : "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {money(p.pendiente, p.moneda)}
+                        {money(p.balance, p.moneda)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
                           className="ml-auto w-32 text-right"
                           type="number"
                           step="0.01"
-                          value={aplicaciones[p.documento] ?? 0}
+                          value={aplicaciones[p.referencia] ?? 0}
                           onChange={(e) =>
                             setAplicaciones((prev) => ({
                               ...prev,
-                              [p.documento]: Number(e.target.value),
+                              [p.referencia]: Number(e.target.value),
                             }))
                           }
                         />
@@ -493,7 +491,13 @@ function NuevaOperacionPage() {
 
       {lineas.length > 0 ? (
         <div className="mt-5">
-          <AsientoContable lineas={lineas} onCambio={setLineas} moneda={moneda} />
+          <AsientoContable
+            lineas={lineas}
+            onCambiar={setLineas}
+            advertencias={advertencias}
+            titulo="Asiento contable de la operación"
+            nota="Cuentas propuestas por el tipo de operación, el suplidor o el concepto. Puedes cambiarlas antes de guardar."
+          />
         </div>
       ) : null}
 
