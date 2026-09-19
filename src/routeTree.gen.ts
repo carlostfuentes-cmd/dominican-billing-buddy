@@ -18,6 +18,7 @@ import { Route as FormatosRouteImport } from './routes/formatos'
 import { Route as ItemsRouteImport } from './routes/items'
 import { Route as NcfRouteImport } from './routes/ncf'
 import { Route as PerfilesRouteImport } from './routes/perfiles'
+import { Route as PlantillasRouteImport } from './routes/plantillas'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as BancosIndexRouteImport } from './routes/bancos.index'
@@ -98,6 +99,11 @@ const NcfRoute = NcfRouteImport.update({
 const PerfilesRoute = PerfilesRouteImport.update({
   id: '/perfiles',
   path: '/perfiles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlantillasRoute = PlantillasRouteImport.update({
+  id: '/plantillas',
+  path: '/plantillas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportesRoute = ReportesRouteImport.update({
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
+  '/plantillas': typeof PlantillasRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/bancos/$id': typeof BancosIdRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
+  '/plantillas': typeof PlantillasRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/bancos/$id': typeof BancosIdRoute
@@ -386,6 +394,7 @@ export interface FileRoutesById {
   '/items': typeof ItemsRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
+  '/plantillas': typeof PlantillasRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
   '/bancos/$id': typeof BancosIdRoute
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/ncf'
     | '/perfiles'
+    | '/plantillas'
     | '/reportes'
     | '/usuarios'
     | '/bancos/$id'
@@ -482,6 +492,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/ncf'
     | '/perfiles'
+    | '/plantillas'
     | '/reportes'
     | '/usuarios'
     | '/bancos/$id'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/ncf'
     | '/perfiles'
+    | '/plantillas'
     | '/reportes'
     | '/usuarios'
     | '/bancos/$id'
@@ -577,6 +589,7 @@ export interface RootRouteChildren {
   ItemsRoute: typeof ItemsRoute
   NcfRoute: typeof NcfRoute
   PerfilesRoute: typeof PerfilesRoute
+  PlantillasRoute: typeof PlantillasRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
   BancosIdRoute: typeof BancosIdRoute
@@ -678,6 +691,13 @@ declare module '@tanstack/react-router' {
       path: '/perfiles'
       fullPath: '/perfiles'
       preLoaderRoute: typeof PerfilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plantillas': {
+      id: '/plantillas'
+      path: '/plantillas'
+      fullPath: '/plantillas'
+      preLoaderRoute: typeof PlantillasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reportes': {
@@ -945,6 +965,7 @@ const rootRouteChildren: RootRouteChildren = {
   ItemsRoute: ItemsRoute,
   NcfRoute: NcfRoute,
   PerfilesRoute: PerfilesRoute,
+  PlantillasRoute: PlantillasRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
   BancosIdRoute: BancosIdRoute,
