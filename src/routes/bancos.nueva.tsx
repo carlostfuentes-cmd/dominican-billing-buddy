@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Save, Wallet } from "lucide-react";
+import { Copy, Save, Search, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -32,6 +32,8 @@ import {
   guardarMovimientoBanco,
   obtenerAsientoBanco,
   obtenerListasBancos,
+  obtenerMovimientoBanco,
+  obtenerMovimientosBanco,
 } from "@/lib/bancos.functions";
 import { obtenerPendientesCxP } from "@/lib/cxp.functions";
 import { fechaCorta, hoyISO, money, type LineaAsiento } from "@/lib/erp-types";
