@@ -23,6 +23,8 @@ export const PANTALLAS: Pantalla[] = [
   { ruta: "/cxc", menu_id: "2.03.01", titulo: "Cuentas por cobrar" },
   { ruta: "/compras", menu_id: "2.05.01", titulo: "Órdenes de compra" },
   { ruta: "/cxp", menu_id: "2.04.07", titulo: "Cuentas por pagar" },
+  { ruta: "/bancos/cuentas", menu_id: "1.07.02", titulo: "Maestra de caja y bancos" },
+  { ruta: "/bancos", menu_id: "2.07", titulo: "Operaciones bancarias" },
   { ruta: "/clientes", menu_id: "1.03.11", titulo: "Clientes" },
   { ruta: "/items", menu_id: "1.02.05", titulo: "Ítems" },
   { ruta: "/contabilidad", menu_id: "2.09.01", titulo: "Diario general" },
