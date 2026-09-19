@@ -495,7 +495,10 @@ export async function propuestaAsientoBanco(
       contrapartidaTexto = `Transferencia a ${destino.nombre}`;
     }
   } else if (entrada.avance?.suplidor_id) {
-    contrapartida = entrada.avance.cuenta_cxp || CUENTA_CXP_SUPLIDORES;
+    contrapartida =
+      entrada.avance.cuenta_cxp ||
+      (await cuentasSuplidor(entrada.avance.suplidor_id)).cxp ||
+      CUENTA_CXP_SUPLIDORES;
     contrapartidaTexto = "Avance al suplidor";
   } else if (entrada.suplidor_id) {
     const ct = await cuentasSuplidor(entrada.suplidor_id);
