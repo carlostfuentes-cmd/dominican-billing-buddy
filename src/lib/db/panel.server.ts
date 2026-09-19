@@ -560,6 +560,15 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
       nota: "Impuesto del período",
     },
     {
+      id: "total-facturado",
+      titulo: "Total facturado (con ITBIS)",
+      valor: conv(round2(num(v["gravado"]) + num(v["exento"]) + num(v["itbis"]))),
+      anterior: conv(round2(num(vp["gravado"]) + num(vp["exento"]) + num(vp["itbis"]))),
+      formato: "moneda",
+      ruta: "/facturas",
+      nota: "Ventas netas más ITBIS",
+    },
+    {
       id: "notas",
       titulo: "Notas de crédito por devolución",
       valor: conv(num(notasDev[0]?.["subtotal"])),
