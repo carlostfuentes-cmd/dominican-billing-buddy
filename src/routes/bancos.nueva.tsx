@@ -553,13 +553,40 @@ function NuevaOperacionPage() {
 
       {esPagoSuplidor && suplidorId ? (
         <Card className="mt-5">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
             <CardTitle className="text-base">Facturas pendientes del suplidor</CardTitle>
+            {pendientes.length > 0 ? (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setAplicaciones(
+                      Object.fromEntries(
+                        pendientes.map((p) => [p.referencia, Math.abs(p.balance)]),
+                      ),
+                    )
+                  }
+                >
+                  Aplicar todo lo adeudado
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAplicaciones({})}
+                >
+                  Limpiar
+                </Button>
+              </div>
+            ) : null}
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">Pagar</TableHead>
                   <TableHead>Documento</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="text-right">Pendiente</TableHead>
@@ -569,28 +596,41 @@ function NuevaOperacionPage() {
               <TableBody>
                 {pendientes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-muted-foreground">
+                    <TableCell colSpan={5} className="text-muted-foreground">
                       Este suplidor no tiene documentos pendientes.
                     </TableCell>
                   </TableRow>
                 ) : (
                   pendientes.map((p) => (
                     <TableRow key={p.referencia}>
+                      <TableCell>
+                        <Checkbox
+                          checked={(aplicaciones[p.referencia] ?? 0) > 0}
+                          onCheckedChange={(v) =>
+                            setAplicaciones((prev) => ({
+                              ...prev,
+                              [p.referencia]: v ? Math.abs(p.balance) : 0,
+                            }))
+                          }
+                          aria-label={`Aplicar el total adeudado del documento ${p.referencia}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{p.referencia}</TableCell>
                       <TableCell>{fechaCorta(p.fecha)}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {money(p.balance, p.moneda)}
+                        {money(Math.abs(p.balance), p.moneda)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
-                          className="ml-auto w-32 text-right"
+                          className="ml-auto w-40 text-right tabular-nums"
                           type="number"
+                          min={0}
                           step="0.01"
                           value={aplicaciones[p.referencia] ?? 0}
                           onChange={(e) =>
                             setAplicaciones((prev) => ({
                               ...prev,
-                              [p.referencia]: Number(e.target.value),
+                              [p.referencia]: Math.abs(Number(e.target.value) || 0),
                             }))
                           }
                         />
@@ -600,9 +640,21 @@ function NuevaOperacionPage() {
                 )}
               </TableBody>
             </Table>
+            {pendientes.length > 0 ? (
+              <p className="mt-3 text-right text-sm text-muted-foreground tabular-nums">
+                Total aplicado:{" "}
+                <span className="font-semibold text-foreground">
+                  {money(
+                    Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0),
+                    pendientes[0]?.moneda,
+                  )}
+                </span>
+              </p>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}
+
 
       {puedeProponer || lineas.length > 0 ? (
         <div className="mt-5">
