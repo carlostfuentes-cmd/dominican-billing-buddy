@@ -460,7 +460,12 @@ function NuevaOperacionPage() {
                     etiqueta: s.nombre,
                   }))}
                   valor={suplidorId}
-                  onSeleccionar={setSuplidorId}
+                  onSeleccionar={(id) => {
+                    setSuplidorId(id);
+                    // Al elegir el suplidor en un pago, se propone su nombre como beneficiario.
+                    const s = (listas?.suplidores ?? []).find((x) => x.id === id);
+                    if (s?.nombre) setBeneficiario(s.nombre);
+                  }}
                   placeholder="Selecciona el suplidor"
                 />
               </div>
