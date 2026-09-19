@@ -657,15 +657,23 @@ function NuevaOperacionPage() {
               </TableBody>
             </Table>
             {pendientes.length > 0 ? (
-              <p className="mt-3 text-right text-sm text-muted-foreground tabular-nums">
-                Total aplicado:{" "}
-                <span className="font-semibold text-foreground">
-                  {money(
-                    Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0),
-                    pendientes[0]?.moneda,
-                  )}
-                </span>
-              </p>
+              <div className="mt-3 space-y-1 text-right text-sm tabular-nums">
+                <p className="text-muted-foreground">
+                  Total aplicado:{" "}
+                  <span className="font-semibold text-foreground">
+                    {money(sumaAplicada, pendientes[0]?.moneda)}
+                  </span>
+                </p>
+                {sumaAplicada > monto + 0.009 ? (
+                  <p className="text-xs text-warning">
+                    Lo aplicado excede el monto de la operación; ajusta las facturas antes de guardar.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Disponible por aplicar: {money(disponible, pendientes[0]?.moneda)}
+                  </p>
+                )}
+              </div>
             ) : null}
           </CardContent>
         </Card>
