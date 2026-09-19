@@ -1192,6 +1192,8 @@ interface FilaFactura {
   vencimiento: string;
   subtotal: number;
   descuento: number;
+  gravado: number;
+  exento: number;
   itbis: number;
   total: number;
   estado: EstadoFactura;
