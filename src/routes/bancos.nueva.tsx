@@ -917,3 +917,32 @@ function NuevaOperacionPage() {
     </>
   );
 }
+
+// Campo de monto con la misma máscara que los balances: miles con coma y
+// siempre dos decimales. Mientras se escribe se respeta el texto del usuario.
+function InputMonto({
+  valor,
+  onCambiar,
+}: {
+  valor: number;
+  onCambiar: (valor: number) => void;
+}) {
+  const formato = (v: number) =>
+    v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const [texto, setTexto] = useState<string | null>(null);
+
+  return (
+    <Input
+      inputMode="decimal"
+      className="ml-auto w-40 text-right tabular-nums"
+      value={texto ?? formato(valor)}
+      onFocus={() => setTexto(valor ? String(valor) : "")}
+      onChange={(e) => {
+        const limpio = e.target.value.replace(/[^\d.]/g, "");
+        setTexto(limpio);
+        onCambiar(Number(limpio) || 0);
+      }}
+      onBlur={() => setTexto(null)}
+    />
+  );
+}
