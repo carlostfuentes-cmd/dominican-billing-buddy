@@ -339,8 +339,11 @@ function NuevaFactura() {
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
           facturar: opciones.facturar,
           ...(opciones.facturar && asiento.length ? { asiento } : {}),
-        },
-      }),
+      };
+      return editando
+        ? actualizarPedido({ data: { ...datos, id: pedidoId as number } })
+        : guardarPedido({ data: datos });
+    },
     onSuccess: async (doc, opciones) => {
       const valores = Object.entries(camposValores)
         .map(([campo_id, valor]) => ({ campo_id: Number(campo_id), valor }))
