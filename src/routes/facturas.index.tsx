@@ -120,9 +120,16 @@ function Facturas() {
     onError: (e: Error) => toast.error(e.message || "No se pudo borrar el pedido"),
   });
 
-  const totalPeriodo = facturas
-    .filter((f) => f.estado !== "anulada")
-    .reduce((a, f) => a + f.total, 0);
+  // Totales en pesos (cada documento guarda su moneda y su tasa). Se separan las
+  // facturas de los pedidos sin facturar, igual que en el panel.
+  const enDop = (monto: number, tasa: number) => monto * (tasa > 0 ? tasa : 1);
+  const facturadas = facturas.filter((f) => f.estado === "emitida" || f.estado === "pagada");
+  const netasFacturadas = facturadas.reduce((a, f) => a + enDop(f.subtotal, f.tasa_cambio), 0);
+  const itbisFacturado = facturadas.reduce((a, f) => a + enDop(f.itbis, f.tasa_cambio), 0);
+  const totalFacturado = facturadas.reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
+  const totalPedidos = facturas
+    .filter((f) => f.estado === "pedido")
+    .reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
 
   return (
     <div>
