@@ -212,6 +212,56 @@ function NuevaOperacionPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const buscar = useMutation({
+    mutationFn: () =>
+      obtenerMovimientosBanco({
+        data: {
+          ...(cr.desde ? { desde: cr.desde } : {}),
+          ...(cr.hasta ? { hasta: cr.hasta } : {}),
+          ...(cr.montoDesde > 0 ? { montoDesde: cr.montoDesde } : {}),
+          ...(cr.montoHasta > 0 ? { montoHasta: cr.montoHasta } : {}),
+          ...(cr.numero.trim() ? { numero: cr.numero.trim() } : {}),
+          ...(cr.tipoId ? { tipoId: cr.tipoId } : {}),
+          ...(cr.cuenta.trim() ? { cuenta: cr.cuenta.trim() } : {}),
+          ...(cr.beneficiario.trim() ? { beneficiario: cr.beneficiario.trim() } : {}),
+          ...(cr.concepto.trim() ? { concepto: cr.concepto.trim() } : {}),
+        },
+      }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /** Copia un movimiento anterior al formulario, con la fecha de hoy y sin número. */
+  const copiar = useMutation({
+    mutationFn: (id: number) => obtenerMovimientoBanco({ data: { id } }),
+    onSuccess: (m) => {
+      if (!m) {
+        toast.error("No se encontró el movimiento");
+        return;
+      }
+      setBancoId(m.banco_id);
+      setTipoId(m.tipo_id);
+      setFecha(hoyISO());
+      setNumero("");
+      setMonto(m.monto);
+      setTasa(m.tasa_cambio || 1);
+      setBeneficiario(m.beneficiario);
+      setDescripcion(m.descripcion);
+      setNcf("");
+      setMontoNcf(m.monto_ncf);
+      setItbis(m.itbis);
+      setComision(m.comision);
+      setItbisRet(0);
+      setIsrRet(0);
+      setConceptoId(m.concepto_id);
+      setSuplidorId(m.suplidor_id);
+      setBancoDestinoId("");
+      setAplicaciones({});
+      setBuscarAbierto(false);
+      toast.success(`Movimiento ${m.numero} copiado. Ajusta fecha, monto y guarda.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const listo = bancoId && tipoId && numero.trim() && monto > 0;
 
   return (
@@ -220,12 +270,17 @@ function NuevaOperacionPage() {
         titulo="Nueva operación bancaria"
         descripcion="El tipo de operación define los campos requeridos y las cuentas que se afectan."
         acciones={
-          <Button
-            disabled={!listo || lineas.length === 0 || guardar.isPending}
-            onClick={() => guardar.mutate()}
-          >
-            <Save className="size-4" /> Guardar operación
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setBuscarAbierto(true)}>
+              <Search className="size-4" /> Buscar y copiar movimiento
+            </Button>
+            <Button
+              disabled={!listo || lineas.length === 0 || guardar.isPending}
+              onClick={() => guardar.mutate()}
+            >
+              <Save className="size-4" /> Guardar operación
+            </Button>
+          </div>
         }
       />
 
