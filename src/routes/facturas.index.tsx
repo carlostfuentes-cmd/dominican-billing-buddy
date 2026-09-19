@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { eliminarPedido, facturarPedido, obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
+import { eliminarPedido, obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
 import {
   dop,
   money,
@@ -105,15 +105,6 @@ function Facturas() {
     void qc.invalidateQueries({ queryKey: ["secuencias"] });
     void qc.invalidateQueries({ queryKey: ["resumen"] });
   };
-
-  const facturar = useMutation({
-    mutationFn: (id: number) => facturarPedido({ data: { id } }),
-    onSuccess: (f) => {
-      toast.success(`Pedido convertido en factura ${f.ncf}`);
-      refrescar();
-    },
-    onError: (e: Error) => toast.error(e.message || "No se pudo facturar el pedido"),
-  });
 
   const borrar = useMutation({
     mutationFn: (id: number) => eliminarPedido({ data: { id } }),
