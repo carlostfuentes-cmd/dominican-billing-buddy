@@ -1166,6 +1166,10 @@ const SQL_FACTURAS = `
       SELECT order_id,
              ROUND(SUM(quantity * price - discount), 2) AS subtotal,
              ROUND(SUM(discount), 2) AS descuento,
+             ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) <> 0
+                            THEN quantity * price - discount ELSE 0 END), 2) AS gravado,
+             ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) = 0
+                            THEN quantity * price - discount ELSE 0 END), 2) AS exento,
              ROUND(SUM(tax1 + tax2 + tax3), 2) AS itbis,
              ROUND(SUM(quantity * price - discount + tax1 + tax2 + tax3), 2) AS total
       FROM orders_detail GROUP BY order_id
