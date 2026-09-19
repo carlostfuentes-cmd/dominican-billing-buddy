@@ -988,7 +988,7 @@ function NuevaFactura() {
                 disabled={guardar.isPending}
               >
                 <Save className="mr-2 h-4 w-4" />
-                Guardar pedido
+                {editando ? "Guardar cambios" : "Guardar pedido"}
               </Button>
               <Button
                 className="w-full"
