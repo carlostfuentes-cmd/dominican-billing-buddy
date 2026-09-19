@@ -62,6 +62,18 @@ export const Route = createFileRoute("/bancos/nueva")({
 const TIPOS_PAGO = ["TS", "TC", "CP", "CB", "CK"];
 const TIPO_TRANSFERENCIA = "TB";
 
+/** Convierte errores de validación (Zod JSON) en mensajes legibles. */
+function mensajeError(e: Error): string {
+  const msg = e.message ?? "";
+  if (!msg.startsWith("[")) return msg || "Ocurrió un error";
+  try {
+    const issues = JSON.parse(msg) as { message?: string }[];
+    return issues.map((i) => i.message ?? "Dato inválido").join(". ");
+  } catch {
+    return msg;
+  }
+}
+
 function NuevaOperacionPage() {
   const navigate = useNavigate();
   const [bancoId, setBancoId] = useState("");
@@ -209,7 +221,7 @@ function NuevaOperacionPage() {
       toast.success(`Operación bancaria No. ${r.numero} registrada`);
       navigate({ to: "/bancos/$id", params: { id: String(r.id) } });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensajeError(e)),
   });
 
   const buscar = useMutation({
