@@ -159,11 +159,17 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
 
   const SQL_VENTAS = (extra: string) => `
     SELECT ROUND(SUM(t.subtotal * COALESCE(NULLIF(o.currency_rate,0),1)), 2) AS subtotal,
+           ROUND(SUM(t.gravado * COALESCE(NULLIF(o.currency_rate,0),1)), 2) AS gravado,
+           ROUND(SUM(t.exento * COALESCE(NULLIF(o.currency_rate,0),1)), 2) AS exento,
            ROUND(SUM(t.itbis * COALESCE(NULLIF(o.currency_rate,0),1)), 2) AS itbis,
            ROUND(SUM(t.total * COALESCE(NULLIF(o.currency_rate,0),1)), 2) AS total,
            COUNT(*) AS cantidad
     FROM orders o
     JOIN (SELECT order_id,
+                 ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) <> 0
+                                THEN quantity * price - discount ELSE 0 END), 2) AS gravado,
+                 ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) = 0
+                                THEN quantity * price - discount ELSE 0 END), 2) AS exento,
                  ROUND(SUM(quantity * price - discount), 2) AS subtotal,
                  ROUND(SUM(tax1 + tax2 + tax3), 2) AS itbis,
                  ROUND(SUM(quantity * price - discount + tax1 + tax2 + tax3), 2) AS total
@@ -171,6 +177,21 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
     WHERE o.invoice_id IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM reverse_invoices ri WHERE ri.invoice_id = o.invoice_id)
       AND o.date BETWEEN ? AND ?${extra}`;
+
+  // Notas de crédito por devolución (NCF B04), sin las anuladas.
+  const condNotas = sucursal !== null ? " AND r.branch_id = ?" : "";
+  const paramsNotas = () => (sucursal !== null ? [sucursal] : []);
+  const SQL_NOTAS = (extra: string) => `
+    SELECT ROUND(SUM(t.subtotal * COALESCE(NULLIF(r.currency_rate,0),1)), 2) AS subtotal,
+           ROUND(SUM(t.itbis * COALESCE(NULLIF(r.currency_rate,0),1)), 2) AS itbis,
+           COUNT(*) AS cantidad
+    FROM reverse_invoices r
+    JOIN (SELECT reverse_invoice_id AS ref,
+                 ROUND(SUM(quantity * price - discount), 2) AS subtotal,
+                 ROUND(SUM(tax1 + tax2 + tax3), 2) AS itbis
+          FROM reverse_invoices_detail GROUP BY reverse_invoice_id) t ON t.ref = r.reverse_invoice_id
+    WHERE COALESCE(r.void, 0) = 0
+      AND r.date BETWEEN ? AND ?${extra}`;
 
   const oc = condOrders();
 
