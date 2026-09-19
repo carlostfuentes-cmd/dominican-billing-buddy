@@ -56,6 +56,7 @@ const NAV = [
   { to: "/ncf", label: "Comprobantes fiscales", icon: Hash, grupo: "fiscal" },
   { to: "/reportes", label: "Reportes", icon: BarChart3, grupo: "fiscal" },
   { to: "/formatos", label: "Formatos de impresión", icon: Printer, grupo: "sistema" },
+  { to: "/plantillas", label: "Diseñador de documentos", icon: Printer, grupo: "sistema" },
   { to: "/campos", label: "Campos personalizados", icon: ListPlus, grupo: "sistema" },
   { to: "/usuarios", label: "Usuarios", icon: UserCog, grupo: "sistema" },
   { to: "/perfiles", label: "Perfiles y permisos", icon: ShieldCheck, grupo: "sistema" },
