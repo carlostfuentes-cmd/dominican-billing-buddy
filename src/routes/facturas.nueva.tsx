@@ -317,9 +317,8 @@ function NuevaFactura() {
   const [camposValores, setCamposValores] = useState<ValoresCampos>({});
 
   const guardar = useMutation({
-    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) =>
-      guardarPedido({
-        data: {
+    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) => {
+      const datos = {
           cliente_id: clienteId,
           tipo_ncf: tipo,
           fecha,
