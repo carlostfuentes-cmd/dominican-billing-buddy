@@ -207,7 +207,7 @@ function BancosPage() {
                           }`}
                         >
                           {m.signo === "D" ? "+" : "−"}
-                          {money(m.monto, m.moneda)}
+                          {money(Math.abs(m.monto), m.moneda)}
                         </TableCell>
                         <TableCell>
                           {m.estado === "A" ? (
