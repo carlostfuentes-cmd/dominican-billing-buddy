@@ -122,7 +122,8 @@ function Facturas() {
 
   // Totales en pesos (cada documento guarda su moneda y su tasa). Se separan las
   // facturas de los pedidos sin facturar, igual que en el panel.
-  const enDop = (monto: number, tasa: number) => monto * (tasa > 0 ? tasa : 1);
+  const enDop = (monto: number, tasa: number | undefined) =>
+    monto * (tasa && tasa > 0 ? tasa : 1);
   const facturadas = facturas.filter((f) => f.estado === "emitida" || f.estado === "pagada");
   const netasFacturadas = facturadas.reduce((a, f) => a + enDop(f.subtotal, f.tasa_cambio), 0);
   const itbisFacturado = facturadas.reduce((a, f) => a + enDop(f.itbis, f.tasa_cambio), 0);
