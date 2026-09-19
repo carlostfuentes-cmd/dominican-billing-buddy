@@ -51,6 +51,10 @@ import {
 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    ...(typeof s["desde"] === "string" ? { desde: s["desde"] } : {}),
+    ...(typeof s["hasta"] === "string" ? { hasta: s["hasta"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Pedidos y facturas — ERP Contable RD" },
@@ -74,9 +78,10 @@ const TODOS = "todos";
 
 function Facturas() {
   const { puedeAgregar } = usePermisoPantalla();
+  const busqueda = Route.useSearch();
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
-  const [desde, setDesde] = useState(inicioMes);
-  const [hasta, setHasta] = useState(hoyISO());
+  const [desde, setDesde] = useState(busqueda.desde ?? inicioMes);
+  const [hasta, setHasta] = useState(busqueda.hasta ?? hoyISO());
   const [cliente, setCliente] = useState(TODOS);
   const [tipo, setTipo] = useState(TODOS);
   const [estado, setEstado] = useState(TODOS);
@@ -115,9 +120,17 @@ function Facturas() {
     onError: (e: Error) => toast.error(e.message || "No se pudo borrar el pedido"),
   });
 
-  const totalPeriodo = facturas
-    .filter((f) => f.estado !== "anulada")
-    .reduce((a, f) => a + f.total, 0);
+  // Totales en pesos (cada documento guarda su moneda y su tasa). Se separan las
+  // facturas de los pedidos sin facturar, igual que en el panel.
+  const enDop = (monto: number, tasa: number | undefined) =>
+    monto * (tasa && tasa > 0 ? tasa : 1);
+  const facturadas = facturas.filter((f) => f.estado === "emitida" || f.estado === "pagada");
+  const netasFacturadas = facturadas.reduce((a, f) => a + enDop(f.subtotal, f.tasa_cambio), 0);
+  const itbisFacturado = facturadas.reduce((a, f) => a + enDop(f.itbis, f.tasa_cambio), 0);
+  const totalFacturado = facturadas.reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
+  const totalPedidos = facturas
+    .filter((f) => f.estado === "pedido")
+    .reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
 
   return (
     <div>
@@ -291,10 +304,27 @@ function Facturas() {
               )}
             </TableBody>
           </Table>
-          <p className="border-t bg-muted/35 px-5 py-4 text-right text-sm text-muted-foreground">
-            Total del período (sin anuladas):{" "}
-            <span className="tabular font-semibold text-foreground">{dop(totalPeriodo)}</span>
-          </p>
+          <div className="grid gap-2 border-t bg-muted/35 px-5 py-4 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+            <p>
+              Ventas netas facturadas (sin ITBIS):{" "}
+              <span className="tabular font-semibold text-foreground">{dop(netasFacturadas)}</span>
+            </p>
+            <p>
+              ITBIS facturado:{" "}
+              <span className="tabular font-semibold text-foreground">{dop(itbisFacturado)}</span>
+            </p>
+            <p>
+              Total facturado (con ITBIS):{" "}
+              <span className="tabular font-semibold text-foreground">{dop(totalFacturado)}</span>
+            </p>
+            <p>
+              Pedidos sin facturar:{" "}
+              <span className="tabular font-semibold text-foreground">{dop(totalPedidos)}</span>
+            </p>
+            <p className="text-xs sm:col-span-2 lg:col-span-4">
+              Totales en pesos, sin anuladas. Las ventas netas facturadas son las mismas del panel.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
