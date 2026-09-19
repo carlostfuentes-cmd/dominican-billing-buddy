@@ -170,6 +170,23 @@ function NuevaOperacionPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Calcula el asiento automáticamente: la cuenta del banco se afecta siempre
+  // (débito si entran fondos, crédito si salen) en cuanto hay banco, tipo y monto.
+  const proponerRef = useRef(proponer);
+  proponerRef.current = proponer;
+  const puedeProponer = Boolean(bancoId && tipoId && monto > 0);
+  const claveAsiento = JSON.stringify(entrada);
+
+  useEffect(() => {
+    if (!puedeProponer) {
+      setLineas([]);
+      setAdvertencias([]);
+      return;
+    }
+    const t = setTimeout(() => proponerRef.current.mutate(), 400);
+    return () => clearTimeout(t);
+  }, [claveAsiento, puedeProponer]);
+
   const guardar = useMutation({
     mutationFn: () => guardarMovimientoBanco({ data: { ...entrada, asiento: lineas } }),
     onSuccess: (r) => {
@@ -421,10 +438,10 @@ function NuevaOperacionPage() {
             <Button
               className="w-full"
               variant="secondary"
-              disabled={!listo || proponer.isPending}
+              disabled={!puedeProponer || proponer.isPending}
               onClick={() => proponer.mutate()}
             >
-              <Wallet className="size-4" /> Proponer asiento contable
+              <Wallet className="size-4" /> Recalcular asiento contable
             </Button>
             {advertencias.map((a) => (
               <p key={a} className="text-xs text-warning">
