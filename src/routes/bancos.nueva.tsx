@@ -150,6 +150,24 @@ function NuevaOperacionPage() {
       [ref]: Math.min(Math.abs(valor) || 0, Math.min(Math.abs(balance), (prev[ref] ?? 0) + disponible)),
     }));
 
+  // Si el monto del pago baja, se recorta lo aplicado para no pasarse jamás.
+  useEffect(() => {
+    setAplicaciones((prev) => {
+      const vals = Object.entries(prev).filter(([, v]) => (v || 0) > 0);
+      if (vals.reduce((s, [, v]) => s + (v || 0), 0) <= monto + 0.009) return prev;
+      let restante = monto;
+      const next: Record<string, number> = {};
+      for (const [ref, v] of vals) {
+        const aplicar = Math.min(v || 0, Math.max(0, restante));
+        if (aplicar > 0.009) {
+          next[ref] = Math.round(aplicar * 100) / 100;
+          restante = Math.round((restante - aplicar) * 100) / 100;
+        }
+      }
+      return next;
+    });
+  }, [monto]);
+
   const entrada = useMemo(
     () => ({
       banco_id: bancoId,
