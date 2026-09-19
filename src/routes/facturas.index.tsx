@@ -303,10 +303,27 @@ function Facturas() {
               )}
             </TableBody>
           </Table>
-          <p className="border-t bg-muted/35 px-5 py-4 text-right text-sm text-muted-foreground">
-            Total del período (sin anuladas):{" "}
-            <span className="tabular font-semibold text-foreground">{dop(totalPeriodo)}</span>
-          </p>
+          <div className="grid gap-2 border-t bg-muted/35 px-5 py-4 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+            <p>
+              Ventas netas facturadas (sin ITBIS):{" "}
+              <span className="tabular font-semibold text-foreground">{dop(netasFacturadas)}</span>
+            </p>
+            <p>
+              ITBIS facturado:{" "}
+              <span className="tabular font-semibold text-foreground">{dop(itbisFacturado)}</span>
+            </p>
+            <p>
+              Total facturado (con ITBIS):{" "}
+              <span className="tabular font-semibold text-foreground">{dop(totalFacturado)}</span>
+            </p>
+            <p>
+              Pedidos sin facturar:{" "}
+              <span className="tabular font-semibold text-foreground">{dop(totalPedidos)}</span>
+            </p>
+            <p className="text-xs sm:col-span-2 lg:col-span-4">
+              Totales en pesos, sin anuladas. Las ventas netas facturadas son las mismas del panel.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
