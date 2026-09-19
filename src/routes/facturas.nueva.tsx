@@ -126,6 +126,56 @@ function NuevaFactura() {
   const [transferencia, setTransferencia] = useState(0);
   const [lineas, setLineas] = useState<LineaEntrada[]>([{ ...lineaVacia }]);
 
+  // Edición de un pedido existente: /facturas/nueva?pedido=123
+  const { pedido: pedidoId } = Route.useSearch();
+  const editando = typeof pedidoId === "number";
+  const { data: pedidoOriginal } = useQuery({
+    queryKey: ["factura", pedidoId],
+    queryFn: () => obtenerFactura({ data: { id: pedidoId as number } }),
+    enabled: editando,
+  });
+  const [cargado, setCargado] = useState(false);
+  useEffect(() => {
+    if (!pedidoOriginal || cargado) return;
+    const p = pedidoOriginal;
+    setCargado(true);
+    setClienteId(p.cliente_id);
+    setTipo(p.tipo_ncf);
+    setFecha(p.fecha);
+    setDias(p.dias_credito ?? 0);
+    setNotas(p.notas ?? "");
+    setMoneda((p.moneda || "DOP").toUpperCase());
+    setTasa(p.tasa_cambio && p.tasa_cambio > 0 ? p.tasa_cambio : 1);
+    if (p.vendedor_id) setVendedor(String(p.vendedor_id));
+    if (p.tecnico_id) setTecnico(String(p.tecnico_id));
+    if (p.almacen_id) setAlmacen(String(p.almacen_id));
+    if (p.sucursal_id) setSucursal(String(p.sucursal_id));
+    if (p.departamento_id) setDepartamento(String(p.departamento_id));
+    if (p.proyecto_id) setProyecto(String(p.proyecto_id));
+    if (p.cotizacion_id) setCotizacion(String(p.cotizacion_id));
+    setOrdenCliente(p.orden_cliente ?? "");
+    setOrdenVendedor(p.orden_vendedor ?? "");
+    setEfectivo(p.pagos?.efectivo ?? 0);
+    setTarjeta(p.pagos?.tarjeta ?? 0);
+    setCheque(p.pagos?.cheque ?? 0);
+    setTransferencia(p.pagos?.transferencia ?? 0);
+    if (p.lineas.length) {
+      setLineas(
+        p.lineas.map((l) => ({
+          item_id: l.item_id,
+          codigo: l.codigo,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          oferta: l.oferta ?? 0,
+          precio: l.precio,
+          descuento_pct: l.descuento_pct,
+          tasa_itbis: l.tasa_itbis,
+        })),
+      );
+    }
+  }, [pedidoOriginal, cargado]);
+
+
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", ""],
     queryFn: () => obtenerClientes({ data: { busqueda: "" } }),
