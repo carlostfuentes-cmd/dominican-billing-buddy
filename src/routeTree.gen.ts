@@ -21,6 +21,7 @@ import { Route as PerfilesRouteImport } from './routes/perfiles'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
 import { Route as BancosIndexRouteImport } from './routes/bancos.index'
+import { Route as BancosNuevaRouteImport } from './routes/bancos.nueva'
 import { Route as ComprasIndexRouteImport } from './routes/compras.index'
 import { Route as ComprasNuevaRouteImport } from './routes/compras.nueva'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
@@ -110,6 +111,11 @@ const UsuariosRoute = UsuariosRouteImport.update({
 const BancosIndexRoute = BancosIndexRouteImport.update({
   id: '/bancos/',
   path: '/bancos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BancosNuevaRoute = BancosNuevaRouteImport.update({
+  id: '/bancos/nueva',
+  path: '/bancos/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
@@ -275,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -319,6 +326,7 @@ export interface FileRoutesByTo {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -364,6 +372,7 @@ export interface FileRoutesById {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -410,6 +419,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -498,6 +509,7 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -543,6 +555,7 @@ export interface RootRouteChildren {
   PerfilesRoute: typeof PerfilesRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
+  BancosNuevaRoute: typeof BancosNuevaRoute
   ComprasNuevaRoute: typeof ComprasNuevaRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
@@ -660,6 +673,13 @@ declare module '@tanstack/react-router' {
       path: '/bancos'
       fullPath: '/bancos/'
       preLoaderRoute: typeof BancosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bancos/nueva': {
+      id: '/bancos/nueva'
+      path: '/bancos/nueva'
+      fullPath: '/bancos/nueva'
+      preLoaderRoute: typeof BancosNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compras/': {
@@ -887,6 +907,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilesRoute: PerfilesRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
+  BancosNuevaRoute: BancosNuevaRoute,
   ComprasNuevaRoute: ComprasNuevaRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
