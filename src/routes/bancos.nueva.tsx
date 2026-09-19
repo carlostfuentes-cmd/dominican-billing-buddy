@@ -140,14 +140,22 @@ function NuevaOperacionPage() {
 
   // El pago aplicado a facturas nunca puede pasar del monto digitado ni del
   // balance pendiente de cada factura.
-  const sumaAplicada = Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0);
-  const disponible = Math.max(0, monto - sumaAplicada);
+  const redondear2 = (valor: number) => Math.round((valor + Number.EPSILON) * 100) / 100;
+  const sumaAplicada = redondear2(
+    Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0),
+  );
+  const disponible = redondear2(Math.max(0, monto - sumaAplicada));
   const maxAplicable = (ref: string, balance: number) =>
-    Math.min(Math.abs(balance), (aplicaciones[ref] ?? 0) + disponible);
+    redondear2(Math.min(Math.abs(balance), (aplicaciones[ref] ?? 0) + disponible));
   const fijarAplicacion = (ref: string, balance: number, valor: number) =>
     setAplicaciones((prev) => ({
       ...prev,
-      [ref]: Math.min(Math.abs(valor) || 0, Math.min(Math.abs(balance), (prev[ref] ?? 0) + disponible)),
+      [ref]: redondear2(
+        Math.min(
+          Math.abs(valor) || 0,
+          Math.min(Math.abs(balance), (prev[ref] ?? 0) + disponible),
+        ),
+      ),
     }));
 
   // Si el monto del pago baja, se recorta lo aplicado para no pasarse jamás.
@@ -595,10 +603,10 @@ function NuevaOperacionPage() {
                     let restante = monto;
                     const next: Record<string, number> = {};
                     for (const p of pendientes) {
-                      const aplicar = Math.min(Math.abs(p.balance), restante);
+                      const aplicar = redondear2(Math.min(Math.abs(p.balance), restante));
                       if (aplicar > 0.009) {
-                        next[p.referencia] = Math.round(aplicar * 100) / 100;
-                        restante = Math.round((restante - aplicar) * 100) / 100;
+                        next[p.referencia] = aplicar;
+                        restante = redondear2(restante - aplicar);
                       }
                     }
                     setAplicaciones(next);
