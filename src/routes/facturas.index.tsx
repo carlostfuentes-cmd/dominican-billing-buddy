@@ -311,24 +311,20 @@ function Facturas() {
             </TableBody>
           </Table>
           <div className="grid gap-2 border-t bg-muted/35 px-5 py-4 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-            <p>
-              Ventas netas facturadas (sin ITBIS):{" "}
-              <span className="tabular font-semibold text-foreground">{dop(netasFacturadas)}</span>
-            </p>
-            <p>
-              ITBIS facturado:{" "}
-              <span className="tabular font-semibold text-foreground">{dop(itbisFacturado)}</span>
-            </p>
-            <p>
-              Total facturado (con ITBIS):{" "}
-              <span className="tabular font-semibold text-foreground">{dop(totalFacturado)}</span>
-            </p>
-            <p>
-              Pedidos sin facturar:{" "}
-              <span className="tabular font-semibold text-foreground">{dop(totalPedidos)}</span>
-            </p>
+            {[
+              { t: "Ventas netas totales", v: netasFacturadas },
+              { t: "Ventas netas no exentas", v: noExentas },
+              { t: "Ventas netas exentas", v: exentas },
+              { t: "ITBIS facturado", v: itbisFacturado },
+              { t: "Total facturado (con ITBIS)", v: totalFacturado },
+              { t: "Pedidos sin facturar", v: totalPedidos },
+            ].map((x) => (
+              <p key={x.t}>
+                {x.t}: <span className="tabular font-semibold text-foreground">{dop(x.v)}</span>
+              </p>
+            ))}
             <p className="text-xs sm:col-span-2 lg:col-span-4">
-              Totales en pesos, sin anuladas. Las ventas netas facturadas son las mismas del panel.
+              Totales en pesos, sin anuladas. Coinciden con los indicadores del panel.
             </p>
           </div>
         </CardContent>
