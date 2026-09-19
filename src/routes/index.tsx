@@ -159,11 +159,21 @@ function Panel() {
   const fmt = (valor: number, formato: "moneda" | "numero" | "ratio") =>
     formato === "moneda" ? money(valor, moneda) : formato === "ratio" ? valor.toFixed(2) : String(valor);
 
+  // Escala la cifra según su longitud para que quepa completa en la tarjeta.
+  const tamañoCifra = (texto: string) => {
+    const n = texto.length;
+    if (n <= 11) return "text-2xl";
+    if (n <= 14) return "text-xl";
+    if (n <= 17) return "text-lg";
+    return "text-base";
+  };
+
   const aplicarPreset = (clave: "mes" | "trimestre" | "anio") => {
     const r = rangoPreset(clave);
     setDesde(r.desde);
     setHasta(r.hasta);
   };
+
 
   const sinDatos = data && !data.conectado;
 
@@ -310,9 +320,17 @@ function Panel() {
                 <CardTitle className="text-xs font-semibold text-muted-foreground">{k.titulo}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="tabular font-display text-2xl font-semibold">
-                  {isLoading ? "—" : fmt(k.valor, k.formato)}
+                <p className="tabular font-display font-semibold leading-tight">
+                  <span
+                    className={cn(
+                      "block whitespace-nowrap",
+                      tamañoCifra(isLoading ? "—" : fmt(k.valor, k.formato)),
+                    )}
+                  >
+                    {isLoading ? "—" : fmt(k.valor, k.formato)}
+                  </span>
                 </p>
+
                 <div className="mt-2">
                   <Variacion valor={k.valor} anterior={k.anterior} />
                 </div>
