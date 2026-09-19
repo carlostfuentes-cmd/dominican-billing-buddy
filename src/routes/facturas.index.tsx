@@ -125,12 +125,18 @@ function Facturas() {
   const enDop = (monto: number, tasa: number | undefined) =>
     monto * (tasa && tasa > 0 ? tasa : 1);
   const facturadas = facturas.filter((f) => f.estado === "emitida" || f.estado === "pagada");
-  const netasFacturadas = facturadas.reduce((a, f) => a + enDop(f.subtotal, f.tasa_cambio), 0);
-  const itbisFacturado = facturadas.reduce((a, f) => a + enDop(f.itbis, f.tasa_cambio), 0);
-  const totalFacturado = facturadas.reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
-  const totalPedidos = facturas
-    .filter((f) => f.estado === "pedido")
-    .reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0);
+  const suma = (campo: (f: (typeof facturas)[number]) => number) =>
+    round2(facturadas.reduce((a, f) => a + enDop(campo(f), f.tasa_cambio), 0));
+  const netasFacturadas = suma((f) => f.subtotal);
+  const noExentas = suma((f) => f.gravado ?? 0);
+  const exentas = suma((f) => f.exento ?? 0);
+  const itbisFacturado = suma((f) => f.itbis);
+  const totalFacturado = round2(netasFacturadas + itbisFacturado);
+  const totalPedidos = round2(
+    facturas
+      .filter((f) => f.estado === "pedido")
+      .reduce((a, f) => a + enDop(f.total, f.tasa_cambio), 0),
+  );
 
   return (
     <div>
