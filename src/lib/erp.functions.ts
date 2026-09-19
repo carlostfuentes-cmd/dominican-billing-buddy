@@ -433,6 +433,20 @@ export const facturarPedido = createServerFn({ method: "POST" })
     return factura;
   });
 
+/** Borra un pedido que aún no se ha convertido en factura. */
+export const eliminarPedido = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ id: z.number().int().positive() }).parse(d))
+  .handler(async ({ data }): Promise<{ ok: true }> => {
+    await (await repo()).eliminarPedido(data.id);
+    await auditar({
+      menu_id: "2.01.02",
+      tipo: "B",
+      accion: `Borró el pedido ${data.id}`,
+      referencia: data.id,
+      cambios: data,
+    });
+    return { ok: true };
+  });
 
 export const cambiarEstadoFactura = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
