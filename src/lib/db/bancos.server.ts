@@ -344,11 +344,11 @@ export async function listarMovimientosBanco(
     params.push(like, like, like);
   }
   if (filtro.montoDesde !== undefined && filtro.montoDesde > 0) {
-    cond.push("b.amount >= ?");
+    cond.push("ABS(b.amount) >= ?");
     params.push(filtro.montoDesde);
   }
   if (filtro.montoHasta !== undefined && filtro.montoHasta > 0) {
-    cond.push("b.amount <= ?");
+    cond.push("ABS(b.amount) <= ?");
     params.push(filtro.montoHasta);
   }
   if (filtro.numero) {

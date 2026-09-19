@@ -105,7 +105,7 @@ function DetalleOperacion() {
             <Dato titulo="Suplidor" valor={mov.suplidor || "—"} />
             <Dato titulo="Concepto" valor={mov.concepto || "—"} />
             <Dato titulo="NCF" valor={mov.ncf || "—"} />
-            <Dato titulo="Monto" valor={money(mov.monto, mov.moneda)} />
+            <Dato titulo="Monto" valor={money(Math.abs(mov.monto), mov.moneda)} />
             <Dato titulo="Tasa de cambio" valor={String(mov.tasa_cambio)} />
             <Dato titulo="Comisión" valor={money(mov.comision, mov.moneda)} />
             <Dato titulo="ITBIS" valor={money(mov.itbis, mov.moneda)} />

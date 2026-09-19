@@ -254,14 +254,14 @@ function NuevaOperacionPage() {
       setTipoId(m.tipo_id);
       setFecha(hoyISO());
       setNumero("");
-      setMonto(m.monto);
+      setMonto(Math.abs(m.monto));
       setTasa(m.tasa_cambio || 1);
       setBeneficiario(m.beneficiario);
       setDescripcion(m.descripcion);
       setNcf("");
-      setMontoNcf(m.monto_ncf);
-      setItbis(m.itbis);
-      setComision(m.comision);
+      setMontoNcf(Math.abs(m.monto_ncf));
+      setItbis(Math.abs(m.itbis));
+      setComision(Math.abs(m.comision));
       setItbisRet(0);
       setIsrRet(0);
       setConceptoId(m.concepto_id);
@@ -341,8 +341,9 @@ function NuevaOperacionPage() {
               <Input
                 type="number"
                 step="0.01"
+                min="0"
                 value={monto}
-                onChange={(e) => setMonto(Number(e.target.value))}
+                onChange={(e) => setMonto(Math.abs(Number(e.target.value)))}
               />
             </div>
             <div>
@@ -771,7 +772,7 @@ function NuevaOperacionPage() {
                       <TableCell className="font-medium">{m.numero}</TableCell>
                       <TableCell>{m.beneficiario || m.descripcion}</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {money(m.monto, m.moneda)}
+                        {money(Math.abs(m.monto), m.moneda)}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
