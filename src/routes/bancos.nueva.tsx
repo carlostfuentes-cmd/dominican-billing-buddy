@@ -89,6 +89,20 @@ function NuevaOperacionPage() {
   const [lineas, setLineas] = useState<LineaAsiento[]>([]);
   const [advertencias, setAdvertencias] = useState<string[]>([]);
 
+  // Búsqueda de movimientos anteriores para copiarlos.
+  const [buscarAbierto, setBuscarAbierto] = useState(false);
+  const [cr, setCr] = useState({
+    desde: "",
+    hasta: "",
+    montoDesde: 0,
+    montoHasta: 0,
+    numero: "",
+    tipoId: "",
+    cuenta: "",
+    beneficiario: "",
+    concepto: "",
+  });
+
   const { data: listas } = useQuery({
     queryKey: ["listas-bancos"],
     queryFn: () => obtenerListasBancos(),
