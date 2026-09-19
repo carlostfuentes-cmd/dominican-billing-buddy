@@ -100,6 +100,7 @@ function NuevaOperacionPage() {
   const [aplicaciones, setAplicaciones] = useState<Record<string, number>>({});
   const [lineas, setLineas] = useState<LineaAsiento[]>([]);
   const [advertencias, setAdvertencias] = useState<string[]>([]);
+  const [asientoCopiado, setAsientoCopiado] = useState(false);
 
   // Búsqueda de movimientos anteriores para copiarlos.
   const [buscarAbierto, setBuscarAbierto] = useState(false);
@@ -192,6 +193,7 @@ function NuevaOperacionPage() {
   const proponer = useMutation({
     mutationFn: () => obtenerAsientoBanco({ data: entrada }),
     onSuccess: (p) => {
+      setAsientoCopiado(false);
       setLineas(p.lineas);
       setAdvertencias(p.advertencias);
     },
@@ -207,13 +209,15 @@ function NuevaOperacionPage() {
 
   useEffect(() => {
     if (!puedeProponer) {
+      if (asientoCopiado) return;
       setLineas([]);
       setAdvertencias([]);
       return;
     }
+    if (asientoCopiado) return;
     const t = setTimeout(() => proponerRef.current.mutate(), 400);
     return () => clearTimeout(t);
-  }, [claveAsiento, puedeProponer]);
+  }, [asientoCopiado, claveAsiento, puedeProponer]);
 
   const guardar = useMutation({
     mutationFn: () => guardarMovimientoBanco({ data: { ...entrada, asiento: lineas } }),
@@ -268,8 +272,19 @@ function NuevaOperacionPage() {
       setSuplidorId(m.suplidor_id);
       setBancoDestinoId("");
       setAplicaciones({});
+      setLineas(
+        m.lineas.map((linea) => ({
+          ...linea,
+          debito: Math.abs(linea.debito),
+          credito: Math.abs(linea.credito),
+        })),
+      );
+      setAdvertencias([]);
+      setAsientoCopiado(true);
       setBuscarAbierto(false);
-      toast.success(`Movimiento ${m.numero} copiado. Ajusta fecha, monto y guarda.`);
+      toast.success(
+        `Movimiento ${m.numero} copiado con ${m.lineas.length} cuenta(s). Ajusta los datos y guarda.`,
+      );
     },
     onError: (e: Error) => toast.error(e.message),
   });

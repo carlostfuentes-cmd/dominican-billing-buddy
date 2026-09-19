@@ -106,8 +106,11 @@ export function AsientoContable({
           </p>
         ) : (
           lineas.map((l, i) => (
-            <div key={i} className="grid gap-3 rounded-md border p-3 lg:grid-cols-12">
-              <div className="lg:col-span-4">
+            <div
+              key={i}
+              className="grid gap-3 rounded-md border p-3 lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_44px]"
+            >
+              <div className="min-w-0">
                 <SelectorBuscable
                   opciones={opcionesCuentas}
                   valor={l.cuenta}
@@ -116,7 +119,7 @@ export function AsientoContable({
                   placeholderBusqueda="Escribe número o nombre…"
                 />
               </div>
-              <div className="lg:col-span-3">
+              <div className="min-w-0">
                 <Input
                   value={l.descripcion}
                   onChange={(e) => actualizar(i, { descripcion: e.target.value })}
@@ -124,7 +127,7 @@ export function AsientoContable({
                   maxLength={200}
                 />
               </div>
-              <div className="lg:col-span-2">
+              <div className="min-w-0">
                 <Select
                   value={l.departamento_id || SIN}
                   onValueChange={(v) =>
@@ -144,7 +147,7 @@ export function AsientoContable({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="min-w-0">
                 <Input
                   type="number"
                   step="0.01"
@@ -153,11 +156,11 @@ export function AsientoContable({
                   onChange={(e) =>
                     actualizar(i, { debito: Number(e.target.value), credito: 0 })
                   }
-                  className="tabular-nums"
+                  className="text-right tabular-nums"
                   aria-label="Débito"
                 />
               </div>
-              <div>
+              <div className="min-w-0">
                 <Input
                   type="number"
                   step="0.01"
@@ -166,7 +169,7 @@ export function AsientoContable({
                   onChange={(e) =>
                     actualizar(i, { credito: Number(e.target.value), debito: 0 })
                   }
-                  className="tabular-nums"
+                  className="text-right tabular-nums"
                   aria-label="Crédito"
                 />
               </div>
