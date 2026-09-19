@@ -1549,6 +1549,138 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
 }
 
 /**
+ * Actualiza un pedido que aún no se ha facturado: reemplaza los datos de
+ * cabecera y todas sus líneas. Si se pide facturar, lo convierte al final.
+ */
+export async function actualizarPedido(id: number, entrada: NuevoPedido): Promise<Factura> {
+  const { lineas, totales } = calcularTotales(entrada.lineas);
+  if (!lineas.length) throw new Error("El pedido debe tener al menos una línea");
+
+  if (await usarMysql()) {
+    const ordenes = await sql<{ invoice_id: number | null; branch_id: number }>(
+      "SELECT invoice_id, branch_id FROM orders WHERE order_id = ?",
+      [id],
+    );
+    const orden = ordenes[0];
+    if (!orden) throw new Error("Pedido no encontrado");
+    if (orden.invoice_id) {
+      throw new Error("Este pedido ya fue facturado; no se puede modificar");
+    }
+    const clientes = await sql<{ name: string; rnc: string | null }>(
+      "SELECT name, rnc FROM customers WHERE customer_id = ?",
+      [entrada.cliente_id],
+    );
+    const cliente = clientes[0];
+    if (!cliente) throw new Error("Cliente no encontrado");
+
+    const d = await defectos();
+    const sucursal = Number(entrada.sucursal_id ?? orden.branch_id ?? 1) || 1;
+    const moneda = (entrada.moneda || "DOP").toUpperCase();
+    const tasa = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+    const p = entrada.pagos ?? {};
+    const cobrado = round2(
+      (p.efectivo ?? 0) + (p.tarjeta ?? 0) + (p.cheque ?? 0) + (p.transferencia ?? 0) + (p.cardnet ?? 0),
+    );
+    const efectivo =
+      cobrado > 0 ? (p.efectivo ?? 0) : entrada.dias_credito === 0 ? totales.total : 0;
+
+    await ejecutar(
+      `UPDATE orders SET
+         branch_id = ?, date = ?, customer_name = ?, credit_days = ?, currency_rate = ?,
+         customer_id = ?, salesman_id = ?, currency_id = ?, warehouse_id = ?,
+         efectivo = ?, tarjeta = ?, cheque = ?, transferencia = ?, cardnet = ?,
+         notes = ?, rnc = ?, tech_id = ?, department_id = ?, project_id = ?,
+         quotation_id = ?, customer_order = ?, salesman_order = ?
+       WHERE order_id = ?`,
+      [
+        sucursal,
+        entrada.fecha,
+        cliente.name,
+        entrada.dias_credito,
+        tasa,
+        entrada.cliente_id,
+        Number(entrada.vendedor_id ?? d.salesman_id) || d.salesman_id,
+        moneda,
+        Number(entrada.almacen_id ?? d.warehouse_id) || d.warehouse_id,
+        efectivo,
+        p.tarjeta ?? 0,
+        p.cheque ?? 0,
+        p.transferencia ?? 0,
+        p.cardnet ?? 0,
+        entrada.notas,
+        cliente.rnc ?? "",
+        entrada.tecnico_id ? Number(entrada.tecnico_id) : null,
+        entrada.departamento_id ? Number(entrada.departamento_id) : null,
+        entrada.proyecto_id ? Number(entrada.proyecto_id) : null,
+        entrada.cotizacion_id ? Number(entrada.cotizacion_id) : null,
+        entrada.orden_cliente ?? "",
+        entrada.orden_vendedor ?? "",
+        id,
+      ],
+    );
+
+    await ejecutar("DELETE FROM orders_detail WHERE order_id = ?", [id]);
+    for (const [pos, l] of lineas.entries()) {
+      const descuentoMonto = round2(l.cantidad * l.precio * (l.descuento_pct / 100));
+      await ejecutar(
+        `INSERT INTO orders_detail
+           (order_id, branch_id, position, product_id, product_name, name,
+            quantity, bonus, price, ref_price, tax1, tax2, tax3,
+            discount_rate, discount, cost, cost_ant, currency_rate,
+            compound_qtty, compound_bonus, compound_price, compound_discount)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, 0, 0, 0, 0)`,
+        [
+          id,
+          sucursal,
+          pos + 1,
+          l.item_id ?? l.codigo ?? "",
+          l.descripcion,
+          l.descripcion,
+          l.cantidad,
+          l.oferta ?? 0,
+          l.precio,
+          l.precio,
+          l.itbis,
+          l.descuento_pct,
+          descuentoMonto,
+          tasa,
+        ],
+      );
+    }
+
+    if (entrada.facturar) return facturarPedido(id, entrada.tipo_ncf, entrada.asiento);
+    const guardado = await obtenerFactura(id);
+    if (!guardado) throw new Error("No se pudo leer el pedido actualizado");
+    return guardado;
+  }
+
+  const dm = demo();
+  const pedido = dm.facturas.find((f) => f.id === id);
+  if (!pedido) throw new Error("Pedido no encontrado");
+  if (pedido.facturado) throw new Error("Este pedido ya fue facturado; no se puede modificar");
+  const clienteDemo = dm.clientes.find((c) => c.id === entrada.cliente_id);
+  if (!clienteDemo) throw new Error("Cliente no encontrado");
+  pedido.cliente_id = clienteDemo.id;
+  pedido.cliente_nombre = clienteDemo.nombre;
+  pedido.cliente_rnc = clienteDemo.rnc;
+  pedido.fecha = entrada.fecha;
+  pedido.vencimiento = sumarDias(entrada.fecha, entrada.dias_credito);
+  pedido.dias_credito = entrada.dias_credito;
+  pedido.moneda = (entrada.moneda || "DOP").toUpperCase();
+  pedido.tasa_cambio = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+  pedido.tipo_ncf = entrada.tipo_ncf;
+  pedido.notas = entrada.notas;
+  pedido.orden_cliente = entrada.orden_cliente ?? "";
+  pedido.subtotal = totales.subtotal;
+  pedido.descuento = totales.descuento;
+  pedido.itbis = totales.itbis;
+  pedido.total = totales.total;
+  pedido.lineas = lineas;
+  if (entrada.facturar) return facturarPedido(id, entrada.tipo_ncf, entrada.asiento);
+  return pedido;
+}
+
+/**
  * Convierte un pedido en factura: reserva el NCF, crea el comprobante en
  * invoices y guarda el número de factura en orders.invoice_id.
  */
