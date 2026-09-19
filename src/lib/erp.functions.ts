@@ -410,6 +410,26 @@ export const guardarPedido = createServerFn({ method: "POST" })
     return factura;
   });
 
+/** Modifica un pedido aún no facturado (y opcionalmente lo factura). */
+export const actualizarPedido = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    nuevaFacturaSchema.extend({ id: z.number().int().positive() }).parse(d),
+  )
+  .handler(async ({ data }): Promise<Factura> => {
+    const { id, ...resto } = data;
+    const factura = await (await repo()).actualizarPedido(id, resto);
+    await auditar({
+      menu_id: "2.01.02",
+      tipo: "E",
+      accion: factura.ncf
+        ? `Modificó y facturó el pedido ${id} | NCF: ${factura.ncf}`
+        : `Modificó el pedido ${id} — ${factura.cliente_nombre}`,
+      referencia: id,
+      cambios: data,
+    });
+    return factura;
+  });
+
 /** Convierte un pedido existente en factura (asigna NCF y número de factura). */
 export const facturarPedido = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
