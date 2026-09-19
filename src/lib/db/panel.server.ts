@@ -223,6 +223,8 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
   const [
     ventas,
     ventasPrev,
+    notasDev,
+    notasDevPrev,
     pedidos,
     porCobrar,
     porCobrarPrev,
