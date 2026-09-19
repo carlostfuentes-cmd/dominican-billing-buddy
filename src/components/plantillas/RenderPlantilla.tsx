@@ -69,7 +69,7 @@ function Elemento({
 }: {
   el: ElementoPlantilla;
   datos: DatosDocumento;
-  linea?: Record<string, string>;
+  linea?: Record<string, string> | undefined;
 }) {
   const estilo = estiloElemento(el);
   if (el.tipo === "linea" || el.tipo === "caja") return <div style={estilo} />;
@@ -93,7 +93,7 @@ function Banda({
 }: {
   banda: BandaPlantilla;
   datos: DatosDocumento;
-  linea?: Record<string, string>;
+  linea?: Record<string, string> | undefined;
 }) {
   return (
     <div style={{ position: "relative", height: `${banda.alto}mm` }}>

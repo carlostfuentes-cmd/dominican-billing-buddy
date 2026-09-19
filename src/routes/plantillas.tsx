@@ -671,7 +671,7 @@ function DisenadorPlantillas() {
                             value={elementoSeleccionado.campo ?? "ninguno"}
                             onValueChange={(v) =>
                               cambiarElemento(elementoSeleccionado.id, {
-                                campo: v === "ninguno" ? undefined : v,
+                                ...(v === "ninguno" ? {} : { campo: v }),
                                 tipo: v === "ninguno" ? "texto" : "campo",
                               })
                             }
