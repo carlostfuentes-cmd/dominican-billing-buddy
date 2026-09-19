@@ -1364,3 +1364,144 @@ export function totalFacturaSuplidor(f: {
       f.isr_retenido,
   );
 }
+
+/* ========================= Bancos ========================= */
+
+/** Tipo de operación bancaria (banks_book_entry). */
+export interface TipoOperacionBanco {
+  id: string;
+  nombre: string;
+  /** D = entra dinero al banco, C = sale dinero del banco. */
+  signo: "D" | "C";
+  entrada_id: string;
+}
+
+/** Cuenta bancaria de la maestra de caja y bancos (banks). */
+export interface CuentaBancaria {
+  id: string;
+  nombre: string;
+  numero_cuenta: string;
+  nombre_corto: string;
+  tipo_id: string;
+  tipo?: string | undefined;
+  oficial: string;
+  telefono: string;
+  direccion: string;
+  cuenta_contable: string;
+  cuenta_contable_nombre?: string | undefined;
+  moneda: string;
+  sucursal_id: string;
+  rnc: string;
+  numero_empresa: string;
+  activa: boolean;
+  ultimo_deposito: number;
+  ultimo_cheque: number;
+  ultima_nota_credito: number;
+  ultima_nota_debito: number;
+  limite_cheques: number;
+  limite_monto: number;
+  cargo_tc: number;
+  itbis_tc: number;
+}
+
+export interface ConceptoBancario {
+  id: string;
+  nombre: string;
+  cuenta: string;
+  cuenta_nombre?: string | undefined;
+}
+
+export interface ListasBancos {
+  bancos: CuentaBancaria[];
+  tipos: TipoOperacionBanco[];
+  conceptos: ConceptoBancario[];
+  tipos_cuenta: OpcionId[];
+  suplidores: OpcionId[];
+  sucursales: OpcionId[];
+  monedas: Moneda[];
+}
+
+export interface MovimientoBanco {
+  id: number;
+  fecha: string;
+  numero: string;
+  beneficiario: string;
+  descripcion: string;
+  monto: number;
+  itbis: number;
+  comision: number;
+  monto_ncf: number;
+  ncf: string;
+  tasa_cambio: number;
+  moneda: string;
+  banco_id: string;
+  banco: string;
+  tipo_id: string;
+  tipo: string;
+  signo: "D" | "C";
+  concepto_id: string;
+  concepto: string;
+  suplidor_id: string;
+  suplidor: string;
+  estado: "A" | "I" | "P";
+  conciliado: string;
+}
+
+export interface DisponibilidadBanco {
+  banco_id: string;
+  banco: string;
+  numero_cuenta: string;
+  moneda: string;
+  saldo: number;
+  movimientos: number;
+  ultimo: string;
+}
+
+export interface FiltroBancos {
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  bancoId?: string | undefined;
+  tipoId?: string | undefined;
+  suplidorId?: string | undefined;
+  busqueda?: string | undefined;
+  estado?: string | undefined;
+}
+
+/** Aplicación del pago a un documento pendiente del suplidor (ap_reference). */
+export interface AplicacionCxP {
+  referencia: string;
+  monto: number;
+}
+
+export interface NuevoMovimientoBanco {
+  banco_id: string;
+  tipo_id: string;
+  fecha: string;
+  numero: string;
+  monto: number;
+  tasa_cambio: number;
+  beneficiario: string;
+  descripcion: string;
+  ncf: string;
+  monto_ncf: number;
+  itbis: number;
+  comision: number;
+  itbis_retenido: number;
+  isr_retenido: number;
+  concepto_id?: string | undefined;
+  suplidor_id?: string | undefined;
+  /** Banco destino en transferencias entre bancos. */
+  banco_destino_id?: string | undefined;
+  /** Avance al suplidor: crea el avance no aplicado en cuentas por pagar. */
+  avance?: { suplidor_id: string; cuenta_cxp: string } | undefined;
+  aplicaciones?: AplicacionCxP[] | undefined;
+  asiento?: LineaAsiento[] | undefined;
+}
+
+export interface ResultadoMovimientoBanco {
+  id: number;
+  numero: string;
+  /** Movimiento espejo creado en el banco destino de una transferencia. */
+  id_destino?: number | undefined;
+  ap_id?: number | undefined;
+}

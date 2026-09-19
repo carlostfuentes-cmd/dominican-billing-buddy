@@ -20,6 +20,10 @@ import { Route as NcfRouteImport } from './routes/ncf'
 import { Route as PerfilesRouteImport } from './routes/perfiles'
 import { Route as ReportesRouteImport } from './routes/reportes'
 import { Route as UsuariosRouteImport } from './routes/usuarios'
+import { Route as BancosIndexRouteImport } from './routes/bancos.index'
+import { Route as BancosIdRouteImport } from './routes/bancos.$id'
+import { Route as BancosCuentasRouteImport } from './routes/bancos.cuentas'
+import { Route as BancosNuevaRouteImport } from './routes/bancos.nueva'
 import { Route as ComprasIndexRouteImport } from './routes/compras.index'
 import { Route as ComprasNuevaRouteImport } from './routes/compras.nueva'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
@@ -104,6 +108,26 @@ const ReportesRoute = ReportesRouteImport.update({
 const UsuariosRoute = UsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BancosIndexRoute = BancosIndexRouteImport.update({
+  id: '/bancos/',
+  path: '/bancos/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BancosIdRoute = BancosIdRouteImport.update({
+  id: '/bancos/$id',
+  path: '/bancos/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BancosCuentasRoute = BancosCuentasRouteImport.update({
+  id: '/bancos/cuentas',
+  path: '/bancos/cuentas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BancosNuevaRoute = BancosNuevaRouteImport.update({
+  id: '/bancos/nueva',
+  path: '/bancos/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
@@ -269,6 +293,9 @@ export interface FileRoutesByFullPath {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/$id': typeof BancosIdRoute
+  '/bancos/cuentas': typeof BancosCuentasRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -286,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/bancos/': typeof BancosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
@@ -312,6 +340,9 @@ export interface FileRoutesByTo {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/$id': typeof BancosIdRoute
+  '/bancos/cuentas': typeof BancosCuentasRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -329,6 +360,7 @@ export interface FileRoutesByTo {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/bancos': typeof BancosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/conduces': typeof ConducesIndexRoute
   '/contabilidad': typeof ContabilidadIndexRoute
@@ -356,6 +388,9 @@ export interface FileRoutesById {
   '/perfiles': typeof PerfilesRoute
   '/reportes': typeof ReportesRoute
   '/usuarios': typeof UsuariosRoute
+  '/bancos/$id': typeof BancosIdRoute
+  '/bancos/cuentas': typeof BancosCuentasRoute
+  '/bancos/nueva': typeof BancosNuevaRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -373,6 +408,7 @@ export interface FileRoutesById {
   '/notas-credito/nueva': typeof NotasCreditoNuevaRoute
   '/recurrentes/$id': typeof RecurrentesIdRoute
   '/recurrentes/nueva': typeof RecurrentesNuevaRoute
+  '/bancos/': typeof BancosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/conduces/': typeof ConducesIndexRoute
   '/contabilidad/': typeof ContabilidadIndexRoute
@@ -401,6 +437,9 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/$id'
+    | '/bancos/cuentas'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -418,6 +457,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/bancos/'
     | '/compras/'
     | '/conduces/'
     | '/contabilidad/'
@@ -444,6 +484,9 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/$id'
+    | '/bancos/cuentas'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -461,6 +504,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/bancos'
     | '/compras'
     | '/conduces'
     | '/contabilidad'
@@ -487,6 +531,9 @@ export interface FileRouteTypes {
     | '/perfiles'
     | '/reportes'
     | '/usuarios'
+    | '/bancos/$id'
+    | '/bancos/cuentas'
+    | '/bancos/nueva'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -504,6 +551,7 @@ export interface FileRouteTypes {
     | '/notas-credito/nueva'
     | '/recurrentes/$id'
     | '/recurrentes/nueva'
+    | '/bancos/'
     | '/compras/'
     | '/conduces/'
     | '/contabilidad/'
@@ -531,6 +579,9 @@ export interface RootRouteChildren {
   PerfilesRoute: typeof PerfilesRoute
   ReportesRoute: typeof ReportesRoute
   UsuariosRoute: typeof UsuariosRoute
+  BancosIdRoute: typeof BancosIdRoute
+  BancosCuentasRoute: typeof BancosCuentasRoute
+  BancosNuevaRoute: typeof BancosNuevaRoute
   ComprasNuevaRoute: typeof ComprasNuevaRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
@@ -548,6 +599,7 @@ export interface RootRouteChildren {
   NotasCreditoNuevaRoute: typeof NotasCreditoNuevaRoute
   RecurrentesIdRoute: typeof RecurrentesIdRoute
   RecurrentesNuevaRoute: typeof RecurrentesNuevaRoute
+  BancosIndexRoute: typeof BancosIndexRoute
   ComprasIndexRoute: typeof ComprasIndexRoute
   ConducesIndexRoute: typeof ConducesIndexRoute
   ContabilidadIndexRoute: typeof ContabilidadIndexRoute
@@ -640,6 +692,34 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof UsuariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bancos/': {
+      id: '/bancos/'
+      path: '/bancos'
+      fullPath: '/bancos/'
+      preLoaderRoute: typeof BancosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bancos/$id': {
+      id: '/bancos/$id'
+      path: '/bancos/$id'
+      fullPath: '/bancos/$id'
+      preLoaderRoute: typeof BancosIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bancos/cuentas': {
+      id: '/bancos/cuentas'
+      path: '/bancos/cuentas'
+      fullPath: '/bancos/cuentas'
+      preLoaderRoute: typeof BancosCuentasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bancos/nueva': {
+      id: '/bancos/nueva'
+      path: '/bancos/nueva'
+      fullPath: '/bancos/nueva'
+      preLoaderRoute: typeof BancosNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compras/': {
@@ -867,6 +947,9 @@ const rootRouteChildren: RootRouteChildren = {
   PerfilesRoute: PerfilesRoute,
   ReportesRoute: ReportesRoute,
   UsuariosRoute: UsuariosRoute,
+  BancosIdRoute: BancosIdRoute,
+  BancosCuentasRoute: BancosCuentasRoute,
+  BancosNuevaRoute: BancosNuevaRoute,
   ComprasNuevaRoute: ComprasNuevaRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
@@ -884,6 +967,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotasCreditoNuevaRoute: NotasCreditoNuevaRoute,
   RecurrentesIdRoute: RecurrentesIdRoute,
   RecurrentesNuevaRoute: RecurrentesNuevaRoute,
+  BancosIndexRoute: BancosIndexRoute,
   ComprasIndexRoute: ComprasIndexRoute,
   ConducesIndexRoute: ConducesIndexRoute,
   ContabilidadIndexRoute: ContabilidadIndexRoute,
