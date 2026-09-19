@@ -158,7 +158,7 @@ function BancosPage() {
 
           <Card>
             <CardContent className="pt-6">
-              <Table>
+              <Table className="min-w-[1080px] table-auto">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Fecha</TableHead>
@@ -166,7 +166,9 @@ function BancosPage() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Cuenta bancaria</TableHead>
                     <TableHead>Beneficiario</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
+                    <TableHead className="w-[180px] min-w-[180px] whitespace-nowrap text-right">
+                      Monto
+                    </TableHead>
                     <TableHead>Estado</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -202,7 +204,7 @@ function BancosPage() {
                           {m.beneficiario || m.suplidor || m.concepto}
                         </TableCell>
                         <TableCell
-                          className={`text-right tabular-nums ${
+                          className={`w-[180px] min-w-[180px] whitespace-nowrap pr-4 text-right tabular-nums ${
                             m.signo === "D" ? "text-success" : ""
                           }`}
                         >
