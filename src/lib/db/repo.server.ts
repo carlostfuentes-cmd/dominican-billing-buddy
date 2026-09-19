@@ -1130,6 +1130,7 @@ const SQL_FACTURAS = `
            DATE_FORMAT(o.date, '%Y-%m-%d') AS fecha,
            DATE_FORMAT(DATE_ADD(o.date, INTERVAL o.credit_days DAY), '%Y-%m-%d') AS vencimiento,
            COALESCE(t.subtotal, 0) AS subtotal, COALESCE(t.descuento, 0) AS descuento,
+           COALESCE(t.gravado, 0) AS gravado, COALESCE(t.exento, 0) AS exento,
            COALESCE(t.itbis, 0) AS itbis, COALESCE(t.total, 0) AS total,
            CASE
              WHEN ri.invoice_id IS NOT NULL THEN 'anulada'
