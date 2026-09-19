@@ -721,10 +721,12 @@ function NuevaFactura() {
                       <Input
                         type="number"
                         min={0}
-                        step="0.01"
+                        step="1"
                         className="px-2 text-right tabular"
                         value={l.cantidad}
-                        onChange={(e) => actualizar(i, { cantidad: Number(e.target.value) || 0 })}
+                        onChange={(e) =>
+                          actualizar(i, { cantidad: Math.round(Number(e.target.value) || 0) })
+                        }
                       />
                     </TableCell>
                     <TableCell>
