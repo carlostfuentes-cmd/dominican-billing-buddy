@@ -633,6 +633,152 @@ function NuevaOperacionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={buscarAbierto} onOpenChange={setBuscarAbierto}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Buscar movimiento para copiar</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div>
+              <Label>Fecha desde</Label>
+              <Input
+                type="date"
+                value={cr.desde}
+                onChange={(e) => setCr({ ...cr, desde: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Fecha hasta</Label>
+              <Input
+                type="date"
+                value={cr.hasta}
+                onChange={(e) => setCr({ ...cr, hasta: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Monto desde</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={cr.montoDesde}
+                onChange={(e) => setCr({ ...cr, montoDesde: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label>Monto hasta</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={cr.montoHasta}
+                onChange={(e) => setCr({ ...cr, montoHasta: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label>Documento No.</Label>
+              <Input
+                value={cr.numero}
+                onChange={(e) => setCr({ ...cr, numero: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Tipo de movimiento</Label>
+              <SelectorBuscable
+                opciones={[
+                  { valor: "", etiqueta: "Todos" },
+                  ...(listas?.tipos ?? []).map((t) => ({
+                    valor: t.id,
+                    etiqueta: `${t.id} — ${t.nombre}`,
+                  })),
+                ]}
+                valor={cr.tipoId}
+                onSeleccionar={(v) => setCr({ ...cr, tipoId: v })}
+                placeholder="Todos"
+              />
+            </div>
+            <div>
+              <Label>Cuenta contable</Label>
+              <Input
+                value={cr.cuenta}
+                onChange={(e) => setCr({ ...cr, cuenta: e.target.value })}
+                placeholder="Ej. 6105"
+              />
+            </div>
+            <div>
+              <Label>Beneficiario</Label>
+              <Input
+                value={cr.beneficiario}
+                onChange={(e) => setCr({ ...cr, beneficiario: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-3">
+              <Label>Concepto</Label>
+              <Input
+                value={cr.concepto}
+                onChange={(e) => setCr({ ...cr, concepto: e.target.value })}
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                className="w-full"
+                variant="secondary"
+                disabled={buscar.isPending}
+                onClick={() => buscar.mutate()}
+              >
+                <Search className="size-4" /> Mostrar
+              </Button>
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Número</TableHead>
+                  <TableHead>Beneficiario</TableHead>
+                  <TableHead className="text-right">Monto</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(buscar.data ?? []).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-muted-foreground">
+                      {buscar.isPending
+                        ? "Buscando…"
+                        : "Define los criterios y pulsa Mostrar."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  (buscar.data ?? []).map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell>{fechaCorta(m.fecha)}</TableCell>
+                      <TableCell>{m.tipo}</TableCell>
+                      <TableCell className="font-medium">{m.numero}</TableCell>
+                      <TableCell>{m.beneficiario || m.descripcion}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {money(m.monto, m.moneda)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={copiar.isPending}
+                          onClick={() => copiar.mutate(m.id)}
+                        >
+                          <Copy className="size-4" /> Copiar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
