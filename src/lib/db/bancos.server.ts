@@ -343,6 +343,34 @@ export async function listarMovimientosBanco(
     const like = `%${filtro.busqueda}%`;
     params.push(like, like, like);
   }
+  if (filtro.montoDesde !== undefined && filtro.montoDesde > 0) {
+    cond.push("b.amount >= ?");
+    params.push(filtro.montoDesde);
+  }
+  if (filtro.montoHasta !== undefined && filtro.montoHasta > 0) {
+    cond.push("b.amount <= ?");
+    params.push(filtro.montoHasta);
+  }
+  if (filtro.numero) {
+    cond.push("b.number LIKE ?");
+    params.push(`%${filtro.numero}%`);
+  }
+  if (filtro.beneficiario) {
+    cond.push("b.beneficiary LIKE ?");
+    params.push(`%${filtro.beneficiario}%`);
+  }
+  if (filtro.concepto) {
+    cond.push("(b.description LIKE ? OR c.name LIKE ?)");
+    const like = `%${filtro.concepto}%`;
+    params.push(like, like);
+  }
+  if (filtro.cuenta) {
+    cond.push(
+      `EXISTS (SELECT 1 FROM banks_book_detail d
+                WHERE d.bank_book_id = b.bank_book_id AND d.catalog_account LIKE ?)`,
+    );
+    params.push(`${filtro.cuenta}%`);
+  }
   const where = cond.length ? ` WHERE ${cond.join(" AND ")}` : "";
   const filas = await sql<Record<string, unknown>>(
     `${SQL_MOVIMIENTOS}${where} ORDER BY b.date DESC, b.bank_book_id DESC LIMIT 500`,

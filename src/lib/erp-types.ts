@@ -1465,6 +1465,13 @@ export interface FiltroBancos {
   suplidorId?: string | undefined;
   busqueda?: string | undefined;
   estado?: string | undefined;
+  /** Criterios adicionales de la búsqueda de movimientos (para copiar). */
+  montoDesde?: number | undefined;
+  montoHasta?: number | undefined;
+  numero?: string | undefined;
+  beneficiario?: string | undefined;
+  concepto?: string | undefined;
+  cuenta?: string | undefined;
 }
 
 /** Aplicación del pago a un documento pendiente del suplidor (ap_reference). */

@@ -108,6 +108,12 @@ export const obtenerMovimientosBanco = createServerFn({ method: "GET" })
         suplidorId: texto(10).optional(),
         busqueda: texto(60).optional(),
         estado: texto(1).optional(),
+        montoDesde: z.number().min(0).optional(),
+        montoHasta: z.number().min(0).optional(),
+        numero: texto(20).optional(),
+        beneficiario: texto(50).optional(),
+        concepto: texto(60).optional(),
+        cuenta: texto(15).optional(),
       })
       .parse(d),
   )
