@@ -63,7 +63,7 @@ import {
 
 export const Route = createFileRoute("/facturas/nueva")({
   validateSearch: (s: Record<string, unknown>) => {
-    const n = Number(s.pedido);
+    const n = Number(s["pedido"]);
     return Number.isFinite(n) && n > 0 ? { pedido: n } : {};
   },
   head: () => ({
