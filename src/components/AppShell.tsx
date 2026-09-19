@@ -40,6 +40,8 @@ const NAV = [
   { to: "/cxc", label: "Cuentas por cobrar", icon: Wallet, grupo: "principal" },
   { to: "/compras", label: "Órdenes de compra", icon: ShoppingCart, grupo: "principal" },
   { to: "/cxp", label: "Cuentas por pagar", icon: Banknote, grupo: "principal" },
+  { to: "/bancos", label: "Operaciones bancarias", icon: Landmark, grupo: "principal" },
+  { to: "/bancos/cuentas", label: "Caja y bancos", icon: PiggyBank, grupo: "maestros" },
   { to: "/cotizaciones", label: "Cotizaciones", icon: FileSpreadsheet, grupo: "operaciones" },
   { to: "/conduces", label: "Conduces", icon: Truck, grupo: "operaciones" },
   { to: "/devoluciones", label: "Devoluciones", icon: RotateCcw, grupo: "operaciones" },
