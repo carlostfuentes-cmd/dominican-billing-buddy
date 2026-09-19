@@ -1654,6 +1654,40 @@ async function contabilizarVenta(factura: Factura, asiento?: LineaAsiento[]): Pr
   }
 }
 
+/**
+ * Borra un pedido que aún no se ha facturado (sin NCF ni número de factura).
+ * Elimina sus líneas y los valores de campos personalizados asociados.
+ */
+export async function eliminarPedido(id: number): Promise<void> {
+  if (await usarMysql()) {
+    const ordenes = await sql<{ invoice_id: number | null }>(
+      "SELECT invoice_id FROM orders WHERE order_id = ?",
+      [id],
+    );
+    const orden = ordenes[0];
+    if (!orden) throw new Error("Pedido no encontrado");
+    if (orden.invoice_id) {
+      throw new Error("Este pedido ya fue facturado; no se puede borrar, solo anular la factura");
+    }
+    await ejecutar(
+      `DELETE FROM company_fields_values
+       WHERE reference = ? AND custom_id IN (SELECT custom_id FROM company_fields WHERE process = 'PEDIDOS')`,
+      [String(id)],
+    );
+    await ejecutar("DELETE FROM orders_detail WHERE order_id = ?", [id]);
+    await ejecutar("DELETE FROM orders WHERE order_id = ?", [id]);
+    return;
+  }
+
+  const d = demo();
+  const pedido = d.facturas.find((f) => f.id === id);
+  if (!pedido) throw new Error("Pedido no encontrado");
+  if (pedido.facturado) {
+    throw new Error("Este pedido ya fue facturado; no se puede borrar, solo anular la factura");
+  }
+  d.facturas = d.facturas.filter((f) => f.id !== id);
+}
+
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {
   if (await usarMysql()) {
     if (estado === "pagada") {

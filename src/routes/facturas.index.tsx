@@ -1,11 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { FileCheck2, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
 import { usePermisoPantalla } from "@/components/Sesion";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
+import { eliminarPedido, facturarPedido, obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
 import {
   dop,
   money,
@@ -85,6 +97,31 @@ function Facturas() {
   const { data: facturas = [], isLoading } = useQuery({
     queryKey: ["facturas", filtro],
     queryFn: () => obtenerFacturas({ data: filtro }),
+  });
+
+  const qc = useQueryClient();
+  const refrescar = () => {
+    void qc.invalidateQueries({ queryKey: ["facturas"] });
+    void qc.invalidateQueries({ queryKey: ["secuencias"] });
+    void qc.invalidateQueries({ queryKey: ["resumen"] });
+  };
+
+  const facturar = useMutation({
+    mutationFn: (id: number) => facturarPedido({ data: { id } }),
+    onSuccess: (f) => {
+      toast.success(`Pedido convertido en factura ${f.ncf}`);
+      refrescar();
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo facturar el pedido"),
+  });
+
+  const borrar = useMutation({
+    mutationFn: (id: number) => eliminarPedido({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Pedido borrado");
+      refrescar();
+    },
+    onError: (e: Error) => toast.error(e.message || "No se pudo borrar el pedido"),
   });
 
   const totalPeriodo = facturas
@@ -184,6 +221,7 @@ function Facturas() {
                 <TableHead className="text-right">ITBIS</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Estado</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -217,11 +255,48 @@ function Facturas() {
                       {ETIQUETA_ESTADO[f.estado]}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-right">
+                    {f.estado === "pedido" && puedeAgregar && (
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={facturar.isPending}
+                          onClick={() => facturar.mutate(f.id)}
+                        >
+                          <FileCheck2 className="size-4" /> Facturar
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost" disabled={borrar.isPending}>
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>¿Borrar el pedido {f.id}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Se eliminará el pedido de {f.cliente_nombre} por{" "}
+                                {money(f.total, f.moneda)} con todas sus líneas. Esta acción no se
+                                puede deshacer.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => borrar.mutate(f.id)}>
+                                Borrar pedido
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
               {!isLoading && facturas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground">
                     No hay pedidos ni facturas en este período.
                   </TableCell>
                 </TableRow>
