@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { FileCheck2, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { eliminarPedido, facturarPedido, obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
+import { eliminarPedido, obtenerClientes, obtenerFacturas } from "@/lib/erp.functions";
 import {
   dop,
   money,
@@ -105,15 +105,6 @@ function Facturas() {
     void qc.invalidateQueries({ queryKey: ["secuencias"] });
     void qc.invalidateQueries({ queryKey: ["resumen"] });
   };
-
-  const facturar = useMutation({
-    mutationFn: (id: number) => facturarPedido({ data: { id } }),
-    onSuccess: (f) => {
-      toast.success(`Pedido convertido en factura ${f.ncf}`);
-      refrescar();
-    },
-    onError: (e: Error) => toast.error(e.message || "No se pudo facturar el pedido"),
-  });
 
   const borrar = useMutation({
     mutationFn: (id: number) => eliminarPedido({ data: { id } }),
@@ -258,13 +249,10 @@ function Facturas() {
                   <TableCell className="text-right">
                     {f.estado === "pedido" && puedeAgregar && (
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={facturar.isPending}
-                          onClick={() => facturar.mutate(f.id)}
-                        >
-                          <FileCheck2 className="size-4" /> Facturar
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/facturas/nueva" search={{ pedido: f.id }}>
+                            <Pencil className="size-4" /> Editar
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

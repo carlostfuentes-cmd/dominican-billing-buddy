@@ -35,8 +35,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  actualizarPedido,
   guardarPedido,
   obtenerClientes,
+  obtenerFactura,
   obtenerItems,
   obtenerListasFactura,
   obtenerSecuencias,
@@ -60,6 +62,10 @@ import {
 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/nueva")({
+  validateSearch: (s: Record<string, unknown>) => {
+    const n = Number(s["pedido"]);
+    return Number.isFinite(n) && n > 0 ? { pedido: n } : {};
+  },
   head: () => ({
     meta: [
       { title: "Nuevo pedido — ERP Contable RD" },
@@ -119,6 +125,56 @@ function NuevaFactura() {
   const [cheque, setCheque] = useState(0);
   const [transferencia, setTransferencia] = useState(0);
   const [lineas, setLineas] = useState<LineaEntrada[]>([{ ...lineaVacia }]);
+
+  // Edición de un pedido existente: /facturas/nueva?pedido=123
+  const { pedido: pedidoId } = Route.useSearch();
+  const editando = typeof pedidoId === "number";
+  const { data: pedidoOriginal } = useQuery({
+    queryKey: ["factura", pedidoId],
+    queryFn: () => obtenerFactura({ data: { id: pedidoId as number } }),
+    enabled: editando,
+  });
+  const [cargado, setCargado] = useState(false);
+  useEffect(() => {
+    if (!pedidoOriginal || cargado) return;
+    const p = pedidoOriginal;
+    setCargado(true);
+    setClienteId(p.cliente_id);
+    setTipo(p.tipo_ncf);
+    setFecha(p.fecha);
+    setDias(p.dias_credito ?? 0);
+    setNotas(p.notas ?? "");
+    setMoneda((p.moneda || "DOP").toUpperCase());
+    setTasa(p.tasa_cambio && p.tasa_cambio > 0 ? p.tasa_cambio : 1);
+    if (p.vendedor_id) setVendedor(String(p.vendedor_id));
+    if (p.tecnico_id) setTecnico(String(p.tecnico_id));
+    if (p.almacen_id) setAlmacen(String(p.almacen_id));
+    if (p.sucursal_id) setSucursal(String(p.sucursal_id));
+    if (p.departamento_id) setDepartamento(String(p.departamento_id));
+    if (p.proyecto_id) setProyecto(String(p.proyecto_id));
+    if (p.cotizacion_id) setCotizacion(String(p.cotizacion_id));
+    setOrdenCliente(p.orden_cliente ?? "");
+    setOrdenVendedor(p.orden_vendedor ?? "");
+    setEfectivo(p.pagos?.efectivo ?? 0);
+    setTarjeta(p.pagos?.tarjeta ?? 0);
+    setCheque(p.pagos?.cheque ?? 0);
+    setTransferencia(p.pagos?.transferencia ?? 0);
+    if (p.lineas.length) {
+      setLineas(
+        p.lineas.map((l) => ({
+          item_id: l.item_id,
+          codigo: l.codigo,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          oferta: l.oferta ?? 0,
+          precio: l.precio,
+          descuento_pct: l.descuento_pct,
+          tasa_itbis: l.tasa_itbis,
+        })),
+      );
+    }
+  }, [pedidoOriginal, cargado]);
+
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", ""],
@@ -261,9 +317,8 @@ function NuevaFactura() {
   const [camposValores, setCamposValores] = useState<ValoresCampos>({});
 
   const guardar = useMutation({
-    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) =>
-      guardarPedido({
-        data: {
+    mutationFn: (opciones: { facturar: boolean; imprimir?: boolean }) => {
+      const datos = {
           cliente_id: clienteId,
           tipo_ncf: tipo,
           fecha,
@@ -284,8 +339,11 @@ function NuevaFactura() {
           lineas: lineasCalculo.map((l) => ({ ...l, item_id: l.item_id ?? null })),
           facturar: opciones.facturar,
           ...(opciones.facturar && asiento.length ? { asiento } : {}),
-        },
-      }),
+      };
+      return editando
+        ? actualizarPedido({ data: { ...datos, id: pedidoId as number } })
+        : guardarPedido({ data: datos });
+    },
     onSuccess: async (doc, opciones) => {
       const valores = Object.entries(camposValores)
         .map(([campo_id, valor]) => ({ campo_id: Number(campo_id), valor }))
@@ -300,8 +358,13 @@ function NuevaFactura() {
         }
       }
       toast.success(
-        opciones.facturar ? `Factura ${doc.ncf} guardada` : `Pedido ${doc.id} guardado`,
+        opciones.facturar
+          ? `Factura ${doc.ncf} guardada`
+          : editando
+            ? `Pedido ${doc.id} actualizado`
+            : `Pedido ${doc.id} guardado`,
       );
+      void qc.invalidateQueries({ queryKey: ["factura", doc.id] });
       void qc.invalidateQueries({ queryKey: ["facturas"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
@@ -356,8 +419,12 @@ function NuevaFactura() {
   return (
     <div>
       <PageHeader
-        titulo="Nuevo pedido"
-        descripcion="Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
+        titulo={editando ? `Editar pedido ${pedidoId}` : "Nuevo pedido"}
+        descripcion={
+          editando
+            ? "Modifica los datos y las líneas del pedido; el NCF se asigna al facturar."
+            : "Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
+        }
         acciones={
           <CamposPersonalizados
             proceso="PEDIDOS"
@@ -921,7 +988,7 @@ function NuevaFactura() {
                 disabled={guardar.isPending}
               >
                 <Save className="mr-2 h-4 w-4" />
-                Guardar pedido
+                {editando ? "Guardar cambios" : "Guardar pedido"}
               </Button>
               <Button
                 className="w-full"
