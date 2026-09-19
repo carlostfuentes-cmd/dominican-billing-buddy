@@ -247,6 +247,8 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
   ] = await Promise.all([
     sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
     sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
+    sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [desde, hasta, ...paramsNotas()]),
+    sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [previo.desde, previo.hasta, ...paramsNotas()]),
     sql<Record<string, unknown>>(
       `SELECT COUNT(*) AS cantidad FROM orders o
        WHERE o.invoice_id IS NULL AND o.date BETWEEN ? AND ?${oc.cond}`,
