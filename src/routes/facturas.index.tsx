@@ -78,9 +78,10 @@ const TODOS = "todos";
 
 function Facturas() {
   const { puedeAgregar } = usePermisoPantalla();
+  const busqueda = Route.useSearch();
   const inicioMes = `${hoyISO().slice(0, 7)}-01`;
-  const [desde, setDesde] = useState(inicioMes);
-  const [hasta, setHasta] = useState(hoyISO());
+  const [desde, setDesde] = useState(busqueda.desde ?? inicioMes);
+  const [hasta, setHasta] = useState(busqueda.hasta ?? hoyISO());
   const [cliente, setCliente] = useState(TODOS);
   const [tipo, setTipo] = useState(TODOS);
   const [estado, setEstado] = useState(TODOS);
