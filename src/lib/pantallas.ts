@@ -32,6 +32,7 @@ export const PANTALLAS: Pantalla[] = [
   { ruta: "/ncf", menu_id: "4.55.03", titulo: "Comprobantes fiscales" },
   { ruta: "/campos", menu_id: "4.81", titulo: "Campos personalizados" },
   { ruta: "/formatos", menu_id: "4.51", titulo: "Formatos de impresión" },
+  { ruta: "/plantillas", menu_id: "4.51", titulo: "Diseñador de documentos" },
   { ruta: "/configuracion", menu_id: "4.51", titulo: "Configuración", soloAdmin: true },
   { ruta: "/perfiles", menu_id: "4.01.03", titulo: "Perfiles", soloAdmin: true },
   { ruta: "/usuarios", menu_id: "4.01.05", titulo: "Usuarios", soloAdmin: true },
