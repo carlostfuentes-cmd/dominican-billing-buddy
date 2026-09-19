@@ -676,18 +676,12 @@ function NuevaOperacionPage() {
                       <TableCell className="text-right tabular-nums">
                         {money(Math.abs(p.balance), p.moneda)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          className="ml-auto w-40 text-right tabular-nums"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={aplicaciones[p.referencia] ?? 0}
-                          onChange={(e) =>
-                            fijarAplicacion(p.referencia, p.balance, Number(e.target.value))
-                          }
-                        />
-                      </TableCell>
+                       <TableCell className="text-right">
+                         <InputMonto
+                           valor={aplicaciones[p.referencia] ?? 0}
+                           onCambiar={(v) => fijarAplicacion(p.referencia, p.balance, v)}
+                         />
+                       </TableCell>
                     </TableRow>
                   ))
                 )}
