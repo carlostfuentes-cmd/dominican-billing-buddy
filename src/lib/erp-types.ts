@@ -270,6 +270,10 @@ export interface Factura {
   moneda?: string | undefined;
   tasa_cambio?: number | undefined;
   subtotal: number;
+  /** Parte del subtotal con ITBIS (no exenta). */
+  gravado?: number | undefined;
+  /** Parte del subtotal sin ITBIS (exenta). */
+  exento?: number | undefined;
   descuento: number;
   itbis: number;
   total: number;
