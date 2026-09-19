@@ -159,11 +159,21 @@ function Panel() {
   const fmt = (valor: number, formato: "moneda" | "numero" | "ratio") =>
     formato === "moneda" ? money(valor, moneda) : formato === "ratio" ? valor.toFixed(2) : String(valor);
 
+  // Escala la cifra según su longitud para que quepa completa en la tarjeta.
+  const tamañoCifra = (texto: string) => {
+    const n = texto.length;
+    if (n <= 11) return "text-2xl";
+    if (n <= 14) return "text-xl";
+    if (n <= 17) return "text-lg";
+    return "text-base";
+  };
+
   const aplicarPreset = (clave: "mes" | "trimestre" | "anio") => {
     const r = rangoPreset(clave);
     setDesde(r.desde);
     setHasta(r.hasta);
   };
+
 
   const sinDatos = data && !data.conectado;
 
