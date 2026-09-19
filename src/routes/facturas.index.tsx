@@ -51,6 +51,10 @@ import {
 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    ...(typeof s["desde"] === "string" ? { desde: s["desde"] } : {}),
+    ...(typeof s["hasta"] === "string" ? { hasta: s["hasta"] } : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Pedidos y facturas — ERP Contable RD" },
