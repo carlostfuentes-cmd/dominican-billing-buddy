@@ -209,7 +209,7 @@ function NuevaOperacionPage() {
       toast.success(`Operación bancaria No. ${r.numero} registrada`);
       navigate({ to: "/bancos/$id", params: { id: String(r.id) } });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(mensajeError(e)),
   });
 
   const buscar = useMutation({
