@@ -133,7 +133,9 @@ export const obtenerDisponibilidadBancaria = createServerFn({ method: "GET" }).h
 );
 
 export const obtenerAsientoBanco = createServerFn({ method: "POST" })
-  .inputValidator((d: unknown) => movimientoSchema.partial({ numero: true }).parse(d))
+  .inputValidator((d: unknown) =>
+    movimientoSchema.extend({ numero: texto(15).optional() }).parse(d),
+  )
   .handler(async ({ data }): Promise<PropuestaAsiento> =>
     (await repo()).propuestaAsientoBanco({
       ...data,
