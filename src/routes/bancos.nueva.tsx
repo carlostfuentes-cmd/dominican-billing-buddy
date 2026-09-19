@@ -138,6 +138,36 @@ function NuevaOperacionPage() {
     enabled: esPagoSuplidor && suplidorId.length > 0,
   });
 
+  // El pago aplicado a facturas nunca puede pasar del monto digitado ni del
+  // balance pendiente de cada factura.
+  const sumaAplicada = Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0);
+  const disponible = Math.max(0, monto - sumaAplicada);
+  const maxAplicable = (ref: string, balance: number) =>
+    Math.min(Math.abs(balance), (aplicaciones[ref] ?? 0) + disponible);
+  const fijarAplicacion = (ref: string, balance: number, valor: number) =>
+    setAplicaciones((prev) => ({
+      ...prev,
+      [ref]: Math.min(Math.abs(valor) || 0, Math.min(Math.abs(balance), (prev[ref] ?? 0) + disponible)),
+    }));
+
+  // Si el monto del pago baja, se recorta lo aplicado para no pasarse jamás.
+  useEffect(() => {
+    setAplicaciones((prev) => {
+      const vals = Object.entries(prev).filter(([, v]) => (v || 0) > 0);
+      if (vals.reduce((s, [, v]) => s + (v || 0), 0) <= monto + 0.009) return prev;
+      let restante = monto;
+      const next: Record<string, number> = {};
+      for (const [ref, v] of vals) {
+        const aplicar = Math.min(v || 0, Math.max(0, restante));
+        if (aplicar > 0.009) {
+          next[ref] = Math.round(aplicar * 100) / 100;
+          restante = Math.round((restante - aplicar) * 100) / 100;
+        }
+      }
+      return next;
+    });
+  }, [monto]);
+
   const entrada = useMemo(
     () => ({
       banco_id: bancoId,
@@ -561,13 +591,18 @@ function NuevaOperacionPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setAplicaciones(
-                      Object.fromEntries(
-                        pendientes.map((p) => [p.referencia, Math.abs(p.balance)]),
-                      ),
-                    )
-                  }
+                  onClick={() => {
+                    let restante = monto;
+                    const next: Record<string, number> = {};
+                    for (const p of pendientes) {
+                      const aplicar = Math.min(Math.abs(p.balance), restante);
+                      if (aplicar > 0.009) {
+                        next[p.referencia] = Math.round(aplicar * 100) / 100;
+                        restante = Math.round((restante - aplicar) * 100) / 100;
+                      }
+                    }
+                    setAplicaciones(next);
+                  }}
                 >
                   Aplicar todo lo adeudado
                 </Button>
@@ -607,10 +642,12 @@ function NuevaOperacionPage() {
                         <Checkbox
                           checked={(aplicaciones[p.referencia] ?? 0) > 0}
                           onCheckedChange={(v) =>
-                            setAplicaciones((prev) => ({
-                              ...prev,
-                              [p.referencia]: v ? Math.abs(p.balance) : 0,
-                            }))
+                            v
+                              ? setAplicaciones((prev) => ({
+                                  ...prev,
+                                  [p.referencia]: maxAplicable(p.referencia, p.balance),
+                                }))
+                              : fijarAplicacion(p.referencia, p.balance, 0)
                           }
                           aria-label={`Aplicar el total adeudado del documento ${p.referencia}`}
                         />
@@ -628,10 +665,7 @@ function NuevaOperacionPage() {
                           step="0.01"
                           value={aplicaciones[p.referencia] ?? 0}
                           onChange={(e) =>
-                            setAplicaciones((prev) => ({
-                              ...prev,
-                              [p.referencia]: Math.abs(Number(e.target.value) || 0),
-                            }))
+                            fijarAplicacion(p.referencia, p.balance, Number(e.target.value))
                           }
                         />
                       </TableCell>
@@ -641,15 +675,23 @@ function NuevaOperacionPage() {
               </TableBody>
             </Table>
             {pendientes.length > 0 ? (
-              <p className="mt-3 text-right text-sm text-muted-foreground tabular-nums">
-                Total aplicado:{" "}
-                <span className="font-semibold text-foreground">
-                  {money(
-                    Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0),
-                    pendientes[0]?.moneda,
-                  )}
-                </span>
-              </p>
+              <div className="mt-3 space-y-1 text-right text-sm tabular-nums">
+                <p className="text-muted-foreground">
+                  Total aplicado:{" "}
+                  <span className="font-semibold text-foreground">
+                    {money(sumaAplicada, pendientes[0]?.moneda)}
+                  </span>
+                </p>
+                {sumaAplicada > monto + 0.009 ? (
+                  <p className="text-xs text-warning">
+                    Lo aplicado excede el monto de la operación; ajusta las facturas antes de guardar.
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Disponible por aplicar: {money(disponible, pendientes[0]?.moneda)}
+                  </p>
+                )}
+              </div>
             ) : null}
           </CardContent>
         </Card>
