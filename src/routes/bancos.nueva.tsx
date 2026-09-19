@@ -254,14 +254,14 @@ function NuevaOperacionPage() {
       setTipoId(m.tipo_id);
       setFecha(hoyISO());
       setNumero("");
-      setMonto(m.monto);
+      setMonto(Math.abs(m.monto));
       setTasa(m.tasa_cambio || 1);
       setBeneficiario(m.beneficiario);
       setDescripcion(m.descripcion);
       setNcf("");
-      setMontoNcf(m.monto_ncf);
-      setItbis(m.itbis);
-      setComision(m.comision);
+      setMontoNcf(Math.abs(m.monto_ncf));
+      setItbis(Math.abs(m.itbis));
+      setComision(Math.abs(m.comision));
       setItbisRet(0);
       setIsrRet(0);
       setConceptoId(m.concepto_id);
