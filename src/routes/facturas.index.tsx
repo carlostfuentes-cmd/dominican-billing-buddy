@@ -258,13 +258,10 @@ function Facturas() {
                   <TableCell className="text-right">
                     {f.estado === "pedido" && puedeAgregar && (
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={facturar.isPending}
-                          onClick={() => facturar.mutate(f.id)}
-                        >
-                          <FileCheck2 className="size-4" /> Facturar
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/facturas/nueva" search={{ pedido: f.id }}>
+                            <Pencil className="size-4" /> Editar
+                          </Link>
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
