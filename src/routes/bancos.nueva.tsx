@@ -624,10 +624,12 @@ function NuevaOperacionPage() {
                         <Checkbox
                           checked={(aplicaciones[p.referencia] ?? 0) > 0}
                           onCheckedChange={(v) =>
-                            setAplicaciones((prev) => ({
-                              ...prev,
-                              [p.referencia]: v ? Math.abs(p.balance) : 0,
-                            }))
+                            v
+                              ? setAplicaciones((prev) => ({
+                                  ...prev,
+                                  [p.referencia]: maxAplicable(p.referencia, p.balance),
+                                }))
+                              : fijarAplicacion(p.referencia, p.balance, 0)
                           }
                           aria-label={`Aplicar el total adeudado del documento ${p.referencia}`}
                         />
