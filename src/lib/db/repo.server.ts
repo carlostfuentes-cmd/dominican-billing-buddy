@@ -1130,6 +1130,7 @@ const SQL_FACTURAS = `
            DATE_FORMAT(o.date, '%Y-%m-%d') AS fecha,
            DATE_FORMAT(DATE_ADD(o.date, INTERVAL o.credit_days DAY), '%Y-%m-%d') AS vencimiento,
            COALESCE(t.subtotal, 0) AS subtotal, COALESCE(t.descuento, 0) AS descuento,
+           COALESCE(t.gravado, 0) AS gravado, COALESCE(t.exento, 0) AS exento,
            COALESCE(t.itbis, 0) AS itbis, COALESCE(t.total, 0) AS total,
            CASE
              WHEN ri.invoice_id IS NOT NULL THEN 'anulada'
@@ -1165,6 +1166,10 @@ const SQL_FACTURAS = `
       SELECT order_id,
              ROUND(SUM(quantity * price - discount), 2) AS subtotal,
              ROUND(SUM(discount), 2) AS descuento,
+             ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) <> 0
+                            THEN quantity * price - discount ELSE 0 END), 2) AS gravado,
+             ROUND(SUM(CASE WHEN (tax1 + tax2 + tax3) = 0
+                            THEN quantity * price - discount ELSE 0 END), 2) AS exento,
              ROUND(SUM(tax1 + tax2 + tax3), 2) AS itbis,
              ROUND(SUM(quantity * price - discount + tax1 + tax2 + tax3), 2) AS total
       FROM orders_detail GROUP BY order_id
@@ -1187,6 +1192,8 @@ interface FilaFactura {
   vencimiento: string;
   subtotal: number;
   descuento: number;
+  gravado: number;
+  exento: number;
   itbis: number;
   total: number;
   estado: EstadoFactura;
@@ -1239,6 +1246,8 @@ function mapearFactura(f: FilaFactura): Factura {
     tasa_cambio: Number(f.tasa_cambio ?? 1) || 1,
     subtotal: f.subtotal,
     descuento: f.descuento,
+    gravado: Number(f.gravado ?? 0),
+    exento: Number(f.exento ?? 0),
     itbis: f.itbis,
     total: f.total,
     estado: f.estado,
