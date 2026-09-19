@@ -132,11 +132,22 @@ function NuevaOperacionPage() {
     if (moneda === "DOP") setTasa(1);
   }, [moneda]);
 
-  const { data: pendientes = [] } = useQuery({
+  const { data: pendientesTodos = [] } = useQuery({
     queryKey: ["cxp-pendientes", suplidorId],
     queryFn: () => obtenerPendientesCxP({ data: { suplidorId } }),
     enabled: esPagoSuplidor && suplidorId.length > 0,
   });
+
+  // Solo documentos en la misma moneda de la cuenta bancaria seleccionada.
+  const pendientes = useMemo(
+    () => pendientesTodos.filter((p) => (p.moneda || "DOP") === moneda),
+    [pendientesTodos, moneda],
+  );
+
+  // Al cambiar la moneda del banco se descartan aplicaciones de otra moneda.
+  useEffect(() => {
+    setAplicaciones({});
+  }, [moneda]);
 
   // El pago aplicado a facturas nunca puede pasar del monto digitado ni del
   // balance pendiente de cada factura.
