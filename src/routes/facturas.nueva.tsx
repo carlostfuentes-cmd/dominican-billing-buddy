@@ -60,6 +60,10 @@ import {
 } from "@/lib/erp-types";
 
 export const Route = createFileRoute("/facturas/nueva")({
+  validateSearch: (s: Record<string, unknown>) => {
+    const n = Number(s.pedido);
+    return Number.isFinite(n) && n > 0 ? { pedido: n } : {};
+  },
   head: () => ({
     meta: [
       { title: "Nuevo pedido — ERP Contable RD" },
