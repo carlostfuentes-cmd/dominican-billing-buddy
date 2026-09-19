@@ -358,8 +358,13 @@ function NuevaFactura() {
         }
       }
       toast.success(
-        opciones.facturar ? `Factura ${doc.ncf} guardada` : `Pedido ${doc.id} guardado`,
+        opciones.facturar
+          ? `Factura ${doc.ncf} guardada`
+          : editando
+            ? `Pedido ${doc.id} actualizado`
+            : `Pedido ${doc.id} guardado`,
       );
+      void qc.invalidateQueries({ queryKey: ["factura", doc.id] });
       void qc.invalidateQueries({ queryKey: ["facturas"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
