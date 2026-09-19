@@ -320,9 +320,17 @@ function Panel() {
                 <CardTitle className="text-xs font-semibold text-muted-foreground">{k.titulo}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="tabular font-display text-2xl font-semibold">
-                  {isLoading ? "—" : fmt(k.valor, k.formato)}
+                <p className="tabular font-display font-semibold leading-tight">
+                  <span
+                    className={cn(
+                      "block whitespace-nowrap",
+                      tamañoCifra(isLoading ? "—" : fmt(k.valor, k.formato)),
+                    )}
+                  >
+                    {isLoading ? "—" : fmt(k.valor, k.formato)}
+                  </span>
                 </p>
+
                 <div className="mt-2">
                   <Variacion valor={k.valor} anterior={k.anterior} />
                 </div>
