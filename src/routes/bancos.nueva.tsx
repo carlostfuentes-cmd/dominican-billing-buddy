@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Save, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
@@ -505,12 +505,13 @@ function NuevaOperacionPage() {
         </Card>
       ) : null}
 
-      {lineas.length > 0 ? (
+      {puedeProponer || lineas.length > 0 ? (
         <div className="mt-5">
           <AsientoContable
             lineas={lineas}
             onCambiar={setLineas}
             advertencias={advertencias}
+            cargando={proponer.isPending && lineas.length === 0}
             titulo="Asiento contable de la operación"
             nota="Cuentas propuestas por el tipo de operación, el suplidor o el concepto. Puedes cambiarlas antes de guardar."
           />
