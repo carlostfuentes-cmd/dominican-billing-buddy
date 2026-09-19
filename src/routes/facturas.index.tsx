@@ -296,7 +296,7 @@ function Facturas() {
               ))}
               {!isLoading && facturas.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground">
                     No hay pedidos ni facturas en este período.
                   </TableCell>
                 </TableRow>
