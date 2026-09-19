@@ -1246,6 +1246,8 @@ function mapearFactura(f: FilaFactura): Factura {
     tasa_cambio: Number(f.tasa_cambio ?? 1) || 1,
     subtotal: f.subtotal,
     descuento: f.descuento,
+    gravado: Number(f.gravado ?? 0),
+    exento: Number(f.exento ?? 0),
     itbis: f.itbis,
     total: f.total,
     estado: f.estado,
