@@ -530,7 +530,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
       anterior: conv(round2(num(vp["gravado"]) + num(vp["exento"]))),
       formato: "moneda",
       ruta: "/facturas",
-      nota: "Sin ITBIS, menos notas de crédito aplicadas",
+      nota: "Sin ITBIS, netas de descuentos",
     },
     {
       id: "gravado",
