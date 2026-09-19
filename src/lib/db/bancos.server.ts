@@ -779,6 +779,20 @@ export async function crearMovimientoBanco(
     if (aplicado > round2(entrada.monto))
       throw new Error("Lo aplicado a facturas no puede ser mayor que el monto de la operación");
     if (!entrada.suplidor_id) throw new Error("Selecciona el suplidor para aplicar el pago");
+    // Cada aplicación no puede exceder el balance pendiente del documento.
+    for (const a of aplicaciones) {
+      const [b] = await sql<Record<string, unknown>>(
+        `SELECT ROUND(SUM(r.amount), 2) AS balance
+           FROM ap_reference r JOIN ap x ON x.ap_id = r.ap_id
+          WHERE r.reference = ? AND x.supplier_id = ?`,
+        [a.referencia.slice(0, 15), Number(entrada.suplidor_id)],
+      );
+      const balance = round2(Number(b?.["balance"]) || 0);
+      if (round2(a.monto) > balance + 0.01)
+        throw new Error(
+          `Lo aplicado al documento ${a.referencia} (${round2(a.monto).toFixed(2)}) excede su balance pendiente (${balance.toFixed(2)})`,
+        );
+    }
   }
 
   const asiento = (entrada.asiento ?? []).filter(

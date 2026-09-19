@@ -161,7 +161,7 @@ export async function documentosPendientesCxP(
      JOIN ap_reference r ON r.ap_id = a.ap_id
      WHERE a.supplier_id = ?
      GROUP BY r.reference
-     HAVING ROUND(SUM(r.amount), 2) <> 0
+     HAVING ROUND(SUM(r.amount), 2) > 0
      ORDER BY MIN(a.date), r.reference
      LIMIT 500`,
     [Number(suplidorId)],
