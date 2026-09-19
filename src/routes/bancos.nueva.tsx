@@ -138,6 +138,18 @@ function NuevaOperacionPage() {
     enabled: esPagoSuplidor && suplidorId.length > 0,
   });
 
+  // El pago aplicado a facturas nunca puede pasar del monto digitado ni del
+  // balance pendiente de cada factura.
+  const sumaAplicada = Object.values(aplicaciones).reduce((a, b) => a + (b || 0), 0);
+  const disponible = Math.max(0, monto - sumaAplicada);
+  const maxAplicable = (ref: string, balance: number) =>
+    Math.min(Math.abs(balance), (aplicaciones[ref] ?? 0) + disponible);
+  const fijarAplicacion = (ref: string, balance: number, valor: number) =>
+    setAplicaciones((prev) => ({
+      ...prev,
+      [ref]: Math.min(Math.abs(valor) || 0, Math.min(Math.abs(balance), (prev[ref] ?? 0) + disponible)),
+    }));
+
   const entrada = useMemo(
     () => ({
       banco_id: bancoId,
@@ -561,13 +573,18 @@ function NuevaOperacionPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() =>
-                    setAplicaciones(
-                      Object.fromEntries(
-                        pendientes.map((p) => [p.referencia, Math.abs(p.balance)]),
-                      ),
-                    )
-                  }
+                  onClick={() => {
+                    let restante = monto;
+                    const next: Record<string, number> = {};
+                    for (const p of pendientes) {
+                      const aplicar = Math.min(Math.abs(p.balance), restante);
+                      if (aplicar > 0.009) {
+                        next[p.referencia] = Math.round(aplicar * 100) / 100;
+                        restante = Math.round((restante - aplicar) * 100) / 100;
+                      }
+                    }
+                    setAplicaciones(next);
+                  }}
                 >
                   Aplicar todo lo adeudado
                 </Button>
