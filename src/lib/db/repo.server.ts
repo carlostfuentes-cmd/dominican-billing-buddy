@@ -1680,12 +1680,12 @@ export async function eliminarPedido(id: number): Promise<void> {
   }
 
   const d = demo();
-  const pos = d.facturas.findIndex((f) => f.id === id);
-  if (pos < 0) throw new Error("Pedido no encontrado");
-  if (d.facturas[pos].facturado) {
+  const pedido = d.facturas.find((f) => f.id === id);
+  if (!pedido) throw new Error("Pedido no encontrado");
+  if (pedido.facturado) {
     throw new Error("Este pedido ya fue facturado; no se puede borrar, solo anular la factura");
   }
-  d.facturas.splice(pos, 1);
+  d.facturas = d.facturas.filter((f) => f.id !== id);
 }
 
 export async function cambiarEstadoFactura(id: number, estado: EstadoFactura): Promise<void> {
