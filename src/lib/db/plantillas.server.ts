@@ -2,7 +2,8 @@
 // Se guarda como JSON en una tabla propia de la aplicación (print_templates);
 // no se toca ninguna tabla del sistema existente.
 
-import { ejecutar, sql, usarMysql } from "@/lib/db/mysql.server";
+import { ejecutar, sql } from "@/lib/db/mysql.server";
+import { usarMysql } from "@/lib/db/repo.server";
 import type { Plantilla, TipoPlantilla } from "@/lib/plantillas-tipos";
 import { plantillaBase } from "@/lib/plantillas-tipos";
 
