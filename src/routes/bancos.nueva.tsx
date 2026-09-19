@@ -293,7 +293,6 @@ function NuevaOperacionPage() {
                   opciones={(listas?.suplidores ?? []).map((s) => ({
                     valor: s.id,
                     etiqueta: s.nombre,
-                    detalle: s.rnc,
                   }))}
                   valor={suplidorId}
                   onSeleccionar={setSuplidorId}
@@ -513,7 +512,6 @@ function NuevaOperacionPage() {
                 opciones={(listas?.suplidores ?? []).map((s) => ({
                   valor: s.id,
                   etiqueta: s.nombre,
-                  detalle: s.rnc,
                 }))}
                 valor={avanceSuplidor}
                 onSeleccionar={setAvanceSuplidor}
