@@ -132,11 +132,22 @@ function NuevaOperacionPage() {
     if (moneda === "DOP") setTasa(1);
   }, [moneda]);
 
-  const { data: pendientes = [] } = useQuery({
+  const { data: pendientesTodos = [] } = useQuery({
     queryKey: ["cxp-pendientes", suplidorId],
     queryFn: () => obtenerPendientesCxP({ data: { suplidorId } }),
     enabled: esPagoSuplidor && suplidorId.length > 0,
   });
+
+  // Solo documentos en la misma moneda de la cuenta bancaria seleccionada.
+  const pendientes = useMemo(
+    () => pendientesTodos.filter((p) => (p.moneda || "DOP") === moneda),
+    [pendientesTodos, moneda],
+  );
+
+  // Al cambiar la moneda del banco se descartan aplicaciones de otra moneda.
+  useEffect(() => {
+    setAplicaciones({});
+  }, [moneda]);
 
   // El pago aplicado a facturas nunca puede pasar del monto digitado ni del
   // balance pendiente de cada factura.
@@ -665,18 +676,12 @@ function NuevaOperacionPage() {
                       <TableCell className="text-right tabular-nums">
                         {money(Math.abs(p.balance), p.moneda)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Input
-                          className="ml-auto w-40 text-right tabular-nums"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={aplicaciones[p.referencia] ?? 0}
-                          onChange={(e) =>
-                            fijarAplicacion(p.referencia, p.balance, Number(e.target.value))
-                          }
-                        />
-                      </TableCell>
+                       <TableCell className="text-right">
+                         <InputMonto
+                           valor={aplicaciones[p.referencia] ?? 0}
+                           onCambiar={(v) => fijarAplicacion(p.referencia, p.balance, v)}
+                         />
+                       </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -910,5 +915,34 @@ function NuevaOperacionPage() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// Campo de monto con la misma máscara que los balances: miles con coma y
+// siempre dos decimales. Mientras se escribe se respeta el texto del usuario.
+function InputMonto({
+  valor,
+  onCambiar,
+}: {
+  valor: number;
+  onCambiar: (valor: number) => void;
+}) {
+  const formato = (v: number) =>
+    v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const [texto, setTexto] = useState<string | null>(null);
+
+  return (
+    <Input
+      inputMode="decimal"
+      className="ml-auto w-40 text-right tabular-nums"
+      value={texto ?? formato(valor)}
+      onFocus={() => setTexto(valor ? String(valor) : "")}
+      onChange={(e) => {
+        const limpio = e.target.value.replace(/[^\d.]/g, "");
+        setTexto(limpio);
+        onCambiar(Number(limpio) || 0);
+      }}
+      onBlur={() => setTexto(null)}
+    />
   );
 }
