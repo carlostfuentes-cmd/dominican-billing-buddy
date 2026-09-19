@@ -419,8 +419,12 @@ function NuevaFactura() {
   return (
     <div>
       <PageHeader
-        titulo="Nuevo pedido"
-        descripcion="Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
+        titulo={editando ? `Editar pedido ${pedidoId}` : "Nuevo pedido"}
+        descripcion={
+          editando
+            ? "Modifica los datos y las líneas del pedido; el NCF se asigna al facturar."
+            : "Guarda el pedido y conviértelo en factura cuando quieras; el NCF se asigna al facturar."
+        }
         acciones={
           <CamposPersonalizados
             proceso="PEDIDOS"
