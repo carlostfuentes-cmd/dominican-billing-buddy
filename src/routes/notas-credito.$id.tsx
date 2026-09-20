@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BotonFormato,
+  HojaDisenada,
+  usePlantillaDocumento,
+} from "@/components/plantillas/HojaDocumento";
+import { datosDeNotaCredito } from "@/lib/plantillas-datos";
 import { obtenerEmpresa } from "@/lib/erp.functions";
 import { anularNotaCredito, obtenerNotaCredito } from "@/lib/notascredito.functions";
 import { dop, enDOP, fechaCorta, money, round2 } from "@/lib/erp-types";
@@ -52,6 +58,8 @@ function DetalleNota() {
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+
+  const uso = usePlantillaDocumento("nota-credito", empresa?.id);
 
   const anular = useMutation({
     mutationFn: (motivo: string) => anularNotaCredito({ data: { id: idNum, motivo } }),
@@ -93,6 +101,7 @@ function DetalleNota() {
           </Link>
         </Button>
         <div className="flex gap-2">
+          <BotonFormato uso={uso} />
           {puedeImprimir ? (
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="size-4" /> Imprimir
@@ -117,6 +126,12 @@ function DetalleNota() {
         </div>
       </div>
 
+      {uso.conDisenio && uso.plantilla ? (
+        <>
+          <style>{uso.cssPagina}</style>
+          <HojaDisenada plantilla={uso.plantilla} datos={datosDeNotaCredito(nota, empresa)} />
+        </>
+      ) : (
       <Card className="print-area mx-auto max-w-3xl">
         <CardContent className="p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
@@ -245,6 +260,7 @@ function DetalleNota() {
           ) : null}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

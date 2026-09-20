@@ -15,6 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BotonFormato,
+  HojaDisenada,
+  usePlantillaDocumento,
+} from "@/components/plantillas/HojaDocumento";
+import { datosDeDocumento, tipoPlantillaDocumento } from "@/lib/plantillas-datos";
 import { anularCotizacion, obtenerDocumento } from "@/lib/documentos.functions";
 import { obtenerEmpresa, obtenerFormatoImpresion } from "@/lib/erp.functions";
 import {
@@ -44,6 +50,8 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
     queryKey: ["formato", "empresa"],
     queryFn: () => obtenerFormatoImpresion({ data: {} }),
   });
+
+  const uso = usePlantillaDocumento(tipoPlantillaDocumento(tipo), empresa?.id);
 
   const anular = useMutation({
     mutationFn: () => anularCotizacion({ data: { id: idNum } }),
@@ -80,9 +88,11 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
   const verCodigo = f?.mostrar_codigo ?? true;
   const verItbisLinea = f?.mostrar_itbis_linea ?? true;
   const verEquivalente = f?.mostrar_equivalente_dop ?? true;
-  const cssPagina = `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
-    f?.margen_superior ?? 12
-  }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+  const cssPagina = uso.conDisenio
+    ? uso.cssPagina
+    : `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
+        f?.margen_superior ?? 12
+      }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
 
   const esDOP = doc.moneda === "DOP";
 
@@ -97,6 +107,7 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
+          <BotonFormato uso={uso} />
           {tipo === "cotizacion" && !doc.anulado && (
             <Button variant="outline" onClick={() => anular.mutate()} disabled={anular.isPending}>
               <Ban className="size-4" /> Anular
@@ -113,6 +124,9 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
         </div>
       </div>
 
+      {uso.conDisenio && uso.plantilla ? (
+        <HojaDisenada plantilla={uso.plantilla} datos={datosDeDocumento(doc, empresa)} />
+      ) : (
       <Card className="print-area mx-auto max-w-3xl">
         <CardContent className="p-8">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
@@ -289,6 +303,7 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
           {f?.pie ? <p className="mt-2 text-center text-xs text-muted-foreground">{f.pie}</p> : null}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

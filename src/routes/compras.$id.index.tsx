@@ -16,6 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  BotonFormato,
+  HojaDisenada,
+  usePlantillaDocumento,
+} from "@/components/plantillas/HojaDocumento";
+import { datosDeOrdenCompra } from "@/lib/plantillas-datos";
+import { obtenerEmpresa } from "@/lib/erp.functions";
 import { anularCompra, obtenerCompra } from "@/lib/compras.functions";
 import { ETIQUETA_ESTADO_COMPRA, ETIQUETA_RECEPCION, fechaCorta, money } from "@/lib/erp-types";
 
@@ -50,6 +57,9 @@ function DetalleCompraPage() {
     queryFn: () => obtenerCompra({ data: { id: Number(id) } }),
   });
 
+  const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+  const uso = usePlantillaDocumento("orden-compra", empresa?.id);
+
   const anular = useMutation({
     mutationFn: () => anularCompra({ data: { id: Number(id) } }),
     onSuccess: async () => {
@@ -70,6 +80,7 @@ function DetalleCompraPage() {
         descripcion={`${orden.suplidor} · ${fechaCorta(orden.fecha)} · ${orden.moneda}`}
         acciones={
           <div className="flex flex-wrap gap-2">
+            <BotonFormato uso={uso} />
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="size-4" /> Imprimir
             </Button>
@@ -89,6 +100,13 @@ function DetalleCompraPage() {
         }
       />
 
+      {uso.conDisenio && uso.plantilla ? (
+        <>
+          <style>{uso.cssPagina}</style>
+          <HojaDisenada plantilla={uso.plantilla} datos={datosDeOrdenCompra(orden, empresa)} />
+        </>
+      ) : (
+      <>
       <Card className="mb-4">
         <CardHeader>
           <CardTitle>Datos de la orden</CardTitle>
@@ -180,6 +198,8 @@ function DetalleCompraPage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }
