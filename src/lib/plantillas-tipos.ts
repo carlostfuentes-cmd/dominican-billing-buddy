@@ -468,7 +468,7 @@ export function plantillaLogikos(empresaId = "1087"): Plantilla {
       },
       {
         tipo: "totales",
-        alto: 67,
+        alto: 70,
         visible: true,
         elementos: [
           nuevoElemento("caja", { x: 2, y: 2, ancho: 108, alto: 20, color: negro, grosor: 0.35, fondo: "" }),
