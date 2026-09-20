@@ -33,8 +33,12 @@ function PantallaLogin() {
 
   const entrar = useMutation({
     mutationFn: () => iniciarSesion({ data: { login, clave } }),
-    onSuccess: (sesion) => {
-      toast.success(`Bienvenido, ${sesion.nombre}`);
+    onSuccess: (resultado) => {
+      if (!resultado.ok) {
+        toast.error(resultado.mensaje);
+        return;
+      }
+      toast.success(`Bienvenido, ${resultado.sesion.nombre}`);
       queryClient.invalidateQueries();
     },
     onError: (error: Error) => toast.error(error.message),

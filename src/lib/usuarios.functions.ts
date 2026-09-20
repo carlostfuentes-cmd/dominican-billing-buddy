@@ -38,12 +38,25 @@ export const iniciarSesion = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<Sesion> => {
-    const sesion = await (await repo()).autenticar(data.login, data.clave);
-    if (!sesion) throw new Error("Usuario o clave incorrectos");
-    await (await ses()).escribirSesion(sesion);
-    await auditar({ tipo: "A", accion: `Inicio de sesión de ${sesion.login}` });
-    return sesion;
+  .handler(async ({ data }): Promise<
+    { ok: true; sesion: Sesion } | { ok: false; mensaje: string }
+  > => {
+    try {
+      const sesion = await (await repo()).autenticar(data.login, data.clave);
+      if (!sesion) return { ok: false, mensaje: "Usuario o clave incorrectos" };
+      await (await ses()).escribirSesion(sesion);
+      await auditar({ tipo: "A", accion: `Inicio de sesión de ${sesion.login}` });
+      return { ok: true, sesion };
+    } catch (error) {
+      console.error(
+        "No se pudo completar el inicio de sesión:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return {
+        ok: false,
+        mensaje: "No se pudo conectar con el servidor de datos. Inténtalo de nuevo.",
+      };
+    }
   });
 
 export const cerrarSesion = createServerFn({ method: "POST" }).handler(
