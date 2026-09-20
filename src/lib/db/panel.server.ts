@@ -233,29 +233,29 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
   }
 
   const [
-    ventas,
-    ventasPrev,
-    notasDev,
-    notasDevPrev,
-    pedidos,
-    porCobrar,
-    porCobrarPrev,
-    porPagar,
-    porPagarPrev,
-    agingCxCRaw,
-    agingCxPRaw,
-    bancos,
-    bancosPrev,
-    descuadrados,
-    mensualRaw,
-    flujoRaw,
-    gastosRaw,
-    centroRaw,
-    liquidezRaw,
-    secuencias,
-    sucursales,
-    departamentos,
-    monedas,
+    ventas = [],
+    ventasPrev = [],
+    notasDev = [],
+    notasDevPrev = [],
+    pedidos = [],
+    porCobrar = [],
+    porCobrarPrev = [],
+    porPagar = [],
+    porPagarPrev = [],
+    agingCxCRaw = [],
+    agingCxPRaw = [],
+    bancos = [],
+    bancosPrev = [],
+    descuadrados = [],
+    mensualRaw = [],
+    flujoRaw = [],
+    gastosRaw = [],
+    centroRaw = [],
+    liquidezRaw = [],
+    secuenciasRaw = [],
+    sucursales = [],
+    departamentos = [],
+    monedas = [],
   ] = await ejecutarEnLotes<Array<Record<string, unknown>>>([
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
@@ -352,7 +352,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        LIMIT 8`,
       [desde, hasta, ...paramsGl()],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT ROUND(SUM(CASE WHEN LEFT(d.account,2) = '11' THEN d.debit - d.credit ELSE 0 END), 2) AS activo,
               ROUND(SUM(CASE WHEN LEFT(d.account,2) = '21' THEN d.credit - d.debit ELSE 0 END), 2) AS pasivo
        FROM gl_journal j
@@ -369,6 +369,8 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
       "SELECT currency_id AS id, name AS nombre FROM currencies WHERE currency_id <> '000' ORDER BY is_base DESC, currency_id",
     ),
   ]);
+
+  const secuencias = secuenciasRaw as unknown as Awaited<ReturnType<typeof listarSecuencias>>;
 
   const v = ventas[0] ?? {};
   const vp = ventasPrev[0] ?? {};
