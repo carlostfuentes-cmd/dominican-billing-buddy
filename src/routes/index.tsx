@@ -149,11 +149,14 @@ function Panel() {
   const { data, isLoading } = useQuery({
     queryKey: ["panel", filtro],
     queryFn: () => obtenerPanel({ data: filtro }),
+    retry: 1,
   });
 
   const { data: resumen } = useQuery({
     queryKey: ["resumen"],
     queryFn: () => obtenerResumen(),
+    enabled: data?.conectado === true,
+    retry: 1,
   });
 
   const fmt = (valor: number, formato: "moneda" | "numero" | "ratio") =>

@@ -32,6 +32,7 @@ type Conexion = {
 };
 
 let cache: { conexion: Conexion } | null = null;
+let conexionPendiente: Promise<Conexion | null> | null = null;
 let ultimoError: string | null = null;
 
 // Puente HTTPS opcional: un archivo alojado en el servidor del usuario
@@ -99,6 +100,21 @@ function conexionPuente(url: string, token: string): Conexion {
 async function obtenerConexion(): Promise<Conexion | null> {
   if (cache) return cache.conexion;
 
+  // Una pantalla puede iniciar muchas consultas a la vez. Todas deben esperar
+  // la misma comprobación inicial, no lanzar un SELECT 1 por cada consulta.
+  if (conexionPendiente) return conexionPendiente;
+
+  conexionPendiente = crearConexion();
+  try {
+    return await conexionPendiente;
+  } finally {
+    conexionPendiente = null;
+  }
+}
+
+async function crearConexion(): Promise<Conexion | null> {
+  if (cache) return cache.conexion;
+
   const puente = leerPuente();
   if (puente) {
     try {
@@ -110,7 +126,10 @@ async function obtenerConexion(): Promise<Conexion | null> {
     } catch (error) {
       ultimoError = `Puente: ${error instanceof Error ? error.message : String(error)}`;
       console.error("Puente MySQL no disponible:", ultimoError);
-      // Se intenta la conexión directa como respaldo.
+      // Si hay puente configurado, es la conexión de producción. No intentar
+      // mysql2 desde el entorno publicado: no admite ese driver y solo demora
+      // todavía más la respuesta que ya falló.
+      return null;
     }
   }
 
