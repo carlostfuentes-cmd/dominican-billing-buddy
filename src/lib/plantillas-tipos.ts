@@ -7,6 +7,7 @@
 // cada línea del documento.
 
 import { papelCss, type PapelImpresion } from "@/lib/erp-types";
+import logoLogikos from "@/assets/logo-logikos.png.asset.json";
 
 export type TipoPlantilla =
   | "factura"
@@ -115,6 +116,9 @@ export const CAMPOS_SISTEMA: CampoSistema[] = [
   { id: "doc.tasa", nombre: "Tasa de cambio", grupo: "Documento", muestra: "1.0000" },
   { id: "doc.orden_cliente", nombre: "Orden del cliente (O/C)", grupo: "Documento", muestra: "CORREO" },
   { id: "doc.cotizacion", nombre: "Cotización", grupo: "Documento", muestra: "12045" },
+  { id: "doc.pedido", nombre: "Pedido", grupo: "Documento", muestra: "CORREO" },
+  { id: "doc.conduce", nombre: "Conduce", grupo: "Documento", muestra: "" },
+  { id: "doc.soporte", nombre: "Soporte", grupo: "Documento", muestra: "" },
   { id: "doc.notas", nombre: "Observaciones", grupo: "Documento", muestra: "ENTREGA INMEDIATA" },
   { id: "doc.pagina", nombre: "Página", grupo: "Documento", muestra: "1" },
 
@@ -374,6 +378,155 @@ export function plantillaBase(empresaId: string, docTipo: TipoPlantilla): Planti
       },
     ],
   };
+}
+
+/** Factura inicial de Logikos, inspirada en la estructura operativa de Distosa. */
+export function plantillaLogikos(empresaId = "1087"): Plantilla {
+  const negro = "#111827";
+  const azul = "#0b4f94";
+  return {
+    empresa_id: empresaId,
+    doc_tipo: "factura",
+    nombre: "Factura Logikos — estilo Distosa",
+    papel: "carta",
+    margen_superior: 8,
+    margen_inferior: 8,
+    margen_izquierdo: 10,
+    margen_derecho: 10,
+    copias: 1,
+    bandas: [
+      {
+        tipo: "encabezado",
+        alto: 48,
+        visible: true,
+        elementos: [
+          nuevoElemento("imagen", { x: 0, y: 0, ancho: 76, alto: 22, url: logoLogikos.url }),
+          cmp("empresa.direccion", 0, 24, 98, { tamano: 7, color: azul }),
+          txt("RNC: {empresa.rnc}  |  Tel: {empresa.telefono}", 0, 29, 98, { tamano: 7, color: azul }),
+          cmp("empresa.email", 0, 34, 98, { tamano: 7, color: azul }),
+          cmp("doc.titulo", 118, 0, 77, { tamano: 16, negrita: true, alineacion: "right" }),
+          txt("No.", 126, 9, 25, { tamano: 8, alineacion: "right" }),
+          cmp("doc.numero", 153, 8, 42, { tamano: 11, negrita: true, alineacion: "right" }),
+          txt("Fecha de emisión", 118, 15, 45, { tamano: 7, alineacion: "right" }),
+          cmp("doc.fecha", 165, 14, 30, { tamano: 8, negrita: true, alineacion: "right" }),
+          txt("Pagar antes del", 118, 21, 45, { tamano: 7, alineacion: "right" }),
+          cmp("doc.vencimiento", 165, 20, 30, { tamano: 8, negrita: true, alineacion: "right" }),
+          txt("NCF", 118, 27, 35, { tamano: 7, alineacion: "right" }),
+          cmp("fiscal.ncf", 154, 26, 41, { tamano: 8, negrita: true, alineacion: "right" }),
+          txt("Vigencia NCF", 118, 33, 45, { tamano: 7, alineacion: "right" }),
+          cmp("fiscal.vigencia", 165, 32, 30, { tamano: 8, negrita: true, alineacion: "right" }),
+          nuevoElemento("linea", { x: 0, y: 43, ancho: 195, alto: 0.4, color: azul, grosor: 0.5 }),
+        ],
+      },
+      {
+        tipo: "cliente",
+        alto: 42,
+        visible: true,
+        elementos: [
+          txt("Código: {cliente.codigo}     RNC / Cédula: {cliente.rnc}", 3, 2, 118, { tamano: 8 }),
+          nuevoElemento("caja", { x: 0, y: 7, ancho: 125, alto: 25, color: negro, grosor: 0.4, fondo: "" }),
+          cmp("cliente.nombre", 3, 9, 119, { tamano: 10, negrita: true }),
+          txt("{cliente.contacto}  ·  Tel: {cliente.telefono}", 3, 16, 119, { tamano: 8 }),
+          cmp("cliente.direccion", 3, 22, 119, { tamano: 8 }),
+          txt("Condición de pago", 131, 8, 64, { tamano: 7 }),
+          cmp("doc.condicion", 131, 12, 64, { tamano: 8, negrita: true }),
+          txt("Vendedor", 131, 19, 30, { tamano: 7 }),
+          cmp("doc.vendedor", 131, 23, 64, { tamano: 8, negrita: true }),
+          txt("Soporte: {doc.soporte}", 131, 30, 64, { tamano: 7 }),
+          txt("O/C: {doc.orden_cliente}", 131, 35, 64, { tamano: 8, negrita: true }),
+          nuevoElemento("linea", { x: 0, y: 40, ancho: 195, alto: 0.4, color: negro, grosor: 0.35 }),
+        ],
+      },
+      {
+        tipo: "cabecera",
+        alto: 16,
+        visible: true,
+        elementos: [
+          txt("Información de productos y servicios", 1, 1, 150, { tamano: 11, color: azul, negrita: true }),
+          nuevoElemento("linea", { x: 0, y: 8, ancho: 195, alto: 0.4, color: negro, grosor: 0.35 }),
+          txt("Código", 2, 10, 23, { tamano: 7, negrita: true }),
+          txt("Descripción", 27, 10, 76, { tamano: 7, negrita: true }),
+          txt("Cant.", 105, 10, 14, { tamano: 7, negrita: true, alineacion: "right" }),
+          txt("Precio", 121, 10, 25, { tamano: 7, negrita: true, alineacion: "right" }),
+          txt("% Desc.", 148, 10, 18, { tamano: 7, negrita: true, alineacion: "right" }),
+          txt("Importe", 168, 10, 27, { tamano: 7, negrita: true, alineacion: "right" }),
+          nuevoElemento("linea", { x: 0, y: 15, ancho: 195, alto: 0.4, color: negro, grosor: 0.35 }),
+        ],
+      },
+      {
+        tipo: "detalle",
+        alto: 6,
+        visible: true,
+        elementos: [
+          cmp("linea.codigo", 2, 1, 23, { tamano: 7 }),
+          cmp("linea.descripcion", 27, 1, 76, { tamano: 8 }),
+          cmp("linea.cantidad", 105, 1, 14, { tamano: 8, alineacion: "right" }),
+          cmp("linea.precio", 121, 1, 25, { tamano: 8, alineacion: "right" }),
+          cmp("linea.descuento_pct", 148, 1, 18, { tamano: 8, alineacion: "right" }),
+          cmp("linea.importe", 168, 1, 27, { tamano: 8, alineacion: "right" }),
+        ],
+      },
+      {
+        tipo: "totales",
+        alto: 67,
+        visible: true,
+        elementos: [
+          nuevoElemento("caja", { x: 2, y: 2, ancho: 108, alto: 20, color: negro, grosor: 0.35, fondo: "" }),
+          txt("Observaciones", 4, 3, 45, { tamano: 7, negrita: true }),
+          cmp("doc.notas", 4, 8, 104, { tamano: 8 }),
+          txt("Devoluciones después de 20 días estarán sujetas a las disposiciones fiscales vigentes.", 3, 25, 110, { tamano: 6 }),
+          txt("Resumen estado de cuenta", 2, 34, 54, { tamano: 8, negrita: true, color: azul }),
+          nuevoElemento("caja", { x: 0, y: 38, ancho: 58, alto: 28, color: negro, grosor: 0.35, fondo: "" }),
+          txt("Por vencer", 2, 40, 28, { tamano: 7, negrita: true }),
+          cmp("cxc.por_vencer", 31, 40, 25, { tamano: 7, alineacion: "right" }),
+          txt("0–30 días", 2, 45, 28, { tamano: 7 }),
+          cmp("cxc.d30", 31, 45, 25, { tamano: 7, alineacion: "right" }),
+          txt("31–60 días", 2, 50, 28, { tamano: 7 }),
+          cmp("cxc.d60", 31, 50, 25, { tamano: 7, alineacion: "right" }),
+          txt("61–90 días", 2, 55, 28, { tamano: 7 }),
+          cmp("cxc.d90", 31, 55, 25, { tamano: 7, alineacion: "right" }),
+          txt("Más de 91 días", 2, 60, 28, { tamano: 7 }),
+          cmp("cxc.d91", 31, 60, 25, { tamano: 7, alineacion: "right" }),
+          txt("RECIBIDO CONFORME", 66, 34, 58, { tamano: 9, negrita: true, alineacion: "center" }),
+          txt("Nombre completo", 63, 44, 31, { tamano: 7 }),
+          nuevoElemento("linea", { x: 94, y: 48, ancho: 34, alto: 0.4, color: negro, grosor: 0.25 }),
+          txt("Cédula", 63, 53, 31, { tamano: 7 }),
+          nuevoElemento("linea", { x: 94, y: 57, ancho: 34, alto: 0.4, color: negro, grosor: 0.25 }),
+          txt("Fecha y hora", 63, 62, 31, { tamano: 7 }),
+          nuevoElemento("linea", { x: 94, y: 66, ancho: 34, alto: 0.4, color: negro, grosor: 0.25 }),
+          txt("Subtotal", 132, 5, 28, { tamano: 8, alineacion: "right" }),
+          cmp("totales.subtotal", 163, 5, 32, { tamano: 8, alineacion: "right" }),
+          txt("Descuento", 132, 12, 28, { tamano: 8, alineacion: "right" }),
+          cmp("totales.descuento", 163, 12, 32, { tamano: 8, alineacion: "right" }),
+          txt("ITBIS", 132, 19, 28, { tamano: 8, alineacion: "right" }),
+          cmp("totales.itbis", 163, 19, 32, { tamano: 8, alineacion: "right" }),
+          nuevoElemento("linea", { x: 132, y: 27, ancho: 63, alto: 0.4, color: azul, grosor: 0.5 }),
+          txt("TOTAL", 132, 30, 28, { tamano: 10, negrita: true, alineacion: "right", color: azul }),
+          txt("{doc.moneda} {totales.total}", 161, 30, 34, { tamano: 10, negrita: true, alineacion: "right", color: azul }),
+        ],
+      },
+      {
+        tipo: "pie",
+        alto: 22,
+        visible: true,
+        elementos: [
+          nuevoElemento("linea", { x: 0, y: 1, ancho: 195, alto: 0.4, color: azul, grosor: 0.5 }),
+          txt("{empresa.nombre}  ·  RNC {empresa.rnc}", 0, 4, 125, { tamano: 7, negrita: true, color: azul }),
+          txt("{empresa.direccion}  ·  {empresa.telefono}  ·  {empresa.email}", 0, 9, 145, { tamano: 7, color: azul }),
+          txt("Cotización: {doc.cotizacion}", 150, 4, 45, { tamano: 7 }),
+          txt("Pedido: {doc.pedido}", 150, 9, 45, { tamano: 7 }),
+          txt("Conduce: {doc.conduce}", 150, 14, 45, { tamano: 7 }),
+          txt("Página {doc.pagina}", 0, 16, 145, { tamano: 7, alineacion: "center" }),
+        ],
+      },
+    ],
+  };
+}
+
+/** Diseño de fábrica correspondiente a una empresa y documento. */
+export function plantillaPredeterminada(empresaId: string, docTipo: TipoPlantilla): Plantilla {
+  if (empresaId === "1087" && docTipo === "factura") return plantillaLogikos(empresaId);
+  return plantillaBase(empresaId, docTipo);
 }
 
 export function bandaDe(plantilla: Plantilla, tipo: TipoBanda): BandaPlantilla {
