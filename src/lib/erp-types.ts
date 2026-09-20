@@ -240,6 +240,8 @@ export interface LineaFactura {
   item_id: string | null;
   codigo: string;
   descripcion: string;
+  /** Observación o comentario del usuario para este artículo. */
+  observacion?: string | undefined;
   cantidad: number;
   oferta?: number | undefined;
   precio: number;
@@ -332,6 +334,8 @@ export interface LineaEntrada {
   item_id?: string | null | undefined;
   codigo: string;
   descripcion: string;
+  /** Observación o comentario del usuario para este artículo. */
+  observacion?: string | undefined;
   cantidad: number;
   /** Unidades bonificadas (oferta): se despachan pero no se cobran. */
   oferta?: number | undefined;
@@ -353,6 +357,7 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
     item_id: l.item_id ?? null,
     codigo: l.codigo,
     descripcion: l.descripcion,
+    observacion: l.observacion ?? "",
     cantidad: l.cantidad,
     oferta: l.oferta ?? 0,
     precio,

@@ -72,6 +72,7 @@ const nuevoDocumentoSchema = z.object({
         item_id: texto(50).nullable().optional(),
         codigo: texto(50),
         descripcion: texto(200).min(1, "Descripción requerida"),
+        observacion: texto(250).optional(),
         cantidad: z.number().positive().max(1_000_000),
         oferta: z.number().min(0).max(1_000_000).optional(),
         precio: z.number().min(0).max(99_999_999),

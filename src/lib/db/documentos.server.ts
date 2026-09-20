@@ -132,6 +132,7 @@ function consultaLineas(tipo: TipoDocumento): string {
     return `
       SELECT l.product_id AS item_id, l.product_id AS codigo,
              COALESCE(NULLIF(l.name, ''), NULLIF(p.name, ''), l.product_id) AS descripcion,
+             l.notes AS observacion,
              l.quantity AS cantidad, l.bonus AS oferta, l.price AS precio,
              l.discount_rate AS descuento_pct,
              CASE WHEN l.quantity * l.price - l.discount > 0
@@ -148,6 +149,7 @@ function consultaLineas(tipo: TipoDocumento): string {
     return `
       SELECT l.product_id AS item_id, l.product_id AS codigo,
              COALESCE(NULLIF(l.name, ''), NULLIF(p.name, ''), l.product_id) AS descripcion,
+             l.notes AS observacion,
              l.quantity AS cantidad, 0 AS oferta, l.price AS precio,
              l.discount_rate AS descuento_pct,
              CASE WHEN l.quantity * l.price - l.discount > 0
@@ -322,6 +324,7 @@ export async function obtenerDocumento(
         item_id: l["item_id"] === null ? null : String(l["item_id"]),
         codigo: String(l["codigo"] ?? ""),
         descripcion: String(l["descripcion"] ?? ""),
+        observacion: String(l["observacion"] ?? ""),
         cantidad: Number(l["cantidad"] ?? 0),
         oferta: Number(l["oferta"] ?? 0),
         precio: Number(l["precio"] ?? 0),
@@ -414,8 +417,8 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
         await ejecutar(
           `INSERT INTO quotations_detail
              (quotation_id, position, product_id, name, quantity, bonus, price, ref_price,
-              tax1, tax2, tax3, discount_rate, discount, cost)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0)`,
+              tax1, tax2, tax3, discount_rate, discount, cost, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?)`,
           [
             id,
             pos + 1,
@@ -428,6 +431,7 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
             l.itbis,
             l.descuento_pct,
             descuento,
+            l.observacion ?? "",
           ],
         );
       }
@@ -468,8 +472,8 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
         await ejecutar(
           `INSERT INTO delivery_orders_detail
              (do_id, branch_id, position, product_id, name, quantity, price,
-              tax1, tax2, tax3, discount_rate, discount, cost, currency_rate)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?)`,
+              tax1, tax2, tax3, discount_rate, discount, cost, currency_rate, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?, ?)`,
           [
             id,
             sucursal,
@@ -482,6 +486,7 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
             l.descuento_pct,
             descuento,
             tasa,
+            l.observacion ?? "",
           ],
         );
       }

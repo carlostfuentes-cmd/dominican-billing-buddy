@@ -128,6 +128,7 @@ export function datosDeFactura(
     "linea.numero": String(i + 1),
     "linea.codigo": l.codigo ?? "",
     "linea.descripcion": l.descripcion ?? "",
+    "linea.observacion": l.observacion ?? "",
     "linea.serial": "",
     "linea.cantidad": num(l.cantidad),
     "linea.unidad": "",

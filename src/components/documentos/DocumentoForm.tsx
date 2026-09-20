@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,6 +60,7 @@ const lineaVacia: LineaEntrada = {
   precio: 0,
   descuento_pct: 0,
   tasa_itbis: 18,
+  observacion: "",
 };
 
 const lista = (v: OpcionId[] | undefined): OpcionId[] => v ?? [];
@@ -162,6 +163,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
           precio: x.precio,
           descuento_pct: x.descuento_pct,
           tasa_itbis: x.tasa_itbis,
+          observacion: x.observacion ?? "",
         })),
       );
       setIncluyeItbis(false);
@@ -601,7 +603,8 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                   : l.precio;
                 const importe = l.cantidad * precioNeto * (1 - l.descuento_pct / 100);
                 return (
-                  <TableRow key={i}>
+                  <Fragment key={i}>
+                  <TableRow className="border-b-0">
                     <TableCell>
                       <SelectorBuscable
                         opciones={opcionesItems}
@@ -683,6 +686,18 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                       </Button>
                     </TableCell>
                   </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={tipo === "conduce" ? 8 : 9} className="pt-0">
+                      <Input
+                        value={l.observacion ?? ""}
+                        maxLength={250}
+                        placeholder="Observación o comentario de este artículo (opcional)"
+                        className="h-8 text-xs"
+                        onChange={(e) => actualizar(i, { observacion: e.target.value })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                  </Fragment>
                 );
               })}
             </TableBody>

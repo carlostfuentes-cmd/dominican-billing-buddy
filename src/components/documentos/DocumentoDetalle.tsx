@@ -225,7 +225,12 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
               {doc.lineas.map((l, i) => (
                 <TableRow key={i}>
                   {verCodigo && <TableCell className="font-mono text-xs">{l.codigo}</TableCell>}
-                  <TableCell>{l.descripcion}</TableCell>
+                  <TableCell>
+                    {l.descripcion}
+                    {l.observacion ? (
+                      <div className="text-muted-foreground text-xs">{l.observacion}</div>
+                    ) : null}
+                  </TableCell>
                   <TableCell className="tabular text-right">{l.cantidad}</TableCell>
                   <TableCell className="tabular text-right">{money(l.precio, doc.moneda)}</TableCell>
                   <TableCell className="tabular text-right">{l.descuento_pct}%</TableCell>
