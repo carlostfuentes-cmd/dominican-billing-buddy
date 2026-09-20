@@ -133,6 +133,7 @@ async function crearConexion(): Promise<Conexion | null> {
       return conexion;
     } catch (error) {
       ultimoError = `Puente: ${error instanceof Error ? error.message : String(error)}`;
+      falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
       console.error("Puente MySQL no disponible:", ultimoError);
       // Si hay puente configurado, es la conexión de producción. No intentar
       // mysql2 desde el entorno publicado: no admite ese driver y solo demora
@@ -167,6 +168,7 @@ async function crearConexion(): Promise<Conexion | null> {
     return conexion;
   } catch (error) {
     ultimoError = error instanceof Error ? error.message : String(error);
+    falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
     console.error("MySQL no disponible:", ultimoError);
     return null;
   }
