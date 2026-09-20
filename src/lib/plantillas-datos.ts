@@ -1,8 +1,21 @@
 // Convierte una factura real del sistema en los datos que consume el
 // diseñador de documentos (RenderPlantilla).
 
-import { fechaCorta, round2, enDOP, tituloDocumento, type Empresa, type Factura } from "@/lib/erp-types";
-import type { DatosDocumento } from "@/lib/plantillas-tipos";
+import {
+  DOCUMENTOS,
+  fechaCorta,
+  round2,
+  enDOP,
+  tituloDocumento,
+  type Documento,
+  type Empresa,
+  type Factura,
+  type LineaFactura,
+  type NotaCredito,
+  type OrdenCompra,
+  type TipoDocumento,
+} from "@/lib/erp-types";
+import type { DatosDocumento, TipoPlantilla } from "@/lib/plantillas-tipos";
 
 const num = (n: number): string =>
   (n ?? 0).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -143,9 +156,6 @@ export function datosDeFactura(
 }
 
 /* ------------ Otros documentos: cotización, conduce, devolución ----------- */
-
-import { DOCUMENTOS, type Documento, type NotaCredito, type OrdenCompra, type TipoDocumento } from "@/lib/erp-types";
-import type { TipoPlantilla } from "@/lib/plantillas-tipos";
 
 /** Plantilla que corresponde a cada documento de venta. */
 export function tipoPlantillaDocumento(tipo: TipoDocumento): TipoPlantilla {
