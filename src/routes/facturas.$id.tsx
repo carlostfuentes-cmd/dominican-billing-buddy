@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
-import { ArrowLeft, Ban, CheckCircle2, FileText, Printer, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Ban, CheckCircle2, FileText, LayoutTemplate, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
+import { RenderPlantilla } from "@/components/plantillas/RenderPlantilla";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,8 @@ import {
   obtenerFactura,
   obtenerFormatoImpresion,
 } from "@/lib/erp.functions";
+import { obtenerPlantilla } from "@/lib/plantillas.functions";
+import { datosDeFactura } from "@/lib/plantillas-datos";
 import {
   dop,
   enDOP,
@@ -31,6 +34,7 @@ import {
   papelCss,
   round2,
 } from "@/lib/erp-types";
+
 
 export const Route = createFileRoute("/facturas/$id")({
   validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
@@ -69,6 +73,17 @@ function DetalleFactura() {
     queryKey: ["formato", "empresa"],
     queryFn: () => obtenerFormatoImpresion({ data: {} }),
   });
+  // Plantilla del diseñador de documentos para la empresa activa.
+  const empresaId = empresa?.id ?? "*";
+  const { data: plantilla } = useQuery({
+    queryKey: ["plantilla", empresaId, "factura"],
+    queryFn: () => obtenerPlantilla({ data: { empresaId, docTipo: "factura" } }),
+    enabled: Boolean(empresa),
+  });
+  // Por defecto se imprime con el formato diseñado; se puede volver al estándar.
+  const [usarDisenio, setUsarDisenio] = useState(true);
+
+
 
   // Impresión automática cuando se llega desde "Imprimir y guardar factura".
   const yaImprimio = useRef(false);
@@ -131,10 +146,17 @@ function DetalleFactura() {
   const verCodigo = f?.mostrar_codigo ?? true;
   const verItbisLinea = f?.mostrar_itbis_linea ?? true;
   const verEquivalente = f?.mostrar_equivalente_dop ?? true;
-  const copias = Math.max(1, Math.min(4, f?.copias ?? 1));
-  const cssPagina = `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
-    f?.margen_superior ?? 12
-  }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+  const conDisenio = Boolean(plantilla) && usarDisenio;
+  const copias = Math.max(
+    1,
+    Math.min(4, (conDisenio ? plantilla?.copias : f?.copias) ?? 1),
+  );
+  const cssPagina = conDisenio
+    ? `@page { size: ${papelCss(plantilla?.papel ?? "carta")}; margin: 0; }`
+    : `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
+        f?.margen_superior ?? 12
+      }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+
 
   const documento = (
         <Card className="print-area mx-auto max-w-3xl">
@@ -335,6 +357,18 @@ function DetalleFactura() {
         </Card>
   );
 
+  // Documento con el formato del diseñador (Diseñador de documentos).
+  const hoja =
+    conDisenio && plantilla ? (
+      <div className="print-area mx-auto w-fit overflow-x-auto">
+        <RenderPlantilla plantilla={plantilla} datos={datosDeFactura(factura, empresa)} />
+      </div>
+    ) : (
+      documento
+    );
+
+
+
   return (
     <div>
       <style>{cssPagina}</style>
@@ -345,7 +379,14 @@ function DetalleFactura() {
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
+          {plantilla ? (
+            <Button variant="ghost" size="sm" onClick={() => setUsarDisenio((v) => !v)}>
+              <LayoutTemplate className="size-4" />{" "}
+              {usarDisenio ? "Ver formato estándar" : "Ver formato diseñado"}
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
+
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
           {factura.estado === "pedido" && (
@@ -394,14 +435,15 @@ function DetalleFactura() {
         </div>
       </div>
 
-      {documento}
+      {hoja}
 
       {/* Copias adicionales: solo se ven al imprimir. */}
       {Array.from({ length: copias - 1 }).map((_, i) => (
         <div key={i} className="hidden print:block" style={{ breakBefore: "page" }}>
-          {documento}
+          {hoja}
         </div>
       ))}
+
     </div>
   );
 }

@@ -184,13 +184,14 @@ export async function obtenerEmpresa(): Promise<Empresa> {
   if (await usarMysql()) {
     // En modo MySQL nunca se mezclan datos de ejemplo: si no hay fila, vacío.
     const filas = await sql<{
+      id: string | number | null;
       nombre: string | null;
       rnc: string | null;
       direccion: string | null;
       telefono: string | null;
       email: string | null;
     }>(
-      `SELECT name AS nombre, rnc,
+      `SELECT company_id AS id, name AS nombre, rnc,
               TRIM(CONCAT_WS(', ', NULLIF(address1, ''), NULLIF(address2, ''),
                              NULLIF(address3, ''), NULLIF(address4, ''))) AS direccion,
               phone AS telefono, email
@@ -199,12 +200,14 @@ export async function obtenerEmpresa(): Promise<Empresa> {
     const f = filas[0];
     if (!f) return EMPRESA_VACIA;
     return {
+      id: f.id === null || f.id === undefined ? undefined : String(f.id),
       nombre: f.nombre ?? "",
       rnc: f.rnc ?? "",
       direccion: f.direccion ?? "",
       telefono: f.telefono ?? "",
       email: f.email ?? "",
     };
+
   }
   return demo().empresa;
 }
