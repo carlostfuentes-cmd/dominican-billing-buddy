@@ -1,7 +1,7 @@
 // Convierte una factura real del sistema en los datos que consume el
 // diseñador de documentos (RenderPlantilla).
 
-import { TIPOS_NCF, fechaCorta, round2, enDOP, type Empresa, type Factura } from "@/lib/erp-types";
+import { fechaCorta, round2, enDOP, tituloDocumento, type Empresa, type Factura } from "@/lib/erp-types";
 import type { DatosDocumento } from "@/lib/plantillas-tipos";
 
 const num = (n: number): string =>
@@ -62,7 +62,6 @@ export function datosDeFactura(
   saldos?: SaldosCliente | undefined,
   pagina = 1,
 ): DatosDocumento {
-  const titulo = TIPOS_NCF.find((t) => t.codigo === factura.tipo_ncf)?.nombre.split("—")[1]?.trim();
   const gravado = factura.gravado ?? round2(factura.subtotal - (factura.exento ?? 0));
   const exento = factura.exento ?? 0;
   const campos: Record<string, string> = {
@@ -73,10 +72,7 @@ export function datosDeFactura(
     "empresa.email": empresa?.email ?? "",
     "empresa.web": "",
 
-    "doc.titulo": (titulo ? `FACTURA DE ${titulo.toUpperCase()}` : "FACTURA").replace(
-      "FACTURA DE NOTA DE CRÉDITO",
-      "NOTA DE CRÉDITO",
-    ),
+    "doc.titulo": tituloDocumento(factura.tipo_ncf),
     "doc.numero": factura.invoice_id ? String(factura.invoice_id) : String(factura.id),
     "doc.fecha": fechaCorta(factura.fecha),
     "doc.vencimiento": fechaCorta(factura.vencimiento),

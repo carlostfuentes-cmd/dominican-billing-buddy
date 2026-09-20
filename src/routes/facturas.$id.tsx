@@ -33,6 +33,7 @@ import {
   money,
   papelCss,
   round2,
+  tituloDocumento,
 } from "@/lib/erp-types";
 
 
@@ -176,7 +177,7 @@ function DetalleFactura() {
               )}
               <div className="text-right">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {f?.titulo || "Factura de crédito fiscal / consumo"}
+                  {tituloDocumento(factura.tipo_ncf)}
                 </p>
                 <p className="font-mono text-xl font-semibold">{factura.ncf}</p>
                 <p className="text-sm text-muted-foreground">Tipo {factura.tipo_ncf}</p>
