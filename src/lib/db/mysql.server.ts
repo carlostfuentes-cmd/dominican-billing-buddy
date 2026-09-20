@@ -44,34 +44,15 @@ function leerPuente(): { url: string; token: string } | null {
   return { url, token };
 }
 
-// El servidor del usuario no atiende bien muchas consultas simultáneas: se
-// limita cuántas viajan a la vez y cada una tiene un tiempo máximo, para que
-// una pantalla nunca se quede esperando indefinidamente.
-const MAX_PARALELO = 4;
+// Cada consulta tiene un tiempo máximo para que una pantalla nunca se quede
+// esperando indefinidamente. No se hace cola entre consultas: en el entorno de
+// ejecución publicado una espera compartida entre peticiones queda cancelada y
+// la pantalla se cuelga sin respuesta.
 const TIEMPO_MAXIMO_MS = 20_000;
-let enCurso = 0;
-const enEspera: Array<() => void> = [];
-
-async function tomarTurno(): Promise<void> {
-  if (enCurso < MAX_PARALELO) {
-    enCurso += 1;
-    return;
-  }
-  await new Promise<void>((listo) => enEspera.push(listo));
-  enCurso += 1;
-}
-
-function soltarTurno(): void {
-  enCurso = Math.max(0, enCurso - 1);
-  const siguiente = enEspera.shift();
-  if (siguiente) siguiente();
-}
 
 function conexionPuente(url: string, token: string): Conexion {
   return {
     async query(sql: string, params: unknown[] = []) {
-      await tomarTurno();
-      try {
         const respuesta = await fetch(url, {
           method: "POST",
           signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
@@ -110,9 +91,6 @@ function conexionPuente(url: string, token: string): Conexion {
           affectedRows: cuerpo.affectedRows ?? 0,
         });
         return [resultado, undefined] as [unknown, unknown];
-      } finally {
-        soltarTurno();
-      }
     },
     async end() {},
   };
