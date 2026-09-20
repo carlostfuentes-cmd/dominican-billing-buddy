@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
 import { CamposPersonalizados, type ValoresCampos } from "@/components/CamposPersonalizados";
+import { DescuentoGlobal } from "@/components/documentos/DescuentoGlobal";
 import { guardarValoresCampos } from "@/lib/campos.functions";
 import type { ProcesoCampo } from "@/lib/db/campos.server";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
@@ -562,13 +563,21 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       <Card className="mt-4">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base">Detalle del producto o servicio</CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLineas((p) => [...p, { ...lineaVacia }])}
-          >
-            <Plus className="size-4" /> Agregar línea
-          </Button>
+          <div className="flex items-center gap-2">
+            <DescuentoGlobal
+              cantidadLineas={lineas.length}
+              onAplicar={(pct) =>
+                setLineas((p) => p.map((l) => ({ ...l, descuento_pct: pct })))
+              }
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLineas((p) => [...p, { ...lineaVacia }])}
+            >
+              <Plus className="size-4" /> Agregar línea
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table className="min-w-[1080px]">
