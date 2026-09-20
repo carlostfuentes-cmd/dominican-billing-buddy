@@ -53,7 +53,6 @@ const TIEMPO_MAXIMO_MS = 20_000;
 function conexionPuente(url: string, token: string): Conexion {
   return {
     async query(sql: string, params: unknown[] = []) {
-      {
         const respuesta = await fetch(url, {
           method: "POST",
           signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
