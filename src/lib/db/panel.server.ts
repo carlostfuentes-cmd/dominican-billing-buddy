@@ -270,7 +270,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
     sucursales = [],
     departamentos = [],
     monedas = [],
-  ] = await ejecutarEnLotes<Array<Record<string, unknown>>>([
+  ] = await ejecutarEnLotes<Record<string, unknown>>([
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
     () => sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [desde, hasta, ...paramsNotas()]),
