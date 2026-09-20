@@ -1182,6 +1182,16 @@ const SQL_FACTURAS = `
     ) ri ON ri.invoice_id = o.invoice_id
   ) f`;
 
+// Para abrir un documento no se debe calcular el total de todo el histórico.
+// Limitar también la subconsulta de líneas evita que la edición agote el tiempo
+// de respuesta cuando orders_detail contiene muchos años de movimientos.
+const SQL_FACTURA_POR_ID = SQL_FACTURAS
+  .replace(
+    "FROM orders_detail GROUP BY order_id",
+    "FROM orders_detail WHERE order_id = ? GROUP BY order_id",
+  )
+  .replace("\n  ) f", "\n    WHERE o.order_id = ?\n  ) f");
+
 interface FilaFactura {
   id: number;
   ncf: string;
@@ -1327,7 +1337,7 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
 
 export async function obtenerFactura(id: number): Promise<Factura | null> {
   if (await usarMysql()) {
-    const filas = await sql<FilaFactura>(`${SQL_FACTURAS} WHERE f.id = ?`, [id]);
+    const filas = await sql<FilaFactura>(SQL_FACTURA_POR_ID, [id, id]);
     const f = filas[0];
     if (!f) return null;
     const lineas = await sql<{
