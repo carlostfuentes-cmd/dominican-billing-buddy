@@ -219,7 +219,7 @@ function Facturas() {
 
       <Card className="overflow-hidden">
         <CardContent className="px-0 pb-0 pt-0">
-          <Table className="min-w-[1040px]">
+          <Table className="min-w-[1040px]" topScrollbar>
             <TableHeader>
               <TableRow>
                 <TableHead>Pedido</TableHead>

@@ -131,7 +131,12 @@ function NuevaFactura() {
   // Edición de un pedido existente: /facturas/nueva?pedido=123
   const { pedido: pedidoId } = Route.useSearch();
   const editando = typeof pedidoId === "number";
-  const { data: pedidoOriginal } = useQuery({
+  const {
+    data: pedidoOriginal,
+    isLoading: cargandoPedido,
+    error: errorPedido,
+    refetch: reintentarPedido,
+  } = useQuery({
     queryKey: ["factura", pedidoId],
     queryFn: () => obtenerFactura({ data: { id: pedidoId as number } }),
     enabled: editando,
@@ -437,6 +442,20 @@ function NuevaFactura() {
           />
         }
       />
+
+      {editando && cargandoPedido && (
+        <div className="mb-4 border border-border bg-muted/35 px-4 py-3 text-sm text-muted-foreground">
+          Cargando los datos del pedido {pedidoId}…
+        </div>
+      )}
+      {editando && errorPedido && (
+        <div className="mb-4 flex items-center justify-between gap-3 border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <span>No se pudieron cargar los datos del pedido {pedidoId}.</span>
+          <Button type="button" size="sm" variant="outline" onClick={() => void reintentarPedido()}>
+            Reintentar
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card>

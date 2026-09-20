@@ -2,12 +2,74 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
-      <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
-    </div>
-  ),
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  topScrollbar?: boolean;
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, topScrollbar = false, ...props }, forwardedRef) => {
+    const tableRef = React.useRef<HTMLTableElement | null>(null);
+    const topRef = React.useRef<HTMLDivElement | null>(null);
+    const bottomRef = React.useRef<HTMLDivElement | null>(null);
+    const [contentWidth, setContentWidth] = React.useState(0);
+    const syncing = React.useRef(false);
+
+    const setTableRef = React.useCallback(
+      (node: HTMLTableElement | null) => {
+        tableRef.current = node;
+        if (typeof forwardedRef === "function") forwardedRef(node);
+        else if (forwardedRef) forwardedRef.current = node;
+      },
+      [forwardedRef],
+    );
+
+    React.useEffect(() => {
+      const table = tableRef.current;
+      if (!table || !topScrollbar) return;
+      const medir = () => setContentWidth(table.scrollWidth);
+      medir();
+      const observer = new ResizeObserver(medir);
+      observer.observe(table);
+      return () => observer.disconnect();
+    }, [topScrollbar]);
+
+    const sincronizar = (origen: "arriba" | "abajo") => {
+      if (syncing.current) return;
+      syncing.current = true;
+      const fuente = origen === "arriba" ? topRef.current : bottomRef.current;
+      const destino = origen === "arriba" ? bottomRef.current : topRef.current;
+      if (fuente && destino) destino.scrollLeft = fuente.scrollLeft;
+      requestAnimationFrame(() => {
+        syncing.current = false;
+      });
+    };
+
+    return (
+      <>
+        {topScrollbar && (
+          <div
+            ref={topRef}
+            className="mb-1 h-4 w-full overflow-x-auto overflow-y-hidden"
+            onScroll={() => sincronizar("arriba")}
+            aria-label="Desplazar tabla horizontalmente"
+          >
+            <div className="h-px" style={{ width: contentWidth }} />
+          </div>
+        )}
+        <div
+          ref={bottomRef}
+          className="relative w-full overflow-auto"
+          onScroll={() => sincronizar("abajo")}
+        >
+          <table
+            ref={setTableRef}
+            className={cn("w-full caption-bottom text-sm", className)}
+            {...props}
+          />
+        </div>
+      </>
+    );
+  },
 );
 Table.displayName = "Table";
 
