@@ -97,8 +97,16 @@ function conexionPuente(url: string, token: string): Conexion {
   };
 }
 
+// Cuando el servidor de datos no responde, no reintentar la comprobación en
+// cada consulta de la misma pantalla: se recuerda el fallo unos segundos para
+// contestar de inmediato en vez de sumar una espera de 20 s por consulta.
+const ESPERA_TRAS_FALLO_MS = 15_000;
+let falloHasta = 0;
+
 async function obtenerConexion(): Promise<Conexion | null> {
   if (cache) return cache.conexion;
+  if (Date.now() < falloHasta) return null;
+
 
   // Una pantalla puede iniciar muchas consultas a la vez. Todas deben esperar
   // la misma comprobación inicial, no lanzar un SELECT 1 por cada consulta.
@@ -125,6 +133,7 @@ async function crearConexion(): Promise<Conexion | null> {
       return conexion;
     } catch (error) {
       ultimoError = `Puente: ${error instanceof Error ? error.message : String(error)}`;
+      falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
       console.error("Puente MySQL no disponible:", ultimoError);
       // Si hay puente configurado, es la conexión de producción. No intentar
       // mysql2 desde el entorno publicado: no admite ese driver y solo demora
@@ -159,6 +168,7 @@ async function crearConexion(): Promise<Conexion | null> {
     return conexion;
   } catch (error) {
     ultimoError = error instanceof Error ? error.message : String(error);
+    falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
     console.error("MySQL no disponible:", ultimoError);
     return null;
   }

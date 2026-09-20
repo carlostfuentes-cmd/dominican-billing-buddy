@@ -224,10 +224,24 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
   // Ejecutamos las consultas en lotes pequeños dentro de esta petición, sin
   // mantener una cola global que pueda sobrevivir incorrectamente entre
   // ejecuciones del servidor.
-  async function ejecutarEnLotes<T>(tareas: Array<() => Promise<T>>, tamano = 2): Promise<T[]> {
-    const resultados: T[] = [];
+  // Si una consulta falla (el puente del ERP no responde), el panel no debe
+  // quedarse en blanco: esa sección queda vacía y las demás sí se muestran.
+  async function ejecutarEnLotes<T>(
+    tareas: Array<() => Promise<T[]>>,
+    tamano = 2,
+  ): Promise<T[][]> {
+    const resultados: T[][] = [];
     for (let i = 0; i < tareas.length; i += tamano) {
-      resultados.push(...(await Promise.all(tareas.slice(i, i + tamano).map((tarea) => tarea()))));
+      resultados.push(
+        ...(await Promise.all(
+          tareas.slice(i, i + tamano).map((tarea) =>
+            tarea().catch((error: unknown) => {
+              console.error("Panel: consulta fallida:", error);
+              return [] as T[];
+            }),
+          ),
+        )),
+      );
     }
     return resultados;
   }
@@ -256,7 +270,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
     sucursales = [],
     departamentos = [],
     monedas = [],
-  ] = await ejecutarEnLotes<Array<Record<string, unknown>>>([
+  ] = await ejecutarEnLotes<Record<string, unknown>>([
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
     () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
     () => sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [desde, hasta, ...paramsNotas()]),
