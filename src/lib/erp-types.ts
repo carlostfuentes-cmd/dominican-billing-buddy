@@ -25,6 +25,31 @@ export const TIPOS_NCF: { codigo: TipoNCF; nombre: string }[] = [
   { codigo: "E46", nombre: "E46 — e-CF Exportaciones" },
 ];
 
+// Título oficial que se imprime en el documento según el tipo de comprobante.
+export const TITULO_NCF: Record<TipoNCF, string> = {
+  B01: "FACTURA DE CRÉDITO FISCAL",
+  B02: "FACTURA DE CONSUMO",
+  B03: "NOTA DE DÉBITO",
+  B04: "NOTA DE CRÉDITO",
+  B11: "FACTURA DE PROVEEDOR INFORMAL",
+  B13: "GASTOS MENORES",
+  B14: "FACTURA DE REGÍMENES ESPECIALES",
+  B15: "FACTURA GUBERNAMENTAL",
+  E31: "FACTURA DE CRÉDITO FISCAL ELECTRÓNICA",
+  E32: "FACTURA DE CONSUMO ELECTRÓNICA",
+  E33: "NOTA DE DÉBITO ELECTRÓNICA",
+  E34: "NOTA DE CRÉDITO ELECTRÓNICA",
+  E41: "COMPROBANTE DE COMPRAS ELECTRÓNICO",
+  E43: "GASTOS MENORES ELECTRÓNICOS",
+  E44: "FACTURA DE REGÍMENES ESPECIALES ELECTRÓNICA",
+  E45: "FACTURA GUBERNAMENTAL ELECTRÓNICA",
+  E46: "COMPROBANTE DE EXPORTACIONES ELECTRÓNICO",
+};
+
+export function tituloDocumento(tipo: string | undefined): string {
+  return TITULO_NCF[tipo as TipoNCF] ?? "FACTURA";
+}
+
 export const TASAS_ITBIS = [18, 16, 0] as const;
 export type TasaItbis = (typeof TASAS_ITBIS)[number];
 
