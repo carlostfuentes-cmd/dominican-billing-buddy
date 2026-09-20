@@ -11,6 +11,7 @@ import {
 } from "@/components/CamposPersonalizados";
 import { guardarValoresCampos } from "@/lib/campos.functions";
 import { SelectorBuscable } from "@/components/SelectorBuscable";
+import { DescuentoGlobal } from "@/components/documentos/DescuentoGlobal";
 import { AsientoContable } from "@/components/AsientoContable";
 import { obtenerPropuestaPedido } from "@/lib/cuentas.functions";
 import { Button } from "@/components/ui/button";
