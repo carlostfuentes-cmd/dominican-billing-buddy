@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useParams, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
-import { ArrowLeft, Ban, CheckCircle2, FileText, Printer, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Ban, CheckCircle2, FileText, LayoutTemplate, Printer, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
+import { RenderPlantilla } from "@/components/plantillas/RenderPlantilla";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,6 +24,8 @@ import {
   obtenerFactura,
   obtenerFormatoImpresion,
 } from "@/lib/erp.functions";
+import { obtenerPlantilla } from "@/lib/plantillas.functions";
+import { datosDeFactura } from "@/lib/plantillas-datos";
 import {
   dop,
   enDOP,
@@ -31,6 +34,7 @@ import {
   papelCss,
   round2,
 } from "@/lib/erp-types";
+
 
 export const Route = createFileRoute("/facturas/$id")({
   validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
