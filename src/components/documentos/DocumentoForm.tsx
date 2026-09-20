@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,6 +60,7 @@ const lineaVacia: LineaEntrada = {
   precio: 0,
   descuento_pct: 0,
   tasa_itbis: 18,
+  observacion: "",
 };
 
 const lista = (v: OpcionId[] | undefined): OpcionId[] => v ?? [];
@@ -162,6 +163,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
           precio: x.precio,
           descuento_pct: x.descuento_pct,
           tasa_itbis: x.tasa_itbis,
+          observacion: x.observacion ?? "",
         })),
       );
       setIncluyeItbis(false);
