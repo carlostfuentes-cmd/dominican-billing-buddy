@@ -30,6 +30,7 @@ function PantallaLogin() {
   const queryClient = useQueryClient();
   const [login, setLogin] = useState("");
   const [clave, setClave] = useState("");
+  const [verClave, setVerClave] = useState(false);
 
   const entrar = useMutation({
     mutationFn: () => iniciarSesion({ data: { login, clave } }),
