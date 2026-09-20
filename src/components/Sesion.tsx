@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { Building2, Loader2, LockKeyhole } from "lucide-react";
+import { Building2, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ function PantallaLogin() {
   const queryClient = useQueryClient();
   const [login, setLogin] = useState("");
   const [clave, setClave] = useState("");
+  const [verClave, setVerClave] = useState(false);
 
   const entrar = useMutation({
     mutationFn: () => iniciarSesion({ data: { login, clave } }),
@@ -78,13 +79,25 @@ function PantallaLogin() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="clave">Clave</Label>
-              <Input
-                id="clave"
-                type="password"
-                autoComplete="current-password"
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="clave"
+                  type={verClave ? "text" : "password"}
+                  autoComplete="current-password"
+                  className="pr-10"
+                  value={clave}
+                  onChange={(e) => setClave(e.target.value)}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={verClave ? "Ocultar clave" : "Mostrar clave"}
+                  onClick={() => setVerClave((v) => !v)}
+                  className="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                >
+                  {verClave ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={entrar.isPending}>
               {entrar.isPending ? (
