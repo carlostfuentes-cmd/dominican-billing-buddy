@@ -5,6 +5,7 @@ import { ArrowLeft, Ban, CheckCircle2, FileText, LayoutTemplate, Printer, Rotate
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
+import { EnviarPorCorreo } from "@/components/EnviarPorCorreo";
 import { RenderPlantilla } from "@/components/plantillas/RenderPlantilla";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
