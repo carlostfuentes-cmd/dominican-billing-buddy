@@ -417,8 +417,8 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
         await ejecutar(
           `INSERT INTO quotations_detail
              (quotation_id, position, product_id, name, quantity, bonus, price, ref_price,
-              tax1, tax2, tax3, discount_rate, discount, cost)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0)`,
+              tax1, tax2, tax3, discount_rate, discount, cost, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?)`,
           [
             id,
             pos + 1,
@@ -431,6 +431,7 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
             l.itbis,
             l.descuento_pct,
             descuento,
+            l.observacion ?? "",
           ],
         );
       }
@@ -471,8 +472,8 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
         await ejecutar(
           `INSERT INTO delivery_orders_detail
              (do_id, branch_id, position, product_id, name, quantity, price,
-              tax1, tax2, tax3, discount_rate, discount, cost, currency_rate)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?)`,
+              tax1, tax2, tax3, discount_rate, discount, cost, currency_rate, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?, ?)`,
           [
             id,
             sucursal,
@@ -485,6 +486,7 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
             l.descuento_pct,
             descuento,
             tasa,
+            l.observacion ?? "",
           ],
         );
       }
