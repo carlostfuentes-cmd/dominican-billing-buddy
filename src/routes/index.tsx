@@ -415,16 +415,22 @@ function Panel() {
 
       <div className="mt-6 grid gap-4 xl:grid-cols-2">
         <Card>
-          <CardHeader className="border-b pb-3">
+          <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
             <CardTitle className="text-base">Antigüedad de cuentas por cobrar</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/cxc">Ver detalle</Link>
+            </Button>
           </CardHeader>
           <CardContent className="pt-4">
             <Aging datos={data?.agingCxC ?? []} moneda={moneda} color="var(--color-chart-1)" />
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="border-b pb-3">
+          <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
             <CardTitle className="text-base">Antigüedad de cuentas por pagar</CardTitle>
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/cxp">Ver detalle</Link>
+            </Button>
           </CardHeader>
           <CardContent className="pt-4">
             <Aging datos={data?.agingCxP ?? []} moneda={moneda} color="var(--color-chart-4)" />
