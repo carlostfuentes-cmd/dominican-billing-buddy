@@ -141,3 +141,247 @@ export function datosDeFactura(
 
   return { campos, lineas };
 }
+
+/* ------------ Otros documentos: cotización, conduce, devolución ----------- */
+
+import { DOCUMENTOS, type Documento, type NotaCredito, type OrdenCompra, type TipoDocumento } from "@/lib/erp-types";
+import type { TipoPlantilla } from "@/lib/plantillas-tipos";
+
+/** Plantilla que corresponde a cada documento de venta. */
+export function tipoPlantillaDocumento(tipo: TipoDocumento): TipoPlantilla {
+  if (tipo === "cotizacion") return "cotizacion";
+  if (tipo === "conduce") return "conduce";
+  return "nota-credito";
+}
+
+interface Comun {
+  titulo: string;
+  numero: string;
+  fecha: string;
+  vencimiento?: string | undefined;
+  dias_credito?: number | undefined;
+  moneda?: string | undefined;
+  tasa?: number | undefined;
+  vendedor?: string | undefined;
+  almacen?: string | undefined;
+  orden_cliente?: string | undefined;
+  cotizacion?: string | undefined;
+  pedido?: string | undefined;
+  conduce?: string | undefined;
+  soporte?: string | undefined;
+  notas?: string | undefined;
+  ncf?: string | undefined;
+  tipo_ncf?: string | undefined;
+  contacto?: string | undefined;
+  cliente_codigo?: string | undefined;
+  cliente_nombre?: string | undefined;
+  cliente_rnc?: string | undefined;
+  cliente_direccion?: string | undefined;
+  cliente_telefono?: string | undefined;
+  subtotal: number;
+  descuento: number;
+  itbis: number;
+  total: number;
+  gravado?: number | undefined;
+  exento?: number | undefined;
+  lineas: LineaFactura[];
+}
+
+function armar(c: Comun, empresa: Empresa | undefined, pagina: number): DatosDocumento {
+  const campos: Record<string, string> = {
+    "empresa.nombre": empresa?.nombre ?? "",
+    "empresa.rnc": empresa?.rnc ?? "",
+    "empresa.direccion": empresa?.direccion ?? "",
+    "empresa.telefono": empresa?.telefono ?? "",
+    "empresa.email": empresa?.email ?? "",
+    "empresa.web": "",
+
+    "doc.titulo": c.titulo,
+    "doc.numero": c.numero,
+    "doc.fecha": fechaCorta(c.fecha),
+    "doc.vencimiento": c.vencimiento ? fechaCorta(c.vencimiento) : "",
+    "doc.condicion": (c.dias_credito ?? 0) > 0 ? `DE 1 A ${c.dias_credito} DÍAS` : "CONTADO",
+    "doc.vendedor": c.vendedor ?? "",
+    "doc.almacen": c.almacen ?? "",
+    "doc.moneda": c.moneda ?? "DOP",
+    "doc.tasa": (c.tasa ?? 1).toFixed(4),
+    "doc.orden_cliente": c.orden_cliente ?? "",
+    "doc.cotizacion": c.cotizacion ?? "",
+    "doc.pedido": c.pedido ?? "",
+    "doc.conduce": c.conduce ?? "",
+    "doc.soporte": c.soporte ?? "",
+    "doc.notas": c.notas ?? "",
+    "doc.pagina": String(pagina),
+
+    "fiscal.ncf": c.ncf ?? "",
+    "fiscal.tipo": c.tipo_ncf ?? "",
+    "fiscal.vigencia": "",
+    "fiscal.autorizacion": "",
+    "fiscal.seguridad": "",
+    "fiscal.firma_fecha": "",
+
+    "cliente.codigo": c.cliente_codigo ?? "",
+    "cliente.nombre": c.cliente_nombre ?? "",
+    "cliente.rnc": c.cliente_rnc ?? "",
+    "cliente.direccion": c.cliente_direccion ?? "",
+    "cliente.telefono": c.cliente_telefono ?? "",
+    "cliente.contacto": c.contacto ?? "",
+    "cliente.envio": "",
+
+    "totales.subtotal": num(round2(c.subtotal + c.descuento)),
+    "totales.descuento": num(c.descuento),
+    "totales.neto": num(c.subtotal),
+    "totales.exento": num(c.exento ?? 0),
+    "totales.gravado": num(c.gravado ?? round2(c.subtotal - (c.exento ?? 0))),
+    "totales.itbis": num(c.itbis),
+    "totales.total": num(c.total),
+    "totales.total_letras": montoEnLetras(c.total),
+    "totales.equivalente_dop": num(enDOP(c.total, c.tasa)),
+    "totales.cantidad_lineas": String(c.lineas.length),
+
+    "cxc.por_vencer": num(0),
+    "cxc.d30": num(0),
+    "cxc.d60": num(0),
+    "cxc.d90": num(0),
+    "cxc.d91": num(0),
+    "cxc.total": num(0),
+  };
+
+  const lineas = c.lineas.map((l, i) => ({
+    "linea.numero": String(i + 1),
+    "linea.codigo": l.codigo ?? "",
+    "linea.descripcion": l.descripcion ?? "",
+    "linea.observacion": l.observacion ?? "",
+    "linea.serial": "",
+    "linea.cantidad": num(l.cantidad),
+    "linea.unidad": "",
+    "linea.precio": num(l.precio),
+    "linea.descuento_pct": num(l.descuento_pct),
+    "linea.descuento": num(round2(l.cantidad * l.precio * (l.descuento_pct / 100))),
+    "linea.itbis": num(l.itbis),
+    "linea.importe": num(l.subtotal),
+  }));
+
+  return { campos, lineas };
+}
+
+/** Cotización, conduce o devolución. */
+export function datosDeDocumento(
+  doc: Documento,
+  empresa?: Empresa | undefined,
+  pagina = 1,
+): DatosDocumento {
+  return armar(
+    {
+      titulo: DOCUMENTOS[doc.tipo].titulo.toUpperCase(),
+      numero: String(doc.id),
+      fecha: doc.fecha,
+      vencimiento: doc.fecha_entrega,
+      dias_credito: doc.dias_credito,
+      moneda: doc.moneda,
+      tasa: doc.tasa_cambio,
+      vendedor: doc.vendedor,
+      almacen: doc.almacen,
+      orden_cliente: doc.orden_cliente,
+      cotizacion: doc.cotizacion_id ? String(doc.cotizacion_id) : "",
+      pedido: doc.pedido_id ? String(doc.pedido_id) : "",
+      soporte: doc.factura_id ? String(doc.factura_id) : "",
+      notas: doc.notas,
+      ncf: doc.ncf,
+      contacto: doc.contacto,
+      cliente_codigo: doc.cliente_id,
+      cliente_nombre: doc.cliente_nombre,
+      cliente_rnc: doc.cliente_rnc,
+      cliente_direccion: doc.cliente_direccion,
+      cliente_telefono: doc.cliente_telefono,
+      subtotal: doc.subtotal,
+      descuento: doc.descuento,
+      itbis: doc.itbis,
+      total: doc.total,
+      lineas: doc.lineas,
+    },
+    empresa,
+    pagina,
+  );
+}
+
+/** Nota de crédito. */
+export function datosDeNotaCredito(
+  nota: NotaCredito,
+  empresa?: Empresa | undefined,
+  pagina = 1,
+): DatosDocumento {
+  return armar(
+    {
+      titulo: tituloDocumento("B04"),
+      numero: String(nota.id),
+      fecha: nota.fecha,
+      moneda: nota.moneda,
+      tasa: nota.tasa_cambio,
+      soporte: nota.factura_ncf ?? (nota.factura_id ? String(nota.factura_id) : ""),
+      pedido: nota.pedido_id ? String(nota.pedido_id) : "",
+      notas: [nota.motivo, nota.notas].filter(Boolean).join(" · "),
+      ncf: nota.ncf,
+      tipo_ncf: "B04",
+      cliente_codigo: nota.cliente_id,
+      cliente_nombre: nota.cliente_nombre,
+      cliente_rnc: nota.cliente_rnc,
+      cliente_direccion: nota.cliente_direccion,
+      cliente_telefono: nota.cliente_telefono,
+      subtotal: nota.subtotal,
+      descuento: nota.descuento,
+      itbis: nota.itbis,
+      total: nota.total,
+      lineas: nota.lineas,
+    },
+    empresa,
+    pagina,
+  );
+}
+
+/** Orden de compra: el suplidor ocupa el bloque del cliente. */
+export function datosDeOrdenCompra(
+  orden: OrdenCompra,
+  empresa?: Empresa | undefined,
+  pagina = 1,
+): DatosDocumento {
+  return armar(
+    {
+      titulo: "ORDEN DE COMPRA",
+      numero: String(orden.id),
+      fecha: orden.fecha,
+      dias_credito: orden.dias_credito,
+      moneda: orden.moneda,
+      tasa: orden.tasa_cambio,
+      almacen: orden.almacen,
+      orden_cliente: orden.requisicion,
+      cotizacion: orden.cotizacion,
+      soporte: orden.factura_suplidor,
+      notas: [orden.uso, orden.destino, orden.lugar, orden.notas].filter(Boolean).join(" · "),
+      cliente_codigo: orden.suplidor_id,
+      cliente_nombre: orden.suplidor,
+      cliente_rnc: orden.suplidor_rnc,
+      cliente_direccion: orden.suplidor_direccion,
+      cliente_telefono: orden.suplidor_telefono,
+      subtotal: orden.subtotal,
+      descuento: orden.descuento,
+      itbis: orden.itbis,
+      total: orden.total,
+      lineas: orden.lineas.map((l) => ({
+        item_id: l.producto_id,
+        codigo: l.codigo,
+        descripcion: l.descripcion,
+        observacion: l.notas,
+        cantidad: l.cantidad,
+        precio: l.precio,
+        descuento_pct: l.descuento_pct,
+        tasa_itbis: l.tasa_itbis,
+        subtotal: l.subtotal,
+        itbis: l.itbis,
+        total: l.total,
+      })),
+    },
+    empresa,
+    pagina,
+  );
+}
