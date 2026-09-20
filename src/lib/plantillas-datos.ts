@@ -1,7 +1,7 @@
 // Convierte una factura real del sistema en los datos que consume el
 // diseñador de documentos (RenderPlantilla).
 
-import { TIPOS_NCF, fechaCorta, round2, enDOP, type Empresa, type Factura } from "@/lib/erp-types";
+import { fechaCorta, round2, enDOP, tituloDocumento, type Empresa, type Factura } from "@/lib/erp-types";
 import type { DatosDocumento } from "@/lib/plantillas-tipos";
 
 const num = (n: number): string =>
