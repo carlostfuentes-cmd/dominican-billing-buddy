@@ -132,6 +132,7 @@ function consultaLineas(tipo: TipoDocumento): string {
     return `
       SELECT l.product_id AS item_id, l.product_id AS codigo,
              COALESCE(NULLIF(l.name, ''), NULLIF(p.name, ''), l.product_id) AS descripcion,
+             l.notes AS observacion,
              l.quantity AS cantidad, l.bonus AS oferta, l.price AS precio,
              l.discount_rate AS descuento_pct,
              CASE WHEN l.quantity * l.price - l.discount > 0
@@ -148,6 +149,7 @@ function consultaLineas(tipo: TipoDocumento): string {
     return `
       SELECT l.product_id AS item_id, l.product_id AS codigo,
              COALESCE(NULLIF(l.name, ''), NULLIF(p.name, ''), l.product_id) AS descripcion,
+             l.notes AS observacion,
              l.quantity AS cantidad, 0 AS oferta, l.price AS precio,
              l.discount_rate AS descuento_pct,
              CASE WHEN l.quantity * l.price - l.discount > 0
@@ -322,6 +324,7 @@ export async function obtenerDocumento(
         item_id: l["item_id"] === null ? null : String(l["item_id"]),
         codigo: String(l["codigo"] ?? ""),
         descripcion: String(l["descripcion"] ?? ""),
+        observacion: String(l["observacion"] ?? ""),
         cantidad: Number(l["cantidad"] ?? 0),
         oferta: Number(l["oferta"] ?? 0),
         precio: Number(l["precio"] ?? 0),
