@@ -73,6 +73,17 @@ function DetalleFactura() {
     queryKey: ["formato", "empresa"],
     queryFn: () => obtenerFormatoImpresion({ data: {} }),
   });
+  // Plantilla del diseñador de documentos para la empresa activa.
+  const empresaId = empresa?.id ?? "*";
+  const { data: plantilla } = useQuery({
+    queryKey: ["plantilla", empresaId, "factura"],
+    queryFn: () => obtenerPlantilla({ data: { empresaId, docTipo: "factura" } }),
+    enabled: Boolean(empresa),
+  });
+  // Por defecto se imprime con el formato diseñado; se puede volver al estándar.
+  const [usarDisenio, setUsarDisenio] = useState(true);
+
+
 
   // Impresión automática cuando se llega desde "Imprimir y guardar factura".
   const yaImprimio = useRef(false);
