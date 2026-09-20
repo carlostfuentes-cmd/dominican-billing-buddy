@@ -108,7 +108,12 @@ export function Aging({
             [`${money(v, moneda)} · ${(p?.payload?.documentos ?? 0) as number} doc.`, "Saldo"] as [string, string]
           }
         />
-        <Bar dataKey="monto" fill={color} radius={[4, 4, 0, 0]} />
+        <Bar
+          dataKey="monto"
+          fill={color}
+          radius={[4, 4, 0, 0]}
+          minPointSize={(valor: number) => (valor > 0 ? 6 : 0)}
+        />
       </BarChart>
     </ResponsiveContainer>
   );
