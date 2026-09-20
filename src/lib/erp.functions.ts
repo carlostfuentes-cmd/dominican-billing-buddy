@@ -41,7 +41,26 @@ export const obtenerEstadoConexion = createServerFn({ method: "GET" }).handler(
 );
 
 export const obtenerResumen = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Resumen> => (await repo()).resumen(),
+  async (): Promise<Resumen> => {
+    try {
+      return await (await repo()).resumen();
+    } catch (error) {
+      console.error(
+        "No se pudo cargar el resumen auxiliar del panel:",
+        error instanceof Error ? error.message : String(error),
+      );
+      const hoy = new Date();
+      return {
+        mes: `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`,
+        facturado: 0,
+        itbis: 0,
+        cantidad: 0,
+        porCobrar: 0,
+        ultimas: [],
+        alertasNCF: [],
+      };
+    }
+  },
 );
 
 /* -------------------------------- Empresa -------------------------------- */
