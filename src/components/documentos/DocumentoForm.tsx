@@ -603,7 +603,8 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                   : l.precio;
                 const importe = l.cantidad * precioNeto * (1 - l.descuento_pct / 100);
                 return (
-                  <TableRow key={i}>
+                  <Fragment key={i}>
+                  <TableRow className="border-b-0">
                     <TableCell>
                       <SelectorBuscable
                         opciones={opcionesItems}
@@ -685,6 +686,18 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                       </Button>
                     </TableCell>
                   </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={tipo === "conduce" ? 8 : 9} className="pt-0">
+                      <Input
+                        value={l.observacion ?? ""}
+                        maxLength={250}
+                        placeholder="Observación o comentario de este artículo (opcional)"
+                        className="h-8 text-xs"
+                        onChange={(e) => actualizar(i, { observacion: e.target.value })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                  </Fragment>
                 );
               })}
             </TableBody>
