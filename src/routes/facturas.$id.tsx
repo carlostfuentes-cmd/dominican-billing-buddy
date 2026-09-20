@@ -146,10 +146,17 @@ function DetalleFactura() {
   const verCodigo = f?.mostrar_codigo ?? true;
   const verItbisLinea = f?.mostrar_itbis_linea ?? true;
   const verEquivalente = f?.mostrar_equivalente_dop ?? true;
-  const copias = Math.max(1, Math.min(4, f?.copias ?? 1));
-  const cssPagina = `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
-    f?.margen_superior ?? 12
-  }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+  const conDisenio = Boolean(plantilla) && usarDisenio;
+  const copias = Math.max(
+    1,
+    Math.min(4, (conDisenio ? plantilla?.copias : f?.copias) ?? 1),
+  );
+  const cssPagina = conDisenio
+    ? `@page { size: ${papelCss(plantilla?.papel ?? "carta")}; margin: 0; }`
+    : `@page { size: ${papelCss(f?.papel ?? "carta")}; margin: ${
+        f?.margen_superior ?? 12
+      }mm ${f?.margen_derecho ?? 12}mm ${f?.margen_inferior ?? 12}mm ${f?.margen_izquierdo ?? 12}mm; }`;
+
 
   const documento = (
         <Card className="print-area mx-auto max-w-3xl">
