@@ -226,16 +226,25 @@ async function permisosEfectivos(perfilId: number): Promise<PermisoPantalla[]> {
 
 export async function autenticar(login: string, clave: string): Promise<Sesion | null> {
   if (!(await mysqlActivo())) {
-    return login.trim().length > 0 ? sesionDemo() : null;
+    throw new Error("No se pudo validar el usuario porque el servidor de datos no respondió");
   }
-  const filas = await sql<FilaUsuario>(
-    `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
-            u.password2, u.profile_id, p.name AS perfil, p.administrator, p.status AS perfil_status
-       FROM users u
-       LEFT JOIN profiles p ON p.profile_id = u.profile_id
-      WHERE u.login = ? LIMIT 1`,
-    [login.trim()],
-  );
+  let filas: FilaUsuario[];
+  try {
+    filas = await sql<FilaUsuario>(
+      `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
+              u.password2, u.profile_id, p.name AS perfil, p.administrator, p.status AS perfil_status
+         FROM users u
+         LEFT JOIN profiles p ON p.profile_id = u.profile_id
+        WHERE u.login = ? LIMIT 1`,
+      [login.trim()],
+    );
+  } catch (error) {
+    console.error(
+      "No se pudo validar el inicio de sesión:",
+      error instanceof Error ? error.message : String(error),
+    );
+    throw new Error("No se pudo validar el usuario porque el servidor de datos no respondió");
+  }
   const fila = filas[0];
   if (!fila) return null;
   if (fila.status !== "A") throw new Error("El usuario está inactivo. Contacta al administrador.");
@@ -264,15 +273,24 @@ export async function autenticar(login: string, clave: string): Promise<Sesion |
 }
 
 export async function recargarSesion(usuarioId: number): Promise<Sesion | null> {
-  if (!(await mysqlActivo())) return sesionDemo();
-  const filas = await sql<FilaUsuario>(
-    `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
-            u.profile_id, p.name AS perfil, p.administrator
-       FROM users u
-       LEFT JOIN profiles p ON p.profile_id = u.profile_id
-      WHERE u.user_id = ? LIMIT 1`,
-    [usuarioId],
-  );
+  if (!(await mysqlActivo())) return null;
+  let filas: FilaUsuario[];
+  try {
+    filas = await sql<FilaUsuario>(
+      `SELECT u.user_id, u.login, u.first_name, u.last_name, u.status, u.is_supervisor,
+              u.profile_id, p.name AS perfil, p.administrator
+         FROM users u
+         LEFT JOIN profiles p ON p.profile_id = u.profile_id
+        WHERE u.user_id = ? LIMIT 1`,
+      [usuarioId],
+    );
+  } catch (error) {
+    console.error(
+      "No se pudo renovar la sesión:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
+  }
   const fila = filas[0];
   if (!fila || fila.status !== "A") return null;
   const perfilId = fila.profile_id === null ? null : Number(fila.profile_id);
