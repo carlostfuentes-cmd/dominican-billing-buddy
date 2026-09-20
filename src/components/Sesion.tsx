@@ -99,10 +99,11 @@ function PantallaLogin() {
 
 export function SesionProvider({ children }: { children: (ctx: Contexto) => ReactNode }) {
   const queryClient = useQueryClient();
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ["sesion"],
     queryFn: () => obtenerSesion(),
     staleTime: 5 * 60_000,
+    retry: 1,
   });
 
   const salir = useMutation({
@@ -116,7 +117,31 @@ export function SesionProvider({ children }: { children: (ctx: Contexto) => Reac
   if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Conectando con el servidor de datos…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-sm text-center">
+          <CardHeader>
+            <CardTitle className="font-display text-lg">No se pudo conectar</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              El servidor de datos no respondió. Verifica la conexión a internet del servidor e
+              inténtalo de nuevo.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" onClick={() => void refetch()}>
+              Reintentar
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
