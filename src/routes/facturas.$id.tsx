@@ -379,7 +379,14 @@ function DetalleFactura() {
           </Link>
         </Button>
         <div className="flex flex-wrap gap-2">
+          {plantilla ? (
+            <Button variant="ghost" size="sm" onClick={() => setUsarDisenio((v) => !v)}>
+              <LayoutTemplate className="size-4" />{" "}
+              {usarDisenio ? "Ver formato estándar" : "Ver formato diseñado"}
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" onClick={() => window.print()}>
+
             <Printer className="size-4" /> Imprimir / PDF
           </Button>
           {factura.estado === "pedido" && (
