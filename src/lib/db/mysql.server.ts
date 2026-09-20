@@ -44,40 +44,75 @@ function leerPuente(): { url: string; token: string } | null {
   return { url, token };
 }
 
+// El servidor del usuario no atiende bien muchas consultas simultáneas: se
+// limita cuántas viajan a la vez y cada una tiene un tiempo máximo, para que
+// una pantalla nunca se quede esperando indefinidamente.
+const MAX_PARALELO = 4;
+const TIEMPO_MAXIMO_MS = 20_000;
+let enCurso = 0;
+const enEspera: Array<() => void> = [];
+
+async function tomarTurno(): Promise<void> {
+  if (enCurso < MAX_PARALELO) {
+    enCurso += 1;
+    return;
+  }
+  await new Promise<void>((listo) => enEspera.push(listo));
+  enCurso += 1;
+}
+
+function soltarTurno(): void {
+  enCurso = Math.max(0, enCurso - 1);
+  const siguiente = enEspera.shift();
+  if (siguiente) siguiente();
+}
+
 function conexionPuente(url: string, token: string): Conexion {
   return {
     async query(sql: string, params: unknown[] = []) {
-      const respuesta = await fetch(url, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ sql, params }),
-      });
-      const texto = await respuesta.text();
-      let cuerpo: {
-        rows?: unknown[];
-        insertId?: number;
-        affectedRows?: number;
-        error?: string;
-        ok?: boolean;
-      };
+      await tomarTurno();
       try {
-        cuerpo = JSON.parse(texto) as typeof cuerpo;
-      } catch {
-        throw new Error(`Respuesta inválida del puente (${respuesta.status})`);
+        const respuesta = await fetch(url, {
+          method: "POST",
+          signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ sql, params }),
+        }).catch((error: unknown) => {
+          const nombre = error instanceof Error ? error.name : "";
+          if (nombre === "TimeoutError" || nombre === "AbortError") {
+            throw new Error("El servidor de datos tardó demasiado en responder");
+          }
+          throw error instanceof Error ? error : new Error(String(error));
+        });
+        const texto = await respuesta.text();
+        let cuerpo: {
+          rows?: unknown[];
+          insertId?: number;
+          affectedRows?: number;
+          error?: string;
+          ok?: boolean;
+        };
+        try {
+          cuerpo = JSON.parse(texto) as typeof cuerpo;
+        } catch {
+          throw new Error(`Respuesta inválida del puente (${respuesta.status})`);
+        }
+        if (!respuesta.ok || cuerpo.error) {
+          throw new Error(cuerpo.error ?? `Puente respondió ${respuesta.status}`);
+        }
+        const filas = cuerpo.rows ?? [];
+        // El repositorio usa tanto filas como insertId/affectedRows.
+        const resultado = Object.assign([...filas], {
+          insertId: cuerpo.insertId ?? 0,
+          affectedRows: cuerpo.affectedRows ?? 0,
+        });
+        return [resultado, undefined] as [unknown, unknown];
+      } finally {
+        soltarTurno();
       }
-      if (!respuesta.ok || cuerpo.error) {
-        throw new Error(cuerpo.error ?? `Puente respondió ${respuesta.status}`);
-      }
-      const filas = cuerpo.rows ?? [];
-      // El repositorio usa tanto filas como insertId/affectedRows.
-      const resultado = Object.assign([...filas], {
-        insertId: cuerpo.insertId ?? 0,
-        affectedRows: cuerpo.affectedRows ?? 0,
-      });
-      return [resultado, undefined];
     },
     async end() {},
   };
