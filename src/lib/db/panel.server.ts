@@ -113,16 +113,22 @@ export function periodoAnterior(desde: string, hasta: string): { desde: string; 
 
 /** Última tasa registrada por moneda (moneda extranjera -> local). */
 async function tasas(): Promise<Map<string, number>> {
-  const filas = await sql<Record<string, unknown>>(
-    `SELECT e.currency_id, e.foreign_to_local
-     FROM exchange_rate e
-     JOIN (SELECT currency_id, MAX(date) AS d FROM exchange_rate GROUP BY currency_id) m
-       ON m.currency_id = e.currency_id AND m.d = e.date`,
-  );
   const mapa = new Map<string, number>([["DOP", 1]]);
-  for (const f of filas) {
-    const tasa = num(f["foreign_to_local"]);
-    if (tasa > 0) mapa.set(txt(f["currency_id"]).toUpperCase(), tasa);
+  try {
+    const filas = await sql<Record<string, unknown>>(
+      `SELECT e.currency_id, e.foreign_to_local
+       FROM exchange_rate e
+       JOIN (SELECT currency_id, MAX(date) AS d FROM exchange_rate GROUP BY currency_id) m
+         ON m.currency_id = e.currency_id AND m.d = e.date`,
+    );
+    for (const f of filas) {
+      const tasa = num(f["foreign_to_local"]);
+      if (tasa > 0) mapa.set(txt(f["currency_id"]).toUpperCase(), tasa);
+    }
+  } catch (error) {
+    // La tasa es auxiliar: si el puente externo expira, mantenemos DOP y
+    // dejamos que las demás secciones usen sus respuestas seguras.
+    console.error("Panel: no se pudieron cargar las tasas:", error);
   }
   return mapa;
 }
