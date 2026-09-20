@@ -366,6 +366,9 @@ export function calcularLinea(l: LineaEntrada): LineaFactura {
 
 
 export interface Totales {
+  /** Sub-total bruto: suma de cantidades × precios, antes de descuentos. */
+  bruto: number;
+  /** Sub-total neto: bruto menos descuentos (base del ITBIS). */
   subtotal: number;
   descuento: number;
   itbisPorTasa: { tasa: number; base: number; itbis: number }[];
@@ -381,6 +384,7 @@ export function calcularTotales(lineas: LineaEntrada[]): {
   const descuento = round2(
     calculadas.reduce((a, l) => a + l.cantidad * l.precio * ((l.descuento_pct || 0) / 100), 0),
   );
+  const bruto = round2(calculadas.reduce((a, l) => a + l.cantidad * l.precio, 0));
 
   const subtotal = round2(calculadas.reduce((a, l) => a + l.subtotal, 0));
   const itbis = round2(calculadas.reduce((a, l) => a + l.itbis, 0));
@@ -394,6 +398,7 @@ export function calcularTotales(lineas: LineaEntrada[]): {
   return {
     lineas: calculadas,
     totales: {
+      bruto,
       subtotal,
       descuento,
       itbis,
