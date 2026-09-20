@@ -91,9 +91,6 @@ function conexionPuente(url: string, token: string): Conexion {
           affectedRows: cuerpo.affectedRows ?? 0,
         });
         return [resultado, undefined] as [unknown, unknown];
-      } finally {
-        soltarTurno();
-      }
     },
     async end() {},
   };
