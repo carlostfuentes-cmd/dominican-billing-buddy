@@ -357,6 +357,18 @@ function DetalleFactura() {
         </Card>
   );
 
+  // Documento con el formato del diseñador (Diseñador de documentos).
+  const hoja =
+    conDisenio && plantilla ? (
+      <div className="print-area mx-auto w-fit overflow-x-auto">
+        <RenderPlantilla plantilla={plantilla} datos={datosDeFactura(factura, empresa)} />
+      </div>
+    ) : (
+      documento
+    );
+
+
+
   return (
     <div>
       <style>{cssPagina}</style>
