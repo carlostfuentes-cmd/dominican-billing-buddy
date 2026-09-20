@@ -220,47 +220,59 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
 
   const inicioMensual = `${sumarDias(hasta, -365).slice(0, 7)}-01`;
 
+  // El puente MariaDB del ERP no tolera una ráfaga grande de solicitudes HTTP.
+  // Ejecutamos las consultas en lotes pequeños dentro de esta petición, sin
+  // mantener una cola global que pueda sobrevivir incorrectamente entre
+  // ejecuciones del servidor.
+  async function ejecutarEnLotes<T>(tareas: Array<() => Promise<T>>, tamano = 2): Promise<T[]> {
+    const resultados: T[] = [];
+    for (let i = 0; i < tareas.length; i += tamano) {
+      resultados.push(...(await Promise.all(tareas.slice(i, i + tamano).map((tarea) => tarea()))));
+    }
+    return resultados;
+  }
+
   const [
-    ventas,
-    ventasPrev,
-    notasDev,
-    notasDevPrev,
-    pedidos,
-    porCobrar,
-    porCobrarPrev,
-    porPagar,
-    porPagarPrev,
-    agingCxCRaw,
-    agingCxPRaw,
-    bancos,
-    bancosPrev,
-    descuadrados,
-    mensualRaw,
-    flujoRaw,
-    gastosRaw,
-    centroRaw,
-    liquidezRaw,
-    secuencias,
-    sucursales,
-    departamentos,
-    monedas,
-  ] = await Promise.all([
-    sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
-    sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
-    sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [desde, hasta, ...paramsNotas()]),
-    sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [previo.desde, previo.hasta, ...paramsNotas()]),
-    sql<Record<string, unknown>>(
+    ventas = [],
+    ventasPrev = [],
+    notasDev = [],
+    notasDevPrev = [],
+    pedidos = [],
+    porCobrar = [],
+    porCobrarPrev = [],
+    porPagar = [],
+    porPagarPrev = [],
+    agingCxCRaw = [],
+    agingCxPRaw = [],
+    bancos = [],
+    bancosPrev = [],
+    descuadrados = [],
+    mensualRaw = [],
+    flujoRaw = [],
+    gastosRaw = [],
+    centroRaw = [],
+    liquidezRaw = [],
+    secuenciasRaw = [],
+    sucursales = [],
+    departamentos = [],
+    monedas = [],
+  ] = await ejecutarEnLotes<Array<Record<string, unknown>>>([
+    () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [desde, hasta, ...oc.params]),
+    () => sql<Record<string, unknown>>(SQL_VENTAS(oc.cond), [previo.desde, previo.hasta, ...oc.params]),
+    () => sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [desde, hasta, ...paramsNotas()]),
+    () => sql<Record<string, unknown>>(SQL_NOTAS(condNotas), [previo.desde, previo.hasta, ...paramsNotas()]),
+    () => sql<Record<string, unknown>>(
       `SELECT COUNT(*) AS cantidad FROM orders o
        WHERE o.invoice_id IS NULL AND o.date BETWEEN ? AND ?${oc.cond}`,
       [desde, hasta, ...oc.params],
     ),
-    sql<Record<string, unknown>>(SQL_BALANCE("ar"), [hasta]),
-    sql<Record<string, unknown>>(SQL_BALANCE("ar"), [previo.hasta]),
-    sql<Record<string, unknown>>(SQL_BALANCE("ap"), [hasta]),
-    sql<Record<string, unknown>>(SQL_BALANCE("ap"), [previo.hasta]),
-    sql<Record<string, unknown>>(SQL_AGING("ar"), [hasta, hasta]),
-    sql<Record<string, unknown>>(SQL_AGING("ap"), [hasta, hasta]),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(SQL_BALANCE("ar"), [hasta]),
+    () => sql<Record<string, unknown>>(SQL_BALANCE("ar"), [previo.hasta]),
+    () => sql<Record<string, unknown>>(SQL_BALANCE("ap"), [hasta]),
+    () => sql<Record<string, unknown>>(SQL_BALANCE("ap"), [previo.hasta]),
+    () => sql<Record<string, unknown>>(SQL_AGING("ar"), [hasta, hasta]),
+    () => sql<Record<string, unknown>>(SQL_AGING("ap"), [hasta, hasta]),
+    () => sql<Record<string, unknown>>(
       `SELECT k.currency_id AS moneda,
               ROUND(COALESCE(SUM(CASE WHEN e.type = 'D' THEN b.amount ELSE -b.amount END), 0), 2) AS saldo
        FROM banks k
@@ -270,7 +282,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        GROUP BY k.currency_id`,
       [hasta],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT k.currency_id AS moneda,
               ROUND(COALESCE(SUM(CASE WHEN e.type = 'D' THEN b.amount ELSE -b.amount END), 0), 2) AS saldo
        FROM banks k
@@ -280,7 +292,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        GROUP BY k.currency_id`,
       [previo.hasta],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT COUNT(*) AS cantidad FROM (
          SELECT j.journal_id
          FROM gl_journal j
@@ -291,7 +303,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        ) x`,
       [desde, hasta, ...paramsGl()],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT DATE_FORMAT(j.date, '%Y-%m') AS mes,
               ROUND(SUM(CASE WHEN LEFT(d.account,1) = '4' THEN d.credit - d.debit ELSE 0 END), 2) AS ingresos,
               ROUND(SUM(CASE WHEN LEFT(d.account,1) IN ('5','6','7') THEN d.debit - d.credit ELSE 0 END), 2) AS gastos
@@ -301,7 +313,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        GROUP BY mes ORDER BY mes`,
       [inicioMensual, hasta, ...paramsGl()],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT DATE_FORMAT(b.date, '%Y-%m-%d') AS fecha, k.currency_id AS moneda,
               ROUND(SUM(CASE WHEN e.type = 'D' THEN ABS(b.amount) ELSE 0 END), 2) AS entradas,
               ROUND(SUM(CASE WHEN e.type = 'C' THEN ABS(b.amount) ELSE 0 END), 2) AS salidas
@@ -313,7 +325,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        ORDER BY fecha`,
       [desde, hasta],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT d.account AS cuenta, COALESCE(c.name, d.account) AS nombre,
               ROUND(SUM(d.debit - d.credit), 2) AS monto
        FROM gl_journal j
@@ -327,7 +339,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        LIMIT 6`,
       [desde, hasta, ...paramsGl()],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT COALESCE(NULLIF(g.name,''), 'Sin centro de costo') AS nombre,
               ROUND(SUM(d.credit - d.debit), 2) AS monto
        FROM gl_journal j
@@ -340,7 +352,7 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        LIMIT 8`,
       [desde, hasta, ...paramsGl()],
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       `SELECT ROUND(SUM(CASE WHEN LEFT(d.account,2) = '11' THEN d.debit - d.credit ELSE 0 END), 2) AS activo,
               ROUND(SUM(CASE WHEN LEFT(d.account,2) = '21' THEN d.credit - d.debit ELSE 0 END), 2) AS pasivo
        FROM gl_journal j
@@ -348,15 +360,17 @@ export async function panelResumen(filtro: FiltroPanel): Promise<PanelResumen> {
        WHERE j.void = 0 AND j.date <= ?${condGl()}`,
       [hasta, ...paramsGl()],
     ),
-    listarSecuencias().catch(() => []),
-    sql<Record<string, unknown>>("SELECT branch_id AS id, name AS nombre FROM branchs ORDER BY name LIMIT 100"),
-    sql<Record<string, unknown>>(
+    async () => (await listarSecuencias().catch(() => [])) as unknown as Array<Record<string, unknown>>,
+    () => sql<Record<string, unknown>>("SELECT branch_id AS id, name AS nombre FROM branchs ORDER BY name LIMIT 100"),
+    () => sql<Record<string, unknown>>(
       "SELECT department_id AS id, name AS nombre FROM gl_department ORDER BY name LIMIT 300",
     ),
-    sql<Record<string, unknown>>(
+    () => sql<Record<string, unknown>>(
       "SELECT currency_id AS id, name AS nombre FROM currencies WHERE currency_id <> '000' ORDER BY is_base DESC, currency_id",
     ),
   ]);
+
+  const secuencias = secuenciasRaw as unknown as Awaited<ReturnType<typeof listarSecuencias>>;
 
   const v = ventas[0] ?? {};
   const vp = ventasPrev[0] ?? {};
