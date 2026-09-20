@@ -464,8 +464,13 @@ function NuevaCompraPage() {
 
           <div className="flex flex-wrap justify-end gap-6 border-t pt-3 text-sm tabular-nums">
             <span className="text-muted-foreground">
-              Subtotal <strong className="text-foreground">{money(totales.subtotal, moneda)}</strong>
+              Subtotal <strong className="text-foreground">{money(totales.bruto, moneda)}</strong>
             </span>
+            {totales.descuento > 0 && (
+              <span className="text-muted-foreground">
+                Descuentos <strong className="text-foreground">-{money(totales.descuento, moneda)}</strong>
+              </span>
+            )}
             <span className="text-muted-foreground">
               ITBIS <strong className="text-foreground">{money(totales.itbis, moneda)}</strong>
             </span>
