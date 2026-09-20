@@ -428,14 +428,15 @@ function DetalleFactura() {
         </div>
       </div>
 
-      {documento}
+      {hoja}
 
       {/* Copias adicionales: solo se ven al imprimir. */}
       {Array.from({ length: copias - 1 }).map((_, i) => (
         <div key={i} className="hidden print:block" style={{ breakBefore: "page" }}>
-          {documento}
+          {hoja}
         </div>
       ))}
+
     </div>
   );
 }
