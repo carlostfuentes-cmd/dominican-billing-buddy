@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { FileText, Plus, Printer, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,6 +98,7 @@ const lineaVacia: LineaEntrada = {
   precio: 0,
   descuento_pct: 0,
   tasa_itbis: 18,
+  observacion: "",
 };
 
 function NuevaFactura() {
@@ -171,6 +172,7 @@ function NuevaFactura() {
           precio: l.precio,
           descuento_pct: l.descuento_pct,
           tasa_itbis: l.tasa_itbis,
+          observacion: l.observacion ?? "",
         })),
       );
     }
@@ -243,6 +245,7 @@ function NuevaFactura() {
             precio: l.precio,
             descuento_pct: l.descuento_pct,
             tasa_itbis: l.tasa_itbis,
+            observacion: l.observacion ?? "",
           })),
         );
       }
