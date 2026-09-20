@@ -46,7 +46,7 @@ async function pdfDelDocumento(): Promise<string> {
 }
 
 interface Props {
-  empresaId: number | undefined;
+  empresaId: number | string | undefined;
   archivo: string;
   asunto: string;
   mensaje: string;
@@ -61,11 +61,12 @@ export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSuger
 
   const enviar = useMutation({
     mutationFn: async () => {
-      if (!empresaId) throw new Error("No hay empresa activa");
+      const idEmpresa = Number(empresaId);
+      if (!idEmpresa) throw new Error("No hay empresa activa");
       const base64 = await pdfDelDocumento();
       return enviarDocumentoPorCorreo({
         data: {
-          empresaId,
+          empresaId: idEmpresa,
           para,
           asunto: tema,
           mensaje: texto,

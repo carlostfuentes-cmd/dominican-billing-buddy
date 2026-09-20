@@ -111,8 +111,8 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
           <BotonFormato uso={uso} />
           <EnviarPorCorreo
             empresaId={empresa?.id}
-            archivo={`${tipo}-${doc.numero ?? doc.id}.pdf`}
-            asunto={`${cfg.singular} ${doc.numero ?? doc.id} — ${empresa?.nombre ?? ""}`.trim()}
+            archivo={`${tipo}-${doc.id}.pdf`}
+            asunto={`${cfg.singular} ${doc.id} — ${empresa?.nombre ?? ""}`.trim()}
             mensaje={`Estimados señores ${doc.cliente_nombre},\n\nAnexo encontrará el documento en formato PDF.\n\nSaludos cordiales,\n${empresa?.nombre ?? ""}`}
           />
           {tipo === "cotizacion" && !doc.anulado && (
