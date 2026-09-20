@@ -1334,6 +1334,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       item_id: string | null;
       codigo: string;
       descripcion: string;
+      observacion: string | null;
       cantidad: number;
       oferta: number;
       precio: number;
@@ -1345,6 +1346,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
     }>(
       `SELECT product_id AS item_id, product_id AS codigo,
               COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
+              notes AS observacion,
               quantity AS cantidad, bonus AS oferta, price AS precio,
               discount_rate AS descuento_pct,
               CASE WHEN quantity * price - discount > 0
@@ -1361,6 +1363,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       item_id: l.item_id,
       codigo: l.codigo,
       descripcion: l.descripcion,
+      observacion: l.observacion ?? "",
       cantidad: Number(l.cantidad),
       oferta: Number(l.oferta ?? 0),
       precio: Number(l.precio),
