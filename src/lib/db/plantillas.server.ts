@@ -61,7 +61,10 @@ export async function obtenerPlantilla(
       );
       const propia = filas.find((f) => String(f["company_id"]) === id);
       const general = filas.find((f) => String(f["company_id"]) === "*");
-      const p = (propia && parsear(propia)) || (general && parsear(general));
+      const p =
+        (propia && parsear(propia)) ||
+        (id === "1087" && docTipo === "factura" ? plantillaPredeterminada(id, docTipo) : null) ||
+        (general && parsear(general));
       if (p) return p;
     } catch {
       /* sin tabla o sin permisos: se usa la de fábrica */
@@ -70,6 +73,7 @@ export async function obtenerPlantilla(
   }
   return (
     demo.get(clave(id, docTipo)) ??
+    (id === "1087" && docTipo === "factura" ? plantillaPredeterminada(id, docTipo) : undefined) ??
     demo.get(clave("*", docTipo)) ??
     plantillaPredeterminada(id, docTipo)
   );
