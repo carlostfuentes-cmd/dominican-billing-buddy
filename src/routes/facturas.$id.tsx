@@ -262,7 +262,12 @@ function DetalleFactura() {
                     {verCodigo ? (
                       <TableCell className="font-mono text-xs">{l.codigo || "—"}</TableCell>
                     ) : null}
-                    <TableCell>{l.descripcion}</TableCell>
+                    <TableCell>
+                      {l.descripcion}
+                      {l.observacion ? (
+                        <div className="text-muted-foreground text-xs">{l.observacion}</div>
+                      ) : null}
+                    </TableCell>
                     <TableCell className="tabular text-right">{l.cantidad}</TableCell>
                     <TableCell className="tabular text-right">{money(l.precio, factura.moneda)}</TableCell>
                     {verItbisLinea ? (

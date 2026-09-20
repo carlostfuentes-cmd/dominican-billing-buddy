@@ -140,6 +140,7 @@ export const CAMPOS_SISTEMA: CampoSistema[] = [
   { id: "linea.numero", nombre: "No. de línea", grupo: "Detalle", linea: true, muestra: "1" },
   { id: "linea.codigo", nombre: "Código", grupo: "Detalle", linea: true, muestra: "55206" },
   { id: "linea.descripcion", nombre: "Descripción", grupo: "Detalle", linea: true, muestra: "TONER BLACK e477/527S" },
+  { id: "linea.observacion", nombre: "Observación del artículo", grupo: "Detalle", linea: true, muestra: "Entregar en almacén 2" },
   { id: "linea.serial", nombre: "Serial (S/N)", grupo: "Detalle", linea: true, muestra: "AB-99231" },
   { id: "linea.cantidad", nombre: "Cantidad", grupo: "Detalle", linea: true, muestra: "1.00" },
   { id: "linea.unidad", nombre: "Unidad", grupo: "Detalle", linea: true, muestra: "UND" },
