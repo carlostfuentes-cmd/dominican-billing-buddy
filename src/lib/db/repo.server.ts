@@ -1504,9 +1504,9 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
         `INSERT INTO orders_detail
            (order_id, branch_id, position, product_id, product_name, name,
             quantity, bonus, price, ref_price, tax1, tax2, tax3,
-            discount_rate, discount, cost, cost_ant, currency_rate,
+            discount_rate, discount, cost, cost_ant, currency_rate, notes,
             compound_qtty, compound_bonus, compound_price, compound_discount)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, 0, 0, 0, 0)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, ?, 0, 0, 0, 0)`,
         [
           orderId,
           sucursal,
@@ -1522,6 +1522,7 @@ export async function crearPedido(entrada: NuevoPedido): Promise<Factura> {
           l.descuento_pct,
           descuentoMonto,
           tasa,
+          l.observacion ?? "",
         ],
       );
     }
@@ -1641,9 +1642,9 @@ export async function actualizarPedido(id: number, entrada: NuevoPedido): Promis
         `INSERT INTO orders_detail
            (order_id, branch_id, position, product_id, product_name, name,
             quantity, bonus, price, ref_price, tax1, tax2, tax3,
-            discount_rate, discount, cost, cost_ant, currency_rate,
+            discount_rate, discount, cost, cost_ant, currency_rate, notes,
             compound_qtty, compound_bonus, compound_price, compound_discount)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, 0, 0, 0, 0)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, 0, ?, ?, 0, 0, 0, 0)`,
         [
           id,
           sucursal,
@@ -1659,6 +1660,7 @@ export async function actualizarPedido(id: number, entrada: NuevoPedido): Promis
           l.descuento_pct,
           descuentoMonto,
           tasa,
+          l.observacion ?? "",
         ],
       );
     }
