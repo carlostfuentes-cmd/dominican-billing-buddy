@@ -112,7 +112,7 @@ export function Aging({
           dataKey="monto"
           fill={color}
           radius={[4, 4, 0, 0]}
-          minPointSize={(valor: number) => (valor > 0 ? 6 : 0)}
+          minPointSize={(valor: number | null | undefined) => ((valor ?? 0) > 0 ? 6 : 0)}
         />
       </BarChart>
     </ResponsiveContainer>
