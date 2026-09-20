@@ -39,12 +39,15 @@ export const ETIQUETA_ESTADO: Record<EstadoFactura, string> = {
 };
 
 export interface Empresa {
+  /** companies.company_id — identifica la plantilla de impresión de la empresa. */
+  id?: string | undefined;
   nombre: string;
   rnc: string;
   direccion: string;
   telefono: string;
   email: string;
 }
+
 
 // Los identificadores son texto: provienen de las tablas existentes
 // (customers.customer_id, products.product_id).
