@@ -399,8 +399,13 @@ export function RecurrenteForm({ plantilla }: { plantilla?: PlantillaRecurrente 
           </Table>
           <div className="border-t bg-muted/35 px-5 py-4 text-right text-sm">
             <p className="text-muted-foreground">
-              Sub-total <span className="tabular ml-2 text-foreground">{money(totales.subtotal, moneda)}</span>
+              Sub-total <span className="tabular ml-2 text-foreground">{money(totales.bruto, moneda)}</span>
             </p>
+            {totales.descuento > 0 && (
+              <p className="text-muted-foreground">
+                Descuentos <span className="tabular ml-2 text-foreground">-{money(totales.descuento, moneda)}</span>
+              </p>
+            )}
             <p className="text-muted-foreground">
               ITBIS <span className="tabular ml-2 text-foreground">{money(totales.itbis, moneda)}</span>
             </p>

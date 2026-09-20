@@ -374,8 +374,14 @@ function NuevaNotaCredito() {
             <div className="border-t bg-muted/35 px-5 py-4 text-right text-sm">
               <p>
                 <span className="text-muted-foreground">Subtotal: </span>
-                <span className="tabular">{money(totales.subtotal, moneda)}</span>
+                <span className="tabular">{money(totales.bruto, moneda)}</span>
               </p>
+              {totales.descuento > 0 && (
+                <p>
+                  <span className="text-muted-foreground">Descuentos: </span>
+                  <span className="tabular">-{money(totales.descuento, moneda)}</span>
+                </p>
+              )}
               <p>
                 <span className="text-muted-foreground">ITBIS: </span>
                 <span className="tabular">{money(totales.itbis, moneda)}</span>
