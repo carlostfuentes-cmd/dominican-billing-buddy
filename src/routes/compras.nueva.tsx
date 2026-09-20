@@ -115,13 +115,16 @@ function NuevaCompraPage() {
   const totales = filas.reduce(
     (a, f) => {
       const t = totalFila(f);
+      const bruto = round2(f.cantidad * f.precio);
       return {
+        bruto: round2(a.bruto + bruto),
+        descuento: round2(a.descuento + (bruto - t.subtotal)),
         subtotal: round2(a.subtotal + t.subtotal),
         itbis: round2(a.itbis + t.itbis),
         total: round2(a.total + t.total),
       };
     },
-    { subtotal: 0, itbis: 0, total: 0 },
+    { bruto: 0, descuento: 0, subtotal: 0, itbis: 0, total: 0 },
   );
 
   const cambiar = (i: number, cambios: Partial<Fila>) =>
@@ -461,8 +464,13 @@ function NuevaCompraPage() {
 
           <div className="flex flex-wrap justify-end gap-6 border-t pt-3 text-sm tabular-nums">
             <span className="text-muted-foreground">
-              Subtotal <strong className="text-foreground">{money(totales.subtotal, moneda)}</strong>
+              Subtotal <strong className="text-foreground">{money(totales.bruto, moneda)}</strong>
             </span>
+            {totales.descuento > 0 && (
+              <span className="text-muted-foreground">
+                Descuentos <strong className="text-foreground">-{money(totales.descuento, moneda)}</strong>
+              </span>
+            )}
             <span className="text-muted-foreground">
               ITBIS <strong className="text-foreground">{money(totales.itbis, moneda)}</strong>
             </span>

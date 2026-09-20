@@ -713,11 +713,11 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
           <CardContent className="space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Sub-total</span>
-              <span className="tabular">{money(totales.subtotal, moneda)}</span>
+              <span className="tabular">{money(totales.bruto, moneda)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Descuentos</span>
-              <span className="tabular">{money(totales.descuento, moneda)}</span>
+              <span className="tabular">-{money(totales.descuento, moneda)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">ITBIS</span>

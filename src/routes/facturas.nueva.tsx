@@ -954,7 +954,7 @@ function NuevaFactura() {
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Sub-total</span>
-              <span className="tabular">{money(totales.subtotal, moneda)}</span>
+              <span className="tabular">{money(totales.bruto, moneda)}</span>
             </div>
             {totales.descuento > 0 && (
               <div className="flex justify-between">
