@@ -5,7 +5,7 @@
 import { ejecutar, sql } from "@/lib/db/mysql.server";
 import { usarMysql } from "@/lib/db/repo.server";
 import type { Plantilla, TipoPlantilla } from "@/lib/plantillas-tipos";
-import { plantillaBase } from "@/lib/plantillas-tipos";
+import { plantillaPredeterminada } from "@/lib/plantillas-tipos";
 
 const SQL_TABLA = `CREATE TABLE IF NOT EXISTS print_templates (
   company_id VARCHAR(20)  NOT NULL,
@@ -61,15 +61,21 @@ export async function obtenerPlantilla(
       );
       const propia = filas.find((f) => String(f["company_id"]) === id);
       const general = filas.find((f) => String(f["company_id"]) === "*");
-      const p = (propia && parsear(propia)) || (general && parsear(general));
+      const p =
+        (propia && parsear(propia)) ||
+        (id === "1087" && docTipo === "factura" ? plantillaPredeterminada(id, docTipo) : null) ||
+        (general && parsear(general));
       if (p) return p;
     } catch {
       /* sin tabla o sin permisos: se usa la de fábrica */
     }
-    return plantillaBase(id, docTipo);
+    return plantillaPredeterminada(id, docTipo);
   }
   return (
-    demo.get(clave(id, docTipo)) ?? demo.get(clave("*", docTipo)) ?? plantillaBase(id, docTipo)
+    demo.get(clave(id, docTipo)) ??
+    (id === "1087" && docTipo === "factura" ? plantillaPredeterminada(id, docTipo) : undefined) ??
+    demo.get(clave("*", docTipo)) ??
+    plantillaPredeterminada(id, docTipo)
   );
 }
 

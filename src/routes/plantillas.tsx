@@ -48,6 +48,7 @@ import {
   medidasPapel,
   nuevoElemento,
   plantillaBase,
+  plantillaPredeterminada,
   type BandaPlantilla,
   type ElementoPlantilla,
   type Plantilla,
@@ -365,7 +366,7 @@ function DisenadorPlantillas() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setPlantilla(plantillaBase(empresaId, docTipo))}
+            onClick={() => setPlantilla(plantillaPredeterminada(empresaId, docTipo))}
           >
             Restaurar diseño base
           </Button>
