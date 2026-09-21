@@ -39,6 +39,21 @@ const vacio: Form = {
   ssl: false,
 };
 
+const completarServidor = (form: Form): Form => {
+  const correo = (form.usuario || form.remitente).trim().toLowerCase();
+  if (form.servidor.trim() || !correo.endsWith("@gmail.com")) return form;
+  return { ...form, servidor: "smtp.gmail.com", puerto: 587, autenticacion: true, ssl: true };
+};
+
+const validar = (form: Form): string | null => {
+  if (!form.servidor.trim()) return "Escriba el servidor SMTP";
+  if (form.puerto < 1) return "Escriba un puerto válido";
+  if (form.autenticacion && !form.usuario.trim()) return "Escriba el usuario del correo";
+  if (form.autenticacion && !form.clave) return "Escriba la clave del correo";
+  if (!form.remitente.includes("@")) return "Escriba un remitente válido";
+  return null;
+};
+
 export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | undefined }) {
   const qc = useQueryClient();
   const id = Number(empresaId) || 0;
@@ -55,7 +70,13 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
   }, [data]);
 
   const guardar = useMutation({
-    mutationFn: () => guardarConfigCorreo({ data: { empresaId: id, ...form } }),
+    mutationFn: async () => {
+      const completo = completarServidor(form);
+      const error = validar(completo);
+      if (error) throw new Error(error);
+      setForm(completo);
+      return guardarConfigCorreo({ data: { empresaId: id, ...completo } });
+    },
     onSuccess: () => {
       toast.success("Datos del servidor de correos guardados");
       void qc.invalidateQueries({ queryKey: ["config-correo", id] });
@@ -64,7 +85,13 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
   });
 
   const probar = useMutation({
-    mutationFn: () => enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...form } }),
+    mutationFn: async () => {
+      const completo = completarServidor(form);
+      const error = validar(completo);
+      if (error) throw new Error(error);
+      setForm(completo);
+      return enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...completo } });
+    },
     onSuccess: (r) => {
       if (r.ok) toast.success("Correo de prueba enviado");
       else toast.error(r.mensaje);
@@ -84,7 +111,7 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
             id="smtp"
             value={form.servidor}
             maxLength={120}
-            placeholder="smtp.miproveedor.com"
+            placeholder="Ej.: smtp.gmail.com"
             onChange={(e) => setForm({ ...form, servidor: e.target.value })}
           />
         </div>
