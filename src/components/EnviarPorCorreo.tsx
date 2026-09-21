@@ -51,10 +51,19 @@ interface Props {
   asunto: string;
   mensaje: string;
   paraSugerido?: string;
+  /** Abre el diálogo automáticamente al montar (envío tras emitir). */
+  iniciarAbierto?: boolean;
 }
 
-export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSugerido }: Props) {
-  const [abierto, setAbierto] = useState(false);
+export function EnviarPorCorreo({
+  empresaId,
+  archivo,
+  asunto,
+  mensaje,
+  paraSugerido,
+  iniciarAbierto,
+}: Props) {
+  const [abierto, setAbierto] = useState(Boolean(iniciarAbierto));
   const [para, setPara] = useState(paraSugerido ?? "");
   const [tema, setTema] = useState(asunto);
   const [texto, setTexto] = useState(mensaje);
