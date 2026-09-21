@@ -119,6 +119,10 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
   });
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
+  // Precarga el correo del cliente para el envío de la cotización.
+  useEffect(() => {
+    if (cliente?.email && !correoCliente) setCorreoCliente(cliente.email);
+  }, [cliente, correoCliente]);
   const opcionesClientes = useMemo(
     () =>
       clientes
@@ -219,7 +223,10 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       void qc.invalidateQueries({ queryKey: ["documentos"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["valores-campos"] });
-      void navigate({ to: cfg.rutaDetalle, params: { id: String(doc.id) } });
+      const buscar: Record<string, unknown> = {};
+      if (tipo === "cotizacion" && enviarCliente && correoCliente.trim())
+        buscar.enviar = correoCliente.trim();
+      void navigate({ to: cfg.rutaDetalle, params: { id: String(doc.id) }, search: buscar });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),
   });
@@ -242,6 +249,10 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
   const enviar = (): void => {
     if (!clienteId) {
       toast.error("Selecciona un cliente");
+      return;
+    }
+    if (tipo === "cotizacion" && enviarCliente && !correoCliente.trim().includes("@")) {
+      toast.error("Escribe el correo del cliente o desmarca el envío");
       return;
     }
     if (!esDOP && (!tasa || tasa <= 0)) {
@@ -300,6 +311,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                 vacio="Sin clientes que coincidan"
                 onSeleccionar={(v) => {
                   setClienteId(v);
+                  setCorreoCliente("");
                   const c = clientes.find((x) => String(x.id) === v);
                   if (c) setDias(c.dias_credito);
                 }}
@@ -322,6 +334,35 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
                 onChange={(e) => setContacto(e.target.value)}
               />
             </div>
+            {tipo === "cotizacion" ? (
+              <div className="rounded-md border border-border p-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="enviar-correo-doc"
+                    checked={enviarCliente}
+                    onCheckedChange={(v) => setEnviarCliente(v === true)}
+                  />
+                  <Label htmlFor="enviar-correo-doc" className="text-sm font-normal">
+                    Enviar la cotización al cliente al guardar
+                  </Label>
+                </div>
+                {enviarCliente ? (
+                  <div className="mt-2">
+                    <Label htmlFor="correo-cliente-doc">Correo del cliente</Label>
+                    <Input
+                      id="correo-cliente-doc"
+                      type="email"
+                      value={correoCliente}
+                      placeholder="cliente@correo.com"
+                      onChange={(e) => setCorreoCliente(e.target.value)}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Precargado con el correo del cliente; puedes editarlo antes de guardar.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
