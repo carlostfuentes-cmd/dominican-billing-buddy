@@ -100,7 +100,11 @@ export async function guardarConfigCorreo(empresaId: number, cfg: ConfigCorreo):
     { nombre: nombreClave("servidor", empresaId), valor: cfg.servidor.trim(), kind: "C" },
     { nombre: nombreClave("puerto", empresaId), valor: String(cfg.puerto), kind: "N" },
     { nombre: nombreClave("usuario", empresaId), valor: cfg.usuario.trim(), kind: "C" },
-    { nombre: nombreClave("clave", empresaId), valor: cfg.clave, kind: "C" },
+    {
+      nombre: nombreClave("clave", empresaId),
+      valor: normalizarClaveCorreo(cfg.clave),
+      kind: "C",
+    },
     { nombre: nombreClave("remitente", empresaId), valor: cfg.remitente.trim(), kind: "C" },
     {
       nombre: nombreClave("remitenteNombre", empresaId),
