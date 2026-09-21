@@ -90,8 +90,9 @@ export async function listasCajaChica(): Promise<ListasCajaChica> {
       "SELECT project_id AS id, name AS nombre FROM projects WHERE status = 'ABIERTO' ORDER BY name",
     ),
     sql<Record<string, unknown>>(
-      `SELECT catalog_account AS cuenta, name AS nombre, COALESCE(kind, '') AS clasificacion
-         FROM gl_catalog ORDER BY catalog_account`,
+      `SELECT account AS cuenta, name AS nombre, level AS nivel, nature AS naturaleza,
+              COALESCE(kind,'') AS clasificacion
+         FROM gl_accounts WHERE is_detail = 1 AND status = 'A' ORDER BY account`,
     ),
   ]);
 
@@ -112,8 +113,8 @@ export async function listasCajaChica(): Promise<ListasCajaChica> {
     cuentas: cuentas.map((r) => ({
       cuenta: txt(r["cuenta"]),
       nombre: txt(r["nombre"]),
-      nivel: 0,
-      naturaleza: "D" as const,
+      nivel: num(r["nivel"]),
+      naturaleza: txt(r["naturaleza"]) === "C" ? ("C" as const) : ("D" as const),
       detalle: true,
       clasificacion: txt(r["clasificacion"]),
     })),
