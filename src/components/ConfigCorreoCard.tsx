@@ -48,7 +48,6 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
   const { data } = useQuery({
     queryKey: ["config-correo", id],
     queryFn: () => obtenerConfigCorreo({ data: { empresaId: id } }),
-    enabled: id > 0,
   });
 
   useEffect(() => {
@@ -161,7 +160,7 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
           </label>
         </div>
         <div className="sm:col-span-2">
-          <Button onClick={() => guardar.mutate()} disabled={guardar.isPending || id === 0}>
+          <Button onClick={() => guardar.mutate()} disabled={guardar.isPending}>
             {guardar.isPending ? "Guardando…" : "Guardar"}
           </Button>
         </div>
