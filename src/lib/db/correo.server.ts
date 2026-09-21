@@ -84,7 +84,7 @@ export async function leerConfigCorreo(empresaId: number): Promise<ConfigCorreo>
     servidor: leer("servidor"),
     puerto: Number.isFinite(puerto) && puerto > 0 ? puerto : 25,
     usuario: leer("usuario"),
-    clave: leer("clave"),
+    clave: normalizarClaveCorreo(leer("clave")),
     remitente: leer("remitente"),
     remitenteNombre: leer("remitenteNombre"),
     copia: leer("copia"),
