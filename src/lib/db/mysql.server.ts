@@ -38,7 +38,7 @@ let ultimoError: string | null = null;
 const TIEMPO_MAXIMO_MS = 20_000;
 const ESPERA_TRAS_FALLO_MS = 8_000;
 const ESPERA_AGRUPACION_MS = 8;
-const MAX_CONSULTAS_POR_LOTE = 30;
+const MAX_CONSULTAS_POR_LOTE = 6;
 let falloHasta = 0;
 
 type ConsultaPendiente = {
@@ -139,7 +139,10 @@ async function vaciarLote(url: string, token: string) {
     // no entiende lotes. En ese caso ejecutamos las lecturas una por una y la
     // aplicación sigue operando hasta que se suba el puente nuevo.
     const mensaje = error instanceof Error ? error.message : String(error);
-    if (/Consulta vacía|lote|queries/i.test(mensaje)) {
+    // Si el lote completo tardó demasiado, se reintenta consulta por consulta:
+    // así una consulta lenta no tumba las demás ni deja la pantalla en blanco.
+    if (/Consulta vacía|lote|queries|tardó demasiado/i.test(mensaje)) {
+      falloHasta = 0;
       for (const item of lote) {
         try {
           const resultado = await pedirPuente(url, token, { sql: item.sql, params: item.params }, true);
