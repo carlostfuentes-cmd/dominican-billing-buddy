@@ -47,6 +47,7 @@ export const obtenerMotivosDevolucion = createServerFn({ method: "GET" }).handle
 
 const nuevoDocumentoSchema = z.object({
   tipo: tipoDoc,
+  id: z.number().int().positive().optional(),
   cliente_id: texto(20).min(1, "Cliente requerido"),
   fecha,
   fecha_entrega: fecha.optional(),
@@ -87,7 +88,12 @@ const nuevoDocumentoSchema = z.object({
 export const guardarDocumento = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => nuevoDocumentoSchema.parse(d))
   .handler(async ({ data }): Promise<Documento> => {
-    const doc = await (await repo()).crearDocumento(data);
+    const editando = typeof data.id === "number";
+    if (editando && data.tipo !== "cotizacion")
+      throw new Error("Sólo las cotizaciones pueden editarse");
+    const doc = editando
+      ? await (await repo()).actualizarCotizacion(data as NuevoDocumento & { id: number })
+      : await (await repo()).crearDocumento(data);
     const menus: Record<string, string> = {
       cotizacion: "2.01.01",
       conduce: "2.01.01.5",
@@ -100,8 +106,10 @@ export const guardarDocumento = createServerFn({ method: "POST" })
     };
     await auditar({
       menu_id: menus[data.tipo] ?? null,
-      tipo: "A",
-      accion: `${nombres[data.tipo] ?? "Documento"}: ${doc.id} — ${doc.cliente_nombre}`,
+      tipo: editando ? "E" : "A",
+      accion: `${nombres[data.tipo] ?? "Documento"}: ${doc.id} — ${doc.cliente_nombre}${
+        editando ? " (editada)" : ""
+      }`,
       referencia: doc.id,
       cambios: data,
     });

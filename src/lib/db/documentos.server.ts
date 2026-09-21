@@ -599,6 +599,113 @@ export async function crearDocumento(entrada: NuevoDocumento): Promise<Documento
   return doc;
 }
 
+/** Actualiza una cotización existente (cabecera y líneas); no permitido si está anulada. */
+export async function actualizarCotizacion(
+  entrada: NuevoDocumento & { id: number },
+): Promise<Documento> {
+  const { lineas, totales } = calcularTotales(entrada.lineas);
+  if (!lineas.length) throw new Error("El documento debe tener al menos una línea");
+
+  const moneda = (entrada.moneda || "DOP").toUpperCase();
+  const tasa = entrada.tasa_cambio && entrada.tasa_cambio > 0 ? entrada.tasa_cambio : 1;
+
+  if (await usarMysql()) {
+    const actuales = await sql<{ void: number | null }>(
+      "SELECT void FROM quotations WHERE quotation_id = ?",
+      [entrada.id],
+    );
+    if (!actuales.length) throw new Error("No encontramos esa cotización");
+    if (Number(actuales[0]?.void ?? 0) === 1)
+      throw new Error("La cotización está anulada y no puede editarse");
+
+    const clientes = await sql<{ name: string }>(
+      "SELECT name FROM customers WHERE customer_id = ?",
+      [entrada.cliente_id],
+    );
+    const cliente = clientes[0];
+    if (!cliente) throw new Error("Cliente no encontrado");
+
+    const d = await defectos();
+    const sucursal = num(entrada.sucursal_id, 1);
+    const vendedor = num(entrada.vendedor_id, d.salesman_id);
+
+    await ejecutar(
+      `UPDATE quotations
+          SET date = ?, customer_name = ?, contact = ?, customer_order = ?,
+              credit_days = ?, currency_rate = ?, notes = ?, customer_id = ?,
+              salesman_id = ?, currency_id = ?, branch_id = ?, project_id = ?,
+              department_id = ?, tech_id = ?
+        WHERE quotation_id = ?`,
+      [
+        entrada.fecha,
+        cliente.name,
+        entrada.contacto ?? "",
+        entrada.orden_cliente ?? "",
+        entrada.dias_credito,
+        tasa,
+        entrada.notas,
+        entrada.cliente_id,
+        vendedor,
+        moneda,
+        sucursal,
+        entrada.proyecto_id ? Number(entrada.proyecto_id) : null,
+        entrada.departamento_id ? Number(entrada.departamento_id) : null,
+        entrada.tecnico_id ? Number(entrada.tecnico_id) : null,
+        entrada.id,
+      ],
+    );
+    await ejecutar("DELETE FROM quotations_detail WHERE quotation_id = ?", [entrada.id]);
+    for (const [pos, l] of lineas.entries()) {
+      const descuento = round2(l.cantidad * l.precio * (l.descuento_pct / 100));
+      await ejecutar(
+        `INSERT INTO quotations_detail
+           (quotation_id, position, product_id, name, quantity, bonus, price, ref_price,
+            tax1, tax2, tax3, discount_rate, discount, cost, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, 0, ?)`,
+        [
+          entrada.id,
+          pos + 1,
+          l.item_id ?? l.codigo ?? "",
+          l.descripcion,
+          l.cantidad,
+          l.oferta ?? 0,
+          l.precio,
+          l.precio,
+          l.itbis,
+          l.descuento_pct,
+          descuento,
+          l.observacion ?? "",
+        ],
+      );
+    }
+    const actualizada = await obtenerDocumento("cotizacion", entrada.id);
+    if (!actualizada) throw new Error("No se pudo leer la cotización actualizada");
+    return actualizada;
+  }
+
+  // Modo demostración
+  const docs = demoDocs.get("cotizacion") ?? [];
+  const doc = docs.find((d) => d.id === entrada.id);
+  if (!doc) throw new Error("No encontramos esa cotización");
+  if (doc.anulado) throw new Error("La cotización está anulada y no puede editarse");
+  Object.assign(doc, {
+    fecha: entrada.fecha,
+    cliente_id: entrada.cliente_id,
+    moneda,
+    tasa_cambio: tasa,
+    dias_credito: entrada.dias_credito,
+    notas: entrada.notas,
+    contacto: entrada.contacto ?? "",
+    orden_cliente: entrada.orden_cliente ?? "",
+    subtotal: totales.subtotal,
+    descuento: totales.descuento,
+    itbis: totales.itbis,
+    total: totales.total,
+    lineas,
+  });
+  return doc;
+}
+
 /** Anula una cotización (queda registrada, nunca se borra). */
 export async function anularCotizacion(id: number): Promise<void> {
   if (await usarMysql()) {

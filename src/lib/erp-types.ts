@@ -633,6 +633,8 @@ export interface Documento {
 
 export interface NuevoDocumento {
   tipo: TipoDocumento;
+  /** Edición: id del documento existente (sólo cotizaciones). */
+  id?: number | undefined;
   cliente_id: string;
   fecha: string;
   fecha_entrega?: string | undefined;
