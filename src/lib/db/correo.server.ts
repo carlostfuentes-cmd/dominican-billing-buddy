@@ -198,7 +198,7 @@ export async function enviarCorreoConConfig(
         host: cfg.servidor,
         port: cfg.puerto,
         user: cfg.usuario,
-        password: cfg.clave,
+        password: normalizarClaveCorreo(cfg.clave),
         from: cfg.remitente,
         fromName: cfg.remitenteNombre,
         to: destinos,
@@ -215,6 +215,18 @@ export async function enviarCorreoConConfig(
     | { ok?: boolean; error?: string }
     | null;
   if (!respuesta.ok || !cuerpo?.ok) {
-    throw new Error(cuerpo?.error || "El servidor de correos rechazó el mensaje");
+    const error = cuerpo?.error || "El servidor de correos rechazó el mensaje";
+    if (/usuario o clave/i.test(error)) {
+      const clave = normalizarClaveCorreo(cfg.clave);
+      const gmail = /gmail|googlemail/i.test(cfg.servidor);
+      const detalle = gmail
+        ? clave.length === 16
+          ? "Gmail rechazó la contraseña de aplicación guardada. Genera una nueva en tu cuenta de Google y guárdala en Configuración → Datos servidor de correos."
+          : `Gmail no acepta la contraseña normal de la cuenta: hay que usar una contraseña de aplicación de 16 caracteres (la guardada tiene ${clave.length}). Genérala en tu cuenta de Google y guárdala en Configuración → Datos servidor de correos.`
+        : `El servidor ${cfg.servidor} rechazó el usuario ${cfg.usuario}. Revisa la clave guardada en Configuración → Datos servidor de correos.`;
+      throw new Error(detalle);
+    }
+    throw new Error(error);
   }
 }
+
