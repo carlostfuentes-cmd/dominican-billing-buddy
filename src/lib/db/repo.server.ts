@@ -1228,6 +1228,7 @@ interface FilaFactura {
   orden_vendedor: string | null;
   cliente_direccion: string | null;
   cliente_telefono: string | null;
+  cliente_email: string | null;
   efectivo: number | null;
   tarjeta: number | null;
   cheque: number | null;
