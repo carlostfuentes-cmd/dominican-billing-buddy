@@ -162,11 +162,11 @@ async function vaciarLote(url: string, token: string) {
   }
 }
 
-function conexionPuente(url: string, token: string): Conexion {
+function conexionPuente(url: string, token: string, admiteLotes: boolean): Conexion {
   return {
     async query(sql: string, params: unknown[] = []) {
       if (Date.now() < falloHasta) throw new Error("Servidor de datos temporalmente no disponible");
-      if (esLectura(sql)) {
+      if (admiteLotes && esLectura(sql)) {
         return new Promise<[unknown, unknown]>((resolve, reject) => {
           lotePendiente.push({ sql, params, resolve, reject });
           if (lotePendiente.length >= MAX_CONSULTAS_POR_LOTE) void vaciarLote(url, token);
@@ -211,11 +211,18 @@ async function crearConexion(): Promise<Conexion | null> {
 
   const puente = leerPuente();
   if (puente) {
-    // No ejecutar un SELECT 1 antes de cada proceso: la primera consulta real
-    // ya verifica el puente y evita duplicar tráfico y tiempo de espera.
-    const conexion = conexionPuente(puente.url, puente.token);
-    cache = { conexion };
-    return conexion;
+    try {
+      // El ping no abre MariaDB. Solo identifica en milisegundos si el archivo
+      // instalado admite lotes; así la versión anterior sigue funcionando sin
+      // esperar un timeout mientras el usuario reemplaza el archivo.
+      const capacidad = await pedirPuente(puente.url, puente.token, { ping: true }, false);
+      const conexion = conexionPuente(puente.url, puente.token, Number(capacidad["version"] ?? 1) >= 2);
+      cache = { conexion };
+      return conexion;
+    } catch (error) {
+      console.error("Puente MySQL no disponible:", error instanceof Error ? error.message : String(error));
+      return null;
+    }
   }
 
   const cred = leerCredenciales();
