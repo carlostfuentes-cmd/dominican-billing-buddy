@@ -7,11 +7,12 @@ interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
 }
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, topScrollbar = false, ...props }, forwardedRef) => {
+  ({ className, topScrollbar = true, ...props }, forwardedRef) => {
     const tableRef = React.useRef<HTMLTableElement | null>(null);
     const topRef = React.useRef<HTMLDivElement | null>(null);
     const bottomRef = React.useRef<HTMLDivElement | null>(null);
     const [contentWidth, setContentWidth] = React.useState(0);
+    const [hasHorizontalOverflow, setHasHorizontalOverflow] = React.useState(false);
     const syncing = React.useRef(false);
 
     const setTableRef = React.useCallback(
@@ -25,11 +26,16 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
 
     React.useEffect(() => {
       const table = tableRef.current;
-      if (!table || !topScrollbar) return;
-      const medir = () => setContentWidth(table.scrollWidth);
+      const bottom = bottomRef.current;
+      if (!table || !bottom || !topScrollbar) return;
+      const medir = () => {
+        setContentWidth(table.scrollWidth);
+        setHasHorizontalOverflow(table.scrollWidth > bottom.clientWidth + 1);
+      };
       medir();
       const observer = new ResizeObserver(medir);
       observer.observe(table);
+      observer.observe(bottom);
       return () => observer.disconnect();
     }, [topScrollbar]);
 
@@ -46,7 +52,7 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
 
     return (
       <>
-        {topScrollbar && (
+        {topScrollbar && hasHorizontalOverflow && (
           <div
             ref={topRef}
             className="mb-1 h-4 w-full overflow-x-auto overflow-y-hidden"
