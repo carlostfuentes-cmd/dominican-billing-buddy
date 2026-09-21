@@ -1,0 +1,10 @@
+import { sql } from "./src/lib/db/mysql.server";
+const p = async (l:string,q:string)=>{try{console.log("== "+l, JSON.stringify(await sql<any>(q),null,0).slice(0,1800));}catch(e){console.log("ERR "+l,String(e));}};
+await p("ncf_kinds", `SELECT * FROM ncf_kinds`);
+await p("expenses_kinds", `SELECT * FROM expenses_kinds`);
+await p("tablas isr", `SHOW TABLES LIKE '%retention%'`);
+await p("projects", `SELECT * FROM projects LIMIT 5`);
+await p("branchs", `SELECT * FROM branchs LIMIT 5`);
+await p("agrupado reposiciones", `SELECT post_number, post_date, COUNT(*) n, SUM(amount) t FROM petty_cash_detail GROUP BY post_number, post_date ORDER BY post_date DESC LIMIT 6`);
+await p("kinds usados", `SELECT kind, status, COUNT(*) n FROM petty_cash_detail GROUP BY kind, status`);
+process.exit(0);
