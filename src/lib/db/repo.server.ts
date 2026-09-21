@@ -1380,50 +1380,55 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
     const f = filas[0];
     if (!f) return null;
     const lineas = await sql<{
+      orders_detail_id: number;
       item_id: string | null;
       codigo: string;
-      descripcion: string;
+      product_name: string | null;
+      name: string | null;
       observacion: string | null;
       cantidad: number;
       oferta: number;
       precio: number;
       descuento_pct: number;
       descuento_monto: number;
-      tasa_itbis: number;
-      subtotal: number;
-      itbis: number;
-      total: number;
+      tax1: number;
+      tax2: number;
+      tax3: number;
     }>(
-      `SELECT product_id AS item_id, product_id AS codigo,
-              COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
+      `SELECT orders_detail_id, product_id AS item_id, product_id AS codigo,
+              product_name, name,
               notes AS observacion,
               quantity AS cantidad, bonus AS oferta, price AS precio,
-               discount_rate AS descuento_pct, discount AS descuento_monto,
-              CASE WHEN quantity * price - discount > 0
-                   THEN ROUND((tax1 + tax2 + tax3) / (quantity * price - discount) * 100)
-                   ELSE 0 END AS tasa_itbis,
-              ROUND(quantity * price - discount, 2) AS subtotal,
-              ROUND(tax1 + tax2 + tax3, 2) AS itbis,
-              ROUND(quantity * price - discount + tax1 + tax2 + tax3, 2) AS total
-       FROM orders_detail WHERE order_id = ? ORDER BY orders_detail_id`,
+              discount_rate AS descuento_pct, discount AS descuento_monto,
+              tax1, tax2, tax3
+       FROM orders_detail WHERE order_id = ?`,
       [id],
       { agrupar: false, ignorarPausa: true },
     );
     const factura = mapearFactura(f);
-    factura.lineas = lineas.map((l) => ({
-      item_id: l.item_id,
-      codigo: l.codigo,
-      descripcion: l.descripcion,
-      observacion: l.observacion ?? "",
-      cantidad: Number(l.cantidad),
-      oferta: Number(l.oferta ?? 0),
-      precio: Number(l.precio),
-      descuento_pct: Number(l.descuento_pct),
-      tasa_itbis: Number(l.tasa_itbis),
-      subtotal: Number(l.subtotal),
-      itbis: Number(l.itbis),
-      total: Number(l.total),
-    }));
+    factura.lineas = lineas
+      .sort((a, b) => Number(a.orders_detail_id) - Number(b.orders_detail_id))
+      .map((l) => {
+        const cantidad = Number(l.cantidad ?? 0);
+        const precio = Number(l.precio ?? 0);
+        const descuento = Number(l.descuento_monto ?? 0);
+        const subtotal = round2(cantidad * precio - descuento);
+        const itbis = round2(Number(l.tax1 ?? 0) + Number(l.tax2 ?? 0) + Number(l.tax3 ?? 0));
+        return {
+          item_id: l.item_id,
+          codigo: l.codigo,
+          descripcion: l.product_name?.trim() || l.name?.trim() || l.codigo,
+          observacion: l.observacion ?? "",
+          cantidad,
+          oferta: Number(l.oferta ?? 0),
+          precio,
+          descuento_pct: Number(l.descuento_pct ?? 0),
+          tasa_itbis: subtotal > 0 ? Math.round((itbis / subtotal) * 100) : 0,
+          subtotal,
+          itbis,
+          total: round2(subtotal + itbis),
+        };
+      });
 
     factura.subtotal = round2(factura.lineas.reduce((s, l) => s + l.subtotal, 0));
     factura.itbis = round2(factura.lineas.reduce((s, l) => s + l.itbis, 0));
