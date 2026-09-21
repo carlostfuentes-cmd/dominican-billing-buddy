@@ -9,11 +9,11 @@ const empresaOpcional = z.number().int().nonnegative().optional();
 
 const configSchema = z.object({
   empresaId: empresaOpcional,
-  servidor: z.string().trim().max(120),
+  servidor: z.string().trim().min(1, "Escriba el servidor SMTP").max(120),
   puerto: z.number().int().min(1).max(65535),
   usuario: z.string().trim().max(120),
   clave: z.string().max(120),
-  remitente: z.string().trim().max(120),
+  remitente: z.string().trim().email("Escriba un remitente válido").max(120),
   remitenteNombre: z.string().trim().max(120),
   copia: z.string().trim().max(120),
   autenticacion: z.boolean(),
