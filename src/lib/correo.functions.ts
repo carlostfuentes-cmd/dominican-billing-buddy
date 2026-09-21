@@ -20,6 +20,11 @@ const configSchema = z.object({
   ssl: z.boolean(),
 });
 
+export type Resultado = { ok: true } | { ok: false; mensaje: string };
+
+const mensajeError = (e: unknown) =>
+  e instanceof Error && e.message ? e.message : "No se pudo enviar el correo";
+
 const anexoSchema = z.object({
   filename: z.string().trim().min(1).max(120),
   contentType: z.string().trim().min(1).max(80),
@@ -51,14 +56,18 @@ export const enviarCorreoPrueba = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<{ ok: true }> => {
+  .handler(async ({ data }): Promise<Resultado> => {
     const mod = await correo();
-    await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
-      para: [data.para],
-      asunto: "Prueba de configuración de correo",
-      html: "<p>Este es un mensaje de prueba enviado desde su ERP. Si lo recibió, la configuración del servidor de correos es correcta.</p>",
-    });
-    return { ok: true };
+    try {
+      await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
+        para: [data.para],
+        asunto: "Prueba de configuración de correo",
+        html: "<p>Este es un mensaje de prueba enviado desde su ERP. Si lo recibió, la configuración del servidor de correos es correcta.</p>",
+      });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, mensaje: mensajeError(e) };
+    }
   });
 
 export const enviarDocumentoPorCorreo = createServerFn({ method: "POST" })
@@ -73,7 +82,7 @@ export const enviarDocumentoPorCorreo = createServerFn({ method: "POST" })
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<{ ok: true }> => {
+  .handler(async ({ data }): Promise<Resultado> => {
     const destinos = data.para
       .split(/[,;]/)
       .map((d) => d.trim())
@@ -83,11 +92,15 @@ export const enviarDocumentoPorCorreo = createServerFn({ method: "POST" })
       .map((p) => `<p style="margin:0 0 12px">${p.replace(/\n/g, "<br />")}</p>`)
       .join("");
     const mod = await correo();
-    await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
-      para: destinos,
-      asunto: data.asunto,
-      html: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222">${cuerpo}</div>`,
-      anexos: data.anexos,
-    });
-    return { ok: true };
+    try {
+      await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
+        para: destinos,
+        asunto: data.asunto,
+        html: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222">${cuerpo}</div>`,
+        anexos: data.anexos,
+      });
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, mensaje: mensajeError(e) };
+    }
   });

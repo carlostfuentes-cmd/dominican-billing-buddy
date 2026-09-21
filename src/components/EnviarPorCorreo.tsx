@@ -73,7 +73,11 @@ export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSuger
         },
       });
     },
-    onSuccess: () => {
+    onSuccess: (r) => {
+      if (!r.ok) {
+        toast.error(r.mensaje);
+        return;
+      }
       toast.success("Correo enviado con el documento anexo");
       setAbierto(false);
     },
