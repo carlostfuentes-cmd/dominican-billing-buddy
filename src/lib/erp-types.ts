@@ -1558,3 +1558,157 @@ export interface ResultadoMovimientoBanco {
   id_destino?: number | undefined;
   ap_id?: number | undefined;
 }
+
+/* ------------------------------- Caja chica ------------------------------- */
+
+export interface CajaChica {
+  id: string;
+  nombre: string;
+  fecha: string;
+  activa: boolean;
+  sucursal_id: string;
+  sucursal: string;
+  cuenta_contable: string;
+  cuenta_contable_nombre: string;
+  /** Fondo asignado (suma de las aperturas registradas). */
+  fondo: number;
+}
+
+/** Comprobante o vale registrado en la caja chica. */
+export interface ComprobanteCaja {
+  id: number;
+  caja_id: string;
+  caja: string;
+  /** 'A' apertura, 'I' ingreso al fondo, 'E' egreso (gasto). */
+  tipo: string;
+  fecha: string;
+  referencia: string;
+  descripcion: string;
+  bienes: number;
+  servicios: number;
+  itbis: number;
+  retencion_itbis: number;
+  retencion_isr: number;
+  propina: number;
+  isc: number;
+  otros_impuestos: number;
+  total: number;
+  /** 'P' pendiente de aprobación, 'A' aprobado. */
+  estado: string;
+  cedula: string;
+  rnc: string;
+  beneficiario: string;
+  ncf: string;
+  autorizacion: string;
+  vigencia: string;
+  ncf_id: string;
+  ncf_tipo: string;
+  gasto_id: string;
+  gasto: string;
+  gasto_menor: boolean;
+  isr_id: string;
+  proyecto_id: string;
+  cuenta_gasto: string;
+  cuenta_itbis: string;
+  cuenta_isr: string;
+  reposicion_numero: string;
+  reposicion_fecha: string;
+  reposicion_banco_id: number;
+  /** Se puede modificar mientras no tenga reposición. */
+  editable: boolean;
+  asiento: LineaAsiento[];
+}
+
+export interface NuevoComprobanteCaja {
+  id?: number | undefined;
+  caja_id: string;
+  tipo: string;
+  fecha: string;
+  referencia: string;
+  descripcion: string;
+  bienes: number;
+  servicios: number;
+  itbis: number;
+  retencion_itbis: number;
+  retencion_isr: number;
+  propina: number;
+  isc: number;
+  otros_impuestos: number;
+  estado: string;
+  cedula: string;
+  rnc: string;
+  beneficiario: string;
+  ncf: string;
+  autorizacion: string;
+  vigencia?: string | undefined;
+  ncf_id: string;
+  gasto_id: string;
+  gasto_menor: boolean;
+  isr_id?: string | undefined;
+  proyecto_id?: string | undefined;
+  cuenta_gasto: string;
+  cuenta_itbis?: string | undefined;
+  cuenta_isr?: string | undefined;
+  asiento?: LineaAsiento[] | undefined;
+}
+
+export interface FiltroCajaChica {
+  cajaId?: string | undefined;
+  desde?: string | undefined;
+  hasta?: string | undefined;
+  estado?: string | undefined;
+  gastoId?: string | undefined;
+  busqueda?: string | undefined;
+}
+
+export interface ResumenCajaChica {
+  fondo: number;
+  pendiente: number;
+  disponible: number;
+  repuesto: number;
+  comprobantes_pendientes: number;
+}
+
+export interface ListasCajaChica {
+  cajas: CajaChica[];
+  comprobantes_fiscales: OpcionId[];
+  gastos: OpcionId[];
+  retenciones: { id: string; nombre: string; tasa: number }[];
+  departamentos: OpcionId[];
+  proyectos: OpcionId[];
+  cuentas: CuentaCatalogo[];
+}
+
+export interface NuevaReposicionCaja {
+  caja_id: string;
+  banco_id: string;
+  tipo_id: string;
+  numero: string;
+  fecha: string;
+  descripcion: string;
+  comprobantes: number[];
+  asiento?: LineaAsiento[] | undefined;
+}
+
+/** Total del comprobante de caja chica a partir de sus montos absolutos. */
+export function totalComprobanteCaja(c: {
+  bienes: number;
+  servicios: number;
+  itbis: number;
+  propina: number;
+  isc: number;
+  otros_impuestos: number;
+  retencion_itbis: number;
+  retencion_isr: number;
+}): number {
+  return round2(
+    Math.abs(c.bienes) +
+      Math.abs(c.servicios) +
+      Math.abs(c.itbis) +
+      Math.abs(c.propina) +
+      Math.abs(c.isc) +
+      Math.abs(c.otros_impuestos) -
+      Math.abs(c.retencion_itbis) -
+      Math.abs(c.retencion_isr),
+  );
+}
