@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ import {
   guardarConfigCorreo,
   obtenerConfigCorreo,
 } from "@/lib/correo.functions";
+import { PUENTE_PHP } from "@/lib/puente-php";
 
 interface Form {
   servidor: string;
@@ -181,10 +183,30 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
             {probar.isPending ? "Enviando…" : "Enviar prueba"}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground sm:col-span-2">
-          El correo sale por este servidor y lleva el documento anexo en PDF. Si cambió el archivo
-          puente, vuelva a subir la versión que se descarga en esta misma pantalla.
-        </p>
+        <div className="flex flex-col gap-2 border-t pt-4 sm:col-span-2">
+          <p className="text-xs text-muted-foreground">
+            El correo sale por este servidor y lleva el documento anexo en PDF. Para que funcione,
+            el archivo puente de su servidor debe ser la versión más reciente: descárguelo aquí y
+            súbalo reemplazando el anterior.
+          </p>
+          <div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const blob = new Blob([PUENTE_PHP], { type: "application/octet-stream" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "puente-mysql.php";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Descargar archivo puente
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
