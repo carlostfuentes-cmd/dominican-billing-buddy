@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -225,7 +225,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       void qc.invalidateQueries({ queryKey: ["valores-campos"] });
       const buscar: Record<string, unknown> = {};
       if (tipo === "cotizacion" && enviarCliente && correoCliente.trim())
-        buscar.enviar = correoCliente.trim();
+        buscar["enviar"] = correoCliente.trim();
       void navigate({ to: cfg.rutaDetalle, params: { id: String(doc.id) }, search: buscar });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),

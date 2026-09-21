@@ -50,11 +50,11 @@ interface Props {
   archivo: string;
   asunto: string;
   mensaje: string;
-  paraSugerido?: string;
+  paraSugerido?: string | undefined;
   /** Abre el diálogo automáticamente al montar (envío tras emitir). */
-  iniciarAbierto?: boolean;
+  iniciarAbierto?: boolean | undefined;
   /** Aviso cuando el diálogo se cierra (para limpiar la dirección de la URL). */
-  alCerrar?: () => void;
+  alCerrar?: (() => void) | undefined;
 }
 
 export function EnviarPorCorreo({
