@@ -342,6 +342,23 @@ function NuevaOperacionPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // En un movimiento copiado, al cambiar el monto se pone el mismo monto en las
+  // cuentas que tenían el monto anterior (el resto, como comisiones, no cambia).
+  useEffect(() => {
+    if (!asientoCopiado || montoBase === null) return;
+    if (!(monto > 0) || Math.abs(monto - montoBase) < 0.005) return;
+    setLineas((prev) =>
+      prev.map((l) => ({
+        ...l,
+        debito: Math.abs(Math.abs(l.debito) - montoBase) < 0.005 ? monto : l.debito,
+        credito: Math.abs(Math.abs(l.credito) - montoBase) < 0.005 ? monto : l.credito,
+      })),
+    );
+    setMontoBase(monto);
+  }, [asientoCopiado, monto, montoBase]);
+
+
+
   /** Qué falta para poder guardar, en palabras del usuario. */
   const faltantes = [
     !bancoId ? "la cuenta bancaria" : "",
