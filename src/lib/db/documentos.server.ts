@@ -40,6 +40,7 @@ const SQL_COTIZACIONES = `
            COALESCE(NULLIF(c.rnc, ''), '') AS cliente_rnc,
            COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
            COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           COALESCE(NULLIF(c.main_email, ''), '') AS cliente_email,
            COALESCE(NULLIF(q.currency_id, ''), 'DOP') AS moneda,
            COALESCE(q.currency_rate, 1) AS tasa_cambio,
            q.credit_days AS dias_credito, COALESCE(q.notes, '') AS notas,
@@ -70,6 +71,7 @@ const SQL_CONDUCES = `
            COALESCE(NULLIF(c.rnc, ''), '') AS cliente_rnc,
            COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
            COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           COALESCE(NULLIF(c.main_email, ''), '') AS cliente_email,
            COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
            COALESCE(o.currency_rate, 1) AS tasa_cambio,
            o.credit_days AS dias_credito, COALESCE(o.notes, '') AS notas,
@@ -100,6 +102,7 @@ const SQL_DEVOLUCIONES = `
            COALESCE(NULLIF(c.rnc, ''), '') AS cliente_rnc,
            COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
            COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           COALESCE(NULLIF(c.main_email, ''), '') AS cliente_email,
            COALESCE(NULLIF(r.currency_id, ''), 'DOP') AS moneda,
            COALESCE(r.currency_rate, 1) AS tasa_cambio,
            0 AS dias_credito, COALESCE(r.notes, '') AS notas,
@@ -190,6 +193,7 @@ interface FilaDoc {
   cliente_rnc: string;
   cliente_direccion: string | null;
   cliente_telefono: string | null;
+  cliente_email: string | null;
   moneda: string | null;
   tasa_cambio: number | null;
   dias_credito: number | null;
@@ -232,6 +236,7 @@ function mapear(tipo: TipoDocumento, f: FilaDoc): Documento {
     cliente_rnc: f.cliente_rnc ?? "",
     cliente_direccion: f.cliente_direccion ?? "",
     cliente_telefono: f.cliente_telefono ?? "",
+    cliente_email: f.cliente_email ?? "",
     moneda: (f.moneda ?? "DOP").toUpperCase(),
     tasa_cambio: Number(f.tasa_cambio ?? 1) || 1,
     dias_credito: Number(f.dias_credito ?? 0),
