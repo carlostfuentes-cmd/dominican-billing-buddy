@@ -1254,6 +1254,7 @@ function mapearFactura(f: FilaFactura): Factura {
     cliente_rnc: f.cliente_rnc,
     cliente_direccion: f.cliente_direccion ?? "",
     cliente_telefono: f.cliente_telefono ?? "",
+    cliente_email: f.cliente_email ?? "",
     fecha: f.fecha,
     vencimiento: f.vencimiento,
     dias_credito: Number(f.dias_credito ?? 0),
