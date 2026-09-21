@@ -84,7 +84,14 @@ const empresaSchema = z.object({
 });
 
 export const obtenerEmpresa = createServerFn({ method: "GET" }).handler(
-  async (): Promise<Empresa> => (await repo()).obtenerEmpresa(),
+  async (): Promise<Empresa> => {
+    try {
+      return await (await repo()).obtenerEmpresa();
+    } catch (e) {
+      console.error("obtenerEmpresa:", e);
+      return { nombre: "", rnc: "", direccion: "", telefono: "", email: "" };
+    }
+  },
 );
 
 export const guardarEmpresa = createServerFn({ method: "POST" })
