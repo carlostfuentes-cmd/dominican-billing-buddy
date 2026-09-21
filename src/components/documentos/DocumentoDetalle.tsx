@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EnviarPorCorreo } from "@/components/EnviarPorCorreo";
 import {
   BotonFormato,
   HojaDisenada,
@@ -108,6 +109,12 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
         </Button>
         <div className="flex flex-wrap gap-2">
           <BotonFormato uso={uso} />
+          <EnviarPorCorreo
+            empresaId={empresa?.id}
+            archivo={`${tipo}-${doc.id}.pdf`}
+            asunto={`${cfg.singular} ${doc.id} — ${empresa?.nombre ?? ""}`.trim()}
+            mensaje={`Estimados señores ${doc.cliente_nombre},\n\nAnexo encontrará el documento en formato PDF.\n\nSaludos cordiales,\n${empresa?.nombre ?? ""}`}
+          />
           {tipo === "cotizacion" && !doc.anulado && (
             <Button variant="outline" onClick={() => anular.mutate()} disabled={anular.isPending}>
               <Ban className="size-4" /> Anular

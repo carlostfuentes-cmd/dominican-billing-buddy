@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
+import { ConfigCorreoCard } from "@/components/ConfigCorreoCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -125,6 +126,8 @@ function Configuracion() {
             </div>
           </CardContent>
         </Card>
+
+        <ConfigCorreoCard empresaId={data?.id} />
 
         <Card>
           <CardHeader>

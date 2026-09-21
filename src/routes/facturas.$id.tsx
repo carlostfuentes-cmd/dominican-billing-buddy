@@ -5,6 +5,7 @@ import { ArrowLeft, Ban, CheckCircle2, FileText, LayoutTemplate, Printer, Rotate
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
+import { EnviarPorCorreo } from "@/components/EnviarPorCorreo";
 import { RenderPlantilla } from "@/components/plantillas/RenderPlantilla";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -391,6 +392,12 @@ function DetalleFactura() {
               {usarDisenio ? "Ver formato estándar" : "Ver formato diseñado"}
             </Button>
           ) : null}
+          <EnviarPorCorreo
+            empresaId={empresa?.id}
+            archivo={`${factura.estado === "pedido" ? "pedido" : "factura"}-${factura.ncf || factura.id}.pdf`}
+            asunto={`${factura.estado === "pedido" ? "Pedido" : "Factura"} ${factura.ncf || factura.id} — ${empresa?.nombre ?? ""}`.trim()}
+            mensaje={`Estimados señores ${factura.cliente_nombre},\n\nAnexo encontrará su documento en formato PDF.\n\nSaludos cordiales,\n${empresa?.nombre ?? ""}`}
+          />
           <Button variant="outline" size="sm" onClick={() => window.print()}>
 
             <Printer className="size-4" /> Imprimir / PDF
