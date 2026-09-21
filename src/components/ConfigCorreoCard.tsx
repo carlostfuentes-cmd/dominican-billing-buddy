@@ -39,11 +39,9 @@ const vacio: Form = {
   ssl: false,
 };
 
-const completarServidor = (form: Form): Form => {
-  const correo = (form.usuario || form.remitente).trim().toLowerCase();
-  if (form.servidor.trim() || !correo.endsWith("@gmail.com")) return form;
-  return { ...form, servidor: "smtp.gmail.com", puerto: 587, autenticacion: true, ssl: true };
-};
+/** Usa los datos tal como se escribieron: nunca se sustituye el servidor del usuario. */
+const completarServidor = (form: Form): Form => form;
+
 
 const sinEspacios = (v: string) => v.replace(/\s+/g, "");
 
@@ -100,12 +98,17 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
       const error = validar(completo);
       if (error) throw new Error(error);
       setForm(completo);
-      return enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...completo } });
+      const r = await enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...completo } });
+      if (r.ok) await guardarConfigCorreo({ data: { empresaId: id, ...completo } });
+      return r;
     },
     onSuccess: (r) => {
-      if (r.ok) toast.success("Correo de prueba enviado");
-      else toast.error(r.mensaje);
+      if (r.ok) {
+        toast.success("Correo de prueba enviado y datos guardados");
+        void qc.invalidateQueries({ queryKey: ["config-correo", id] });
+      } else toast.error(r.mensaje);
     },
+
     onError: (e: Error) => toast.error(e.message || "No se pudo enviar el correo de prueba"),
   });
 
