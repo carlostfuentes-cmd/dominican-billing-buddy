@@ -27,6 +27,7 @@ import { Route as BancosCuentasRouteImport } from './routes/bancos.cuentas'
 import { Route as BancosNuevaRouteImport } from './routes/bancos.nueva'
 import { Route as CajaChicaIndexRouteImport } from './routes/caja-chica.index'
 import { Route as CajaChicaNuevoRouteImport } from './routes/caja-chica.nuevo'
+import { Route as CajaChicaReposicionRouteImport } from './routes/caja-chica.reposicion'
 import { Route as ComprasIndexRouteImport } from './routes/compras.index'
 import { Route as ComprasNuevaRouteImport } from './routes/compras.nueva'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
@@ -146,6 +147,11 @@ const CajaChicaIndexRoute = CajaChicaIndexRouteImport.update({
 const CajaChicaNuevoRoute = CajaChicaNuevoRouteImport.update({
   id: '/caja-chica/nuevo',
   path: '/caja-chica/nuevo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CajaChicaReposicionRoute = CajaChicaReposicionRouteImport.update({
+  id: '/caja-chica/reposicion',
+  path: '/caja-chica/reposicion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
@@ -316,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
   '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
+  '/caja-chica/reposicion': typeof CajaChicaReposicionRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -366,6 +373,7 @@ export interface FileRoutesByTo {
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
   '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
+  '/caja-chica/reposicion': typeof CajaChicaReposicionRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -417,6 +425,7 @@ export interface FileRoutesById {
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
   '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
+  '/caja-chica/reposicion': typeof CajaChicaReposicionRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -469,6 +478,7 @@ export interface FileRouteTypes {
     | '/bancos/cuentas'
     | '/bancos/nueva'
     | '/caja-chica/nuevo'
+    | '/caja-chica/reposicion'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/bancos/cuentas'
     | '/bancos/nueva'
     | '/caja-chica/nuevo'
+    | '/caja-chica/reposicion'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/bancos/cuentas'
     | '/bancos/nueva'
     | '/caja-chica/nuevo'
+    | '/caja-chica/reposicion'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -620,6 +632,7 @@ export interface RootRouteChildren {
   BancosCuentasRoute: typeof BancosCuentasRoute
   BancosNuevaRoute: typeof BancosNuevaRoute
   CajaChicaNuevoRoute: typeof CajaChicaNuevoRoute
+  CajaChicaReposicionRoute: typeof CajaChicaReposicionRoute
   ComprasNuevaRoute: typeof ComprasNuevaRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
@@ -780,6 +793,13 @@ declare module '@tanstack/react-router' {
       path: '/caja-chica/nuevo'
       fullPath: '/caja-chica/nuevo'
       preLoaderRoute: typeof CajaChicaNuevoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/caja-chica/reposicion': {
+      id: '/caja-chica/reposicion'
+      path: '/caja-chica/reposicion'
+      fullPath: '/caja-chica/reposicion'
+      preLoaderRoute: typeof CajaChicaReposicionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compras/': {
@@ -1012,6 +1032,7 @@ const rootRouteChildren: RootRouteChildren = {
   BancosCuentasRoute: BancosCuentasRoute,
   BancosNuevaRoute: BancosNuevaRoute,
   CajaChicaNuevoRoute: CajaChicaNuevoRoute,
+  CajaChicaReposicionRoute: CajaChicaReposicionRoute,
   ComprasNuevaRoute: ComprasNuevaRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
