@@ -1,6 +1,6 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Ban, Printer } from "lucide-react";
+import { ArrowLeft, Ban, Pencil, Printer } from "lucide-react";
 import { toast } from "sonner";
 
 import { CamposDocumento } from "@/components/CamposPersonalizados";
@@ -129,6 +129,13 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
           {tipo === "cotizacion" && !doc.anulado && (
             <Button variant="outline" onClick={() => anular.mutate()} disabled={anular.isPending}>
               <Ban className="size-4" /> Anular
+            </Button>
+          )}
+          {tipo === "cotizacion" && !doc.anulado && (
+            <Button variant="outline" asChild>
+              <Link to="/cotizaciones/nueva" search={{ editar: doc.id }}>
+                <Pencil className="size-4" /> Editar
+              </Link>
             </Button>
           )}
           {tipo === "cotizacion" && (

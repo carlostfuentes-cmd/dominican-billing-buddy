@@ -173,8 +173,8 @@ function Clientes() {
             />
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
+          <div>
+            <Table className="min-w-[960px]" topScrollbar>
               <TableHeader>
                 <TableRow>
                   <TableHead>Código</TableHead>

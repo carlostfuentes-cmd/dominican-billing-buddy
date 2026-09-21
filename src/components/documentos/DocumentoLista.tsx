@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/AppShell";
 import { usePermisoPantalla } from "@/components/Sesion";
@@ -58,6 +58,7 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
   });
 
   const total = docs.filter((d) => !d.anulado).reduce((a, d) => a + d.total * (d.tasa_cambio || 1), 0);
+  const columnas = 10 + (tipo === "cotizacion" ? 1 : 0);
 
   return (
     <div>
@@ -107,8 +108,8 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
       </Card>
 
       <Card className="overflow-hidden">
-        <CardContent className="overflow-x-auto px-0 pb-0 pt-0">
-          <Table className="min-w-[880px]">
+        <CardContent className="px-0 pb-0 pt-0">
+          <Table className="min-w-[880px]" topScrollbar>
             <TableHeader>
               <TableRow>
                 <TableHead>No.</TableHead>
@@ -122,6 +123,7 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
                 <TableHead className="text-right">ITBIS</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead>Estado</TableHead>
+                {tipo === "cotizacion" && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -168,11 +170,22 @@ export function DocumentoLista({ tipo }: { tipo: TipoDocumento }) {
                       <Badge variant="outline">Abierto</Badge>
                     )}
                   </TableCell>
+                  {tipo === "cotizacion" && (
+                    <TableCell className="text-right">
+                      {puedeAgregar && !d.anulado && (
+                        <Button size="sm" variant="outline" asChild>
+                          <Link to="/cotizaciones/nueva" search={{ editar: d.id }}>
+                            <Pencil className="size-4" /> Editar
+                          </Link>
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
               {!isLoading && docs.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center text-muted-foreground">
+                  <TableCell colSpan={columnas} className="text-center text-muted-foreground">
                     No hay documentos en este período.
                   </TableCell>
                 </TableRow>

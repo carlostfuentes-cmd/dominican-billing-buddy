@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Download, Plus, Save, Trash2 } from "lucide-react";
@@ -34,6 +34,7 @@ import {
 import {
   guardarDocumento,
   lineasDesdePedido,
+  obtenerDocumento,
   obtenerMotivosDevolucion,
 } from "@/lib/documentos.functions";
 import { obtenerClientes, obtenerItems, obtenerListasFactura } from "@/lib/erp.functions";
@@ -71,11 +72,20 @@ const PROCESO: Record<TipoDocumento, ProcesoCampo> = {
   devolucion: "DEVOLUCIONES",
 };
 
-export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
+export function DocumentoForm({
+  tipo,
+  idEditar,
+}: {
+  tipo: TipoDocumento;
+  idEditar?: number | undefined;
+}) {
   const cfg = DOCUMENTOS[tipo];
   const navigate = useNavigate();
   const qc = useQueryClient();
   const proceso = PROCESO[tipo];
+  // Edición de una cotización existente: /cotizaciones/nueva?editar=123
+  const editando = typeof idEditar === "number";
+  const [cargado, setCargado] = useState(false);
 
   const [camposValores, setCamposValores] = useState<ValoresCampos>({});
   const [clienteId, setClienteId] = useState("");
@@ -117,6 +127,50 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
     queryFn: () => obtenerMotivosDevolucion(),
     enabled: tipo === "devolucion",
   });
+
+  const {
+    data: docOriginal,
+    isLoading: cargandoDoc,
+    isError: errorDoc,
+  } = useQuery({
+    queryKey: ["documento", tipo, idEditar],
+    queryFn: () => obtenerDocumento({ data: { tipo, id: idEditar as number } }),
+    enabled: editando,
+  });
+
+  // Carga una sola vez los datos de la cotización que se está editando.
+  useEffect(() => {
+    if (!editando || !docOriginal || cargado) return;
+    setCargado(true);
+    const d = docOriginal;
+    setClienteId(d.cliente_id);
+    setFecha(d.fecha);
+    setDias(d.dias_credito ?? 0);
+    setMoneda(d.moneda || "DOP");
+    setTasa(d.tasa_cambio || 1);
+    setContacto(d.contacto ?? "");
+    setVendedor(d.vendedor_id ?? SIN);
+    setTecnico(d.tecnico_id ?? SIN);
+    setSucursal(String(d.sucursal_id ?? 1));
+    setDepartamento(d.departamento_id ?? SIN);
+    setProyecto(d.proyecto_id ?? SIN);
+    setOrdenCliente(d.orden_cliente ?? "");
+    setNotas(d.notas ?? "");
+    if (d.lineas.length)
+      setLineas(
+        d.lineas.map((l) => ({
+          item_id: l.item_id,
+          codigo: l.codigo,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          oferta: l.oferta ?? 0,
+          precio: l.precio,
+          descuento_pct: l.descuento_pct,
+          tasa_itbis: l.tasa_itbis,
+          observacion: l.observacion ?? "",
+        })),
+      );
+  }, [editando, docOriginal, cargado]);
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
   // Precarga el correo del cliente para el envío de la cotización.
@@ -183,6 +237,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       guardarDocumento({
         data: {
           tipo,
+          ...(editando ? { id: idEditar } : {}),
           cliente_id: clienteId,
           fecha,
           ...(tipo === "conduce" ? { fecha_entrega: fechaEntrega } : {}),
@@ -221,6 +276,7 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       }
       toast.success(`${cfg.singular} ${doc.id} guardada`);
       void qc.invalidateQueries({ queryKey: ["documentos"] });
+      void qc.invalidateQueries({ queryKey: ["documento"] });
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["valores-campos"] });
       const buscar: Record<string, unknown> = {};
@@ -251,6 +307,10 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
       toast.error("Selecciona un cliente");
       return;
     }
+    if (editando && docOriginal?.anulado) {
+      toast.error("La cotización está anulada y no puede editarse");
+      return;
+    }
     if (tipo === "cotizacion" && enviarCliente && !correoCliente.trim().includes("@")) {
       toast.error("Escribe el correo del cliente o desmarca el envío");
       return;
@@ -276,10 +336,28 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
     guardar.mutate();
   };
 
+  if (editando && cargandoDoc)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Cargando los datos de la {cfg.singular.toLowerCase()} {idEditar}…
+      </p>
+    );
+  if (editando && (errorDoc || !docOriginal))
+    return (
+      <div>
+        <p className="text-sm text-muted-foreground">
+          No se pudieron cargar los datos de la {cfg.singular.toLowerCase()} {idEditar}.
+        </p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to={cfg.ruta}>Volver a {cfg.plural.toLowerCase()}</Link>
+        </Button>
+      </div>
+    );
+
   return (
     <div>
       <PageHeader
-        titulo={cfg.nuevo}
+        titulo={editando ? `Editar ${cfg.singular.toLowerCase()} ${idEditar}` : cfg.nuevo}
         descripcion={cfg.descripcion}
         acciones={
           <>
@@ -289,7 +367,8 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
               onCambiar={setCamposValores}
             />
             <Button onClick={enviar} disabled={guardar.isPending}>
-              <Save className="size-4" /> Guardar {cfg.singular.toLowerCase()}
+              <Save className="size-4" />{" "}
+              {editando ? "Guardar cambios" : `Guardar ${cfg.singular.toLowerCase()}`}
             </Button>
           </>
         }

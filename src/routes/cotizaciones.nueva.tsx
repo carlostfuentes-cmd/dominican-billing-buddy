@@ -3,6 +3,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { DocumentoForm } from "@/components/documentos/DocumentoForm";
 
 export const Route = createFileRoute("/cotizaciones/nueva")({
+  // /cotizaciones/nueva?editar=123 abre el formulario en modo edición.
+  validateSearch: (s: Record<string, unknown>) => {
+    const n = Number(s["editar"]);
+    return Number.isFinite(n) && n > 0 ? { editar: n } : {};
+  },
   head: () => ({
     meta: [
       { title: "Nueva cotización — ERP Contable RD" },
@@ -16,5 +21,10 @@ export const Route = createFileRoute("/cotizaciones/nueva")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <DocumentoForm tipo="cotizacion" />,
+  component: NuevaCotizacion,
 });
+
+function NuevaCotizacion() {
+  const { editar } = Route.useSearch();
+  return <DocumentoForm tipo="cotizacion" idEditar={editar} />;
+}
