@@ -230,11 +230,13 @@ function ReposicionPage() {
                   <SelectValue placeholder="Selecciona la cuenta" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(listasBanco?.cuentas ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.nombre} — {c.numero} ({c.moneda})
-                    </SelectItem>
-                  ))}
+                  {(listasBanco?.bancos ?? [])
+                    .filter((c) => c.activa)
+                    .map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nombre} — {c.numero_cuenta} ({c.moneda})
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
