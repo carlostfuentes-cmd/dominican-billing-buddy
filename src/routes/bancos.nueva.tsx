@@ -338,7 +338,22 @@ function NuevaOperacionPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const listo = bancoId && tipoId && numero.trim() && monto > 0;
+  /** Qué falta para poder guardar, en palabras del usuario. */
+  const faltantes = [
+    !bancoId ? "la cuenta bancaria" : "",
+    !tipoId ? "el tipo de movimiento" : "",
+    !numero.trim() ? "el documento No." : "",
+    monto > 0 ? "" : "el monto",
+    lineas.length === 0 ? "el asiento contable (recalcúlalo)" : "",
+  ].filter(Boolean);
+
+  const intentarGuardar = () => {
+    if (faltantes.length > 0) {
+      toast.error(`Falta completar ${faltantes.join(", ")}.`);
+      return;
+    }
+    guardar.mutate();
+  };
 
   return (
     <>
@@ -350,10 +365,7 @@ function NuevaOperacionPage() {
             <Button variant="secondary" onClick={() => setBuscarAbierto(true)}>
               <Search className="size-4" /> Buscar y copiar movimiento
             </Button>
-            <Button
-              disabled={!listo || lineas.length === 0 || guardar.isPending}
-              onClick={() => guardar.mutate()}
-            >
+            <Button disabled={guardar.isPending} onClick={intentarGuardar}>
               <Save className="size-4" /> Guardar operación
             </Button>
           </div>
