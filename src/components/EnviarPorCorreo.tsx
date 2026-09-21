@@ -50,14 +50,31 @@ interface Props {
   archivo: string;
   asunto: string;
   mensaje: string;
-  paraSugerido?: string;
+  paraSugerido?: string | undefined;
+  /** Abre el diálogo automáticamente al montar (envío tras emitir). */
+  iniciarAbierto?: boolean | undefined;
+  /** Aviso cuando el diálogo se cierra (para limpiar la dirección de la URL). */
+  alCerrar?: (() => void) | undefined;
 }
 
-export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSugerido }: Props) {
-  const [abierto, setAbierto] = useState(false);
+export function EnviarPorCorreo({
+  empresaId,
+  archivo,
+  asunto,
+  mensaje,
+  paraSugerido,
+  iniciarAbierto,
+  alCerrar,
+}: Props) {
+  const [abierto, setAbierto] = useState(Boolean(iniciarAbierto));
   const [para, setPara] = useState(paraSugerido ?? "");
   const [tema, setTema] = useState(asunto);
   const [texto, setTexto] = useState(mensaje);
+
+  const cerrar = (v: boolean) => {
+    setAbierto(v);
+    if (!v && alCerrar) alCerrar();
+  };
 
   const enviar = useMutation({
     mutationFn: async () => {
@@ -79,13 +96,13 @@ export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSuger
         return;
       }
       toast.success("Correo enviado con el documento anexo");
-      setAbierto(false);
+      cerrar(false);
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo enviar el correo"),
   });
 
   return (
-    <Dialog open={abierto} onOpenChange={setAbierto}>
+    <Dialog open={abierto} onOpenChange={cerrar}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Mail className="size-4" /> Enviar por correo
@@ -126,7 +143,7 @@ export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSuger
           </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setAbierto(false)}>
+          <Button variant="ghost" onClick={() => cerrar(false)}>
             Cancelar
           </Button>
           <Button onClick={() => enviar.mutate()} disabled={enviar.isPending}>

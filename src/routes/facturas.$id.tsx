@@ -39,8 +39,12 @@ import {
 
 
 export const Route = createFileRoute("/facturas/$id")({
-  validateSearch: (search: Record<string, unknown>): { imprimir?: boolean } =>
-    search["imprimir"] === true || search["imprimir"] === "true" ? { imprimir: true } : {},
+  validateSearch: (search: Record<string, unknown>): { imprimir?: boolean; enviar?: string } => ({
+    ...(search["imprimir"] === true || search["imprimir"] === "true" ? { imprimir: true } : {}),
+    ...(typeof search["enviar"] === "string" && search["enviar"].includes("@")
+      ? { enviar: search["enviar"] }
+      : {}),
+  }),
   head: () => ({
     meta: [
       { title: "Detalle de factura — ERP Contable RD" },
@@ -60,7 +64,7 @@ export const Route = createFileRoute("/facturas/$id")({
 
 function DetalleFactura() {
   const { id } = useParams({ from: "/facturas/$id" });
-  const { imprimir } = useSearch({ from: "/facturas/$id" });
+  const { imprimir, enviar } = useSearch({ from: "/facturas/$id" });
   const qc = useQueryClient();
   const idNum = Number(id);
 
@@ -397,6 +401,13 @@ function DetalleFactura() {
             archivo={`${factura.estado === "pedido" ? "pedido" : "factura"}-${factura.ncf || factura.id}.pdf`}
             asunto={`${factura.estado === "pedido" ? "Pedido" : "Factura"} ${factura.ncf || factura.id} — ${empresa?.nombre ?? ""}`.trim()}
             mensaje={`Estimados señores ${factura.cliente_nombre},\n\nAnexo encontrará su documento en formato PDF.\n\nSaludos cordiales,\n${empresa?.nombre ?? ""}`}
+            paraSugerido={enviar || factura.cliente_email || undefined}
+            iniciarAbierto={Boolean(enviar)}
+            alCerrar={
+              enviar
+                ? () => window.history.replaceState(null, "", window.location.pathname)
+                : undefined
+            }
           />
           <Button variant="outline" size="sm" onClick={() => window.print()}>
 
