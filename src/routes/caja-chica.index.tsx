@@ -192,7 +192,7 @@ function CajaChicaPage() {
                       to: "/caja-chica/reposicion",
                       search: {
                         caja: cajaId,
-                        ...(seleccion.length ? { ids: seleccion.join(",") } : {}),
+                        ids: seleccion.length ? seleccion.join(",") : undefined,
                       },
                     })
                   }
@@ -201,7 +201,7 @@ function CajaChicaPage() {
                   <Wallet className="size-4" /> Reponer fondo
                 </Button>
                 <Button asChild>
-                  <Link to="/caja-chica/nuevo" search={{ caja: cajaId }}>
+                  <Link to="/caja-chica/nuevo" search={{ caja: cajaId, id: undefined }}>
                     <Plus className="size-4" /> Nuevo comprobante
                   </Link>
                 </Button>
