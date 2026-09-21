@@ -294,6 +294,7 @@ export interface Factura {
   cliente_rnc: string;
   cliente_direccion?: string | undefined;
   cliente_telefono?: string | undefined;
+  cliente_email?: string | undefined;
   fecha: string;
   vencimiento: string;
   dias_credito?: number | undefined;
@@ -599,6 +600,7 @@ export interface Documento {
   cliente_rnc: string;
   cliente_direccion?: string | undefined;
   cliente_telefono?: string | undefined;
+  cliente_email?: string | undefined;
   moneda: string;
   tasa_cambio: number;
   dias_credito: number;
