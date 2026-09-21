@@ -47,6 +47,13 @@ const CLAVES = {
 const nombreClave = (campo: keyof typeof CLAVES, empresaId: number) =>
   `${CLAVES[campo]}@${empresaId}`;
 
+/**
+ * Normaliza la clave del correo: las contraseñas de aplicación (Gmail, Outlook)
+ * se copian con espacios ("abcd efgh ijkl mnop") y el servidor SMTP las rechaza.
+ */
+export const normalizarClaveCorreo = (clave: string) => clave.replace(/\s+/g, "");
+
+
 /** Devuelve el id de empresa a usar; si no llega uno válido toma la primera empresa. */
 export async function empresaActual(empresaId?: number): Promise<number> {
   if (empresaId && empresaId > 0) return empresaId;
