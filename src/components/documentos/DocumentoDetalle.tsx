@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Printer } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
   const idNum = Number(id);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const buscar = useSearch({ strict: false }) as { enviar?: string };
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ["documento", tipo, idNum],
@@ -114,6 +115,13 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
             archivo={`${tipo}-${doc.id}.pdf`}
             asunto={`${cfg.singular} ${doc.id} — ${empresa?.nombre ?? ""}`.trim()}
             mensaje={`Estimados señores ${doc.cliente_nombre},\n\nAnexo encontrará el documento en formato PDF.\n\nSaludos cordiales,\n${empresa?.nombre ?? ""}`}
+            paraSugerido={buscar.enviar || doc.cliente_email || undefined}
+            iniciarAbierto={Boolean(buscar.enviar)}
+            alCerrar={
+              buscar.enviar
+                ? () => window.history.replaceState(null, "", window.location.pathname)
+                : undefined
+            }
           />
           {tipo === "cotizacion" && !doc.anulado && (
             <Button variant="outline" onClick={() => anular.mutate()} disabled={anular.isPending}>
