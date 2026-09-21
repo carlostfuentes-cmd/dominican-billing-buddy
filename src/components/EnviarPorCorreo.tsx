@@ -143,7 +143,7 @@ export function EnviarPorCorreo({
           </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setAbierto(false)}>
+          <Button variant="ghost" onClick={() => cerrar(false)}>
             Cancelar
           </Button>
           <Button onClick={() => enviar.mutate()} disabled={enviar.isPending}>

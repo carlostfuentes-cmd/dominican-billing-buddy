@@ -97,6 +97,8 @@ export function DocumentoForm({ tipo }: { tipo: TipoDocumento }) {
   const [motivo, setMotivo] = useState(SIN);
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<LineaEntrada[]>([{ ...lineaVacia }]);
+  const [enviarCliente, setEnviarCliente] = useState(false);
+  const [correoCliente, setCorreoCliente] = useState("");
 
   const { data: clientes = [] } = useQuery({
     queryKey: ["clientes", ""],
