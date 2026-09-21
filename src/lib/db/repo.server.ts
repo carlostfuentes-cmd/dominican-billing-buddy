@@ -1158,6 +1158,7 @@ const SQL_FACTURAS = `
            COALESCE(o.salesman_order, '') AS orden_vendedor,
            COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
            COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+           COALESCE(NULLIF(c.main_email, ''), '') AS cliente_email,
            o.efectivo, o.tarjeta, o.cheque, o.transferencia, o.cardnet
     FROM orders o
     LEFT JOIN invoices i ON i.invoice_id = o.invoice_id AND i.branch_id = o.branch_id
