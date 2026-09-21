@@ -6,6 +6,7 @@ import {
   BookOpen,
   Boxes,
   Building2,
+  Coins,
   FileText,
   FileMinus,
   FileSpreadsheet,
