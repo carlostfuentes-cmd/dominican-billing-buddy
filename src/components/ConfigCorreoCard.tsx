@@ -98,12 +98,17 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
       const error = validar(completo);
       if (error) throw new Error(error);
       setForm(completo);
-      return enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...completo } });
+      const r = await enviarCorreoPrueba({ data: { empresaId: id, para: prueba, ...completo } });
+      if (r.ok) await guardarConfigCorreo({ data: { empresaId: id, ...completo } });
+      return r;
     },
     onSuccess: (r) => {
-      if (r.ok) toast.success("Correo de prueba enviado");
-      else toast.error(r.mensaje);
+      if (r.ok) {
+        toast.success("Correo de prueba enviado y datos guardados");
+        void qc.invalidateQueries({ queryKey: ["config-correo", id] });
+      } else toast.error(r.mensaje);
     },
+
     onError: (e: Error) => toast.error(e.message || "No se pudo enviar el correo de prueba"),
   });
 
