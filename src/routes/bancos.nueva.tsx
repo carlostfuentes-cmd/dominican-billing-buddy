@@ -333,6 +333,7 @@ function NuevaOperacionPage() {
       );
       setAdvertencias([]);
       setAsientoCopiado(true);
+      setMontoBase(Math.abs(m.monto));
       setBuscarAbierto(false);
       toast.success(
         `Movimiento ${m.numero} copiado con ${m.lineas.length} cuenta(s). Ajusta los datos y guarda.`,
