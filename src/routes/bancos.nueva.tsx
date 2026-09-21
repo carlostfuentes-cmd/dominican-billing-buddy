@@ -101,6 +101,9 @@ function NuevaOperacionPage() {
   const [lineas, setLineas] = useState<LineaAsiento[]>([]);
   const [advertencias, setAdvertencias] = useState<string[]>([]);
   const [asientoCopiado, setAsientoCopiado] = useState(false);
+  // Monto con el que se copió el asiento: sirve para reflejar en las cuentas
+  // cualquier cambio posterior del monto de la operación.
+  const [montoBase, setMontoBase] = useState<number | null>(null);
 
   // Búsqueda de movimientos anteriores para copiarlos.
   const [buscarAbierto, setBuscarAbierto] = useState(false);
@@ -330,6 +333,7 @@ function NuevaOperacionPage() {
       );
       setAdvertencias([]);
       setAsientoCopiado(true);
+      setMontoBase(Math.abs(m.monto));
       setBuscarAbierto(false);
       toast.success(
         `Movimiento ${m.numero} copiado con ${m.lineas.length} cuenta(s). Ajusta los datos y guarda.`,
@@ -338,7 +342,39 @@ function NuevaOperacionPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const listo = bancoId && tipoId && numero.trim() && monto > 0;
+  // En un movimiento copiado, al cambiar el monto se pone el mismo monto en las
+  // cuentas que tenían el monto anterior (el resto, como comisiones, no cambia).
+  useEffect(() => {
+    if (!asientoCopiado || montoBase === null) return;
+    if (!(monto > 0) || Math.abs(monto - montoBase) < 0.005) return;
+    setLineas((prev) =>
+      prev.map((l) => ({
+        ...l,
+        debito: Math.abs(Math.abs(l.debito) - montoBase) < 0.005 ? monto : l.debito,
+        credito: Math.abs(Math.abs(l.credito) - montoBase) < 0.005 ? monto : l.credito,
+      })),
+    );
+    setMontoBase(monto);
+  }, [asientoCopiado, monto, montoBase]);
+
+
+
+  /** Qué falta para poder guardar, en palabras del usuario. */
+  const faltantes = [
+    !bancoId ? "la cuenta bancaria" : "",
+    !tipoId ? "el tipo de movimiento" : "",
+    !numero.trim() ? "el documento No." : "",
+    monto > 0 ? "" : "el monto",
+    lineas.length === 0 ? "el asiento contable (recalcúlalo)" : "",
+  ].filter(Boolean);
+
+  const intentarGuardar = () => {
+    if (faltantes.length > 0) {
+      toast.error(`Falta completar ${faltantes.join(", ")}.`);
+      return;
+    }
+    guardar.mutate();
+  };
 
   return (
     <>
@@ -350,10 +386,7 @@ function NuevaOperacionPage() {
             <Button variant="secondary" onClick={() => setBuscarAbierto(true)}>
               <Search className="size-4" /> Buscar y copiar movimiento
             </Button>
-            <Button
-              disabled={!listo || lineas.length === 0 || guardar.isPending}
-              onClick={() => guardar.mutate()}
-            >
+            <Button disabled={guardar.isPending} onClick={intentarGuardar}>
               <Save className="size-4" /> Guardar operación
             </Button>
           </div>
