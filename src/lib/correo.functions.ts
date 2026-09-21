@@ -5,8 +5,10 @@ import type { ConfigCorreo } from "@/lib/db/correo.server";
 
 const correo = () => import("@/lib/db/correo.server");
 
+const empresaOpcional = z.number().int().nonnegative().optional();
+
 const configSchema = z.object({
-  empresaId: z.number().int().positive(),
+  empresaId: empresaOpcional,
   servidor: z.string().trim().max(120),
   puerto: z.number().int().min(1).max(65535),
   usuario: z.string().trim().max(120),
@@ -25,18 +27,18 @@ const anexoSchema = z.object({
 });
 
 export const obtenerConfigCorreo = createServerFn({ method: "GET" })
-  .inputValidator((d: { empresaId: number }) =>
-    z.object({ empresaId: z.number().int().positive() }).parse(d),
-  )
+  .inputValidator((d: { empresaId?: number }) => z.object({ empresaId: empresaOpcional }).parse(d))
   .handler(async ({ data }): Promise<ConfigCorreo> => {
-    return (await correo()).leerConfigCorreo(data.empresaId);
+    const mod = await correo();
+    return mod.leerConfigCorreo(await mod.empresaActual(data.empresaId));
   });
 
 export const guardarConfigCorreo = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => configSchema.parse(d))
   .handler(async ({ data }): Promise<{ ok: true }> => {
     const { empresaId, ...cfg } = data;
-    await (await correo()).guardarConfigCorreo(empresaId, cfg);
+    const mod = await correo();
+    await mod.guardarConfigCorreo(await mod.empresaActual(empresaId), cfg);
     return { ok: true };
   });
 
@@ -44,13 +46,14 @@ export const enviarCorreoPrueba = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        empresaId: z.number().int().positive(),
+        empresaId: empresaOpcional,
         para: z.string().trim().email("Escribe un correo válido"),
       })
       .parse(d),
   )
   .handler(async ({ data }): Promise<{ ok: true }> => {
-    await (await correo()).enviarCorreo(data.empresaId, {
+    const mod = await correo();
+    await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
       para: [data.para],
       asunto: "Prueba de configuración de correo",
       html: "<p>Este es un mensaje de prueba enviado desde su ERP. Si lo recibió, la configuración del servidor de correos es correcta.</p>",
@@ -62,7 +65,7 @@ export const enviarDocumentoPorCorreo = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
       .object({
-        empresaId: z.number().int().positive(),
+        empresaId: empresaOpcional,
         para: z.string().trim().min(3, "Escribe el correo del destinatario").max(300),
         asunto: z.string().trim().min(1, "Escribe el asunto").max(200),
         mensaje: z.string().trim().max(4000),
@@ -79,7 +82,8 @@ export const enviarDocumentoPorCorreo = createServerFn({ method: "POST" })
       .split(/\n{2,}/)
       .map((p) => `<p style="margin:0 0 12px">${p.replace(/\n/g, "<br />")}</p>`)
       .join("");
-    await (await correo()).enviarCorreo(data.empresaId, {
+    const mod = await correo();
+    await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
       para: destinos,
       asunto: data.asunto,
       html: `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#222">${cuerpo}</div>`,
