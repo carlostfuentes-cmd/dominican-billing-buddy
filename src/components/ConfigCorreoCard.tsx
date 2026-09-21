@@ -65,7 +65,10 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
 
   const probar = useMutation({
     mutationFn: () => enviarCorreoPrueba({ data: { empresaId: id, para: prueba } }),
-    onSuccess: () => toast.success("Correo de prueba enviado"),
+    onSuccess: (r) => {
+      if (r.ok) toast.success("Correo de prueba enviado");
+      else toast.error(r.mensaje);
+    },
     onError: (e: Error) => toast.error(e.message || "No se pudo enviar el correo de prueba"),
   });
 
