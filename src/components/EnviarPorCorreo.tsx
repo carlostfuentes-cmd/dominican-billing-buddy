@@ -53,6 +53,8 @@ interface Props {
   paraSugerido?: string;
   /** Abre el diálogo automáticamente al montar (envío tras emitir). */
   iniciarAbierto?: boolean;
+  /** Aviso cuando el diálogo se cierra (para limpiar la dirección de la URL). */
+  alCerrar?: () => void;
 }
 
 export function EnviarPorCorreo({
@@ -62,11 +64,17 @@ export function EnviarPorCorreo({
   mensaje,
   paraSugerido,
   iniciarAbierto,
+  alCerrar,
 }: Props) {
   const [abierto, setAbierto] = useState(Boolean(iniciarAbierto));
   const [para, setPara] = useState(paraSugerido ?? "");
   const [tema, setTema] = useState(asunto);
   const [texto, setTexto] = useState(mensaje);
+
+  const cerrar = (v: boolean) => {
+    setAbierto(v);
+    if (!v && alCerrar) alCerrar();
+  };
 
   const enviar = useMutation({
     mutationFn: async () => {
@@ -88,13 +96,13 @@ export function EnviarPorCorreo({
         return;
       }
       toast.success("Correo enviado con el documento anexo");
-      setAbierto(false);
+      cerrar(false);
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo enviar el correo"),
   });
 
   return (
-    <Dialog open={abierto} onOpenChange={setAbierto}>
+    <Dialog open={abierto} onOpenChange={cerrar}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Mail className="size-4" /> Enviar por correo
