@@ -127,6 +127,8 @@ function NuevaFactura() {
   const [cheque, setCheque] = useState(0);
   const [transferencia, setTransferencia] = useState(0);
   const [lineas, setLineas] = useState<LineaEntrada[]>([{ ...lineaVacia }]);
+  const [enviarCliente, setEnviarCliente] = useState(false);
+  const [correoCliente, setCorreoCliente] = useState("");
 
   // Edición de un pedido existente: /facturas/nueva?pedido=123
   const { pedido: pedidoId } = Route.useSearch();
@@ -285,6 +287,10 @@ function NuevaFactura() {
   );
 
   const cliente = clientes.find((c) => String(c.id) === clienteId);
+  // Precarga el correo del cliente apenas se conoce (selección o edición).
+  useEffect(() => {
+    if (cliente?.email && !correoCliente) setCorreoCliente(cliente.email);
+  }, [cliente, correoCliente]);
   const secuencia = secuencias.find((s) => s.tipo_ncf === tipo);
   const esDOP = moneda.toUpperCase() === "DOP";
   const lineasCalculo = useMemo(
@@ -378,10 +384,13 @@ function NuevaFactura() {
       void qc.invalidateQueries({ queryKey: ["secuencias"] });
       void qc.invalidateQueries({ queryKey: ["resumen"] });
       void qc.invalidateQueries({ queryKey: ["valores-campos"] });
+      const buscar: { imprimir?: boolean; enviar?: string } = {};
+      if (opciones.imprimir) buscar.imprimir = true;
+      if (enviarCliente && correoCliente.trim()) buscar.enviar = correoCliente.trim();
       void navigate({
         to: "/facturas/$id",
         params: { id: String(doc.id) },
-        ...(opciones.imprimir ? { search: { imprimir: true } } : {}),
+        search: buscar,
       });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar el documento"),
@@ -404,6 +413,10 @@ function NuevaFactura() {
 
   const enviar = (facturar: boolean, imprimir = false) => {
     if (!clienteId) { toast.error("Selecciona un cliente"); return; }
+    if (enviarCliente && !correoCliente.trim().includes("@")) {
+      toast.error("Escribe el correo del cliente o desmarca el envío");
+      return;
+    }
     if (!esDOP && (!tasa || tasa <= 0)) {
       toast.error("Indica la tasa de cambio a aplicar");
       return;
@@ -473,6 +486,7 @@ function NuevaFactura() {
                 vacio="Sin clientes que coincidan"
                 onSeleccionar={(v) => {
                   setClienteId(v);
+                  setCorreoCliente("");
                   const c = clientes.find((x) => String(x.id) === v);
                   if (c) {
                     setTipo(c.tipo_ncf);
@@ -499,6 +513,33 @@ function NuevaFactura() {
                 <span className="text-muted-foreground">Crédito disponible: </span>
                 {cliente?.monto_credito ? dop(cliente.monto_credito) : "—"}
               </p>
+            </div>
+            <div className="rounded-md border border-border p-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="enviar-correo"
+                  checked={enviarCliente}
+                  onCheckedChange={(v) => setEnviarCliente(v === true)}
+                />
+                <Label htmlFor="enviar-correo" className="text-sm font-normal">
+                  Enviar el documento al cliente al guardar
+                </Label>
+              </div>
+              {enviarCliente ? (
+                <div className="mt-2">
+                  <Label htmlFor="correo-cliente">Correo del cliente</Label>
+                  <Input
+                    id="correo-cliente"
+                    type="email"
+                    value={correoCliente}
+                    placeholder="cliente@correo.com"
+                    onChange={(e) => setCorreoCliente(e.target.value)}
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Precargado con el correo del cliente; puedes editarlo antes de guardar.
+                  </p>
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
