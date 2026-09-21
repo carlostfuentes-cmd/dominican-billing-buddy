@@ -40,6 +40,11 @@ export const obtenerEstadoConexion = createServerFn({ method: "GET" }).handler(
   async (): Promise<EstadoConexion> => (await repo()).estadoConexion(),
 );
 
+export const diagnosticarConexion = createServerFn({ method: "GET" }).handler(async () => {
+  const { diagnosticarMysql } = await import("@/lib/db/mysql.server");
+  return diagnosticarMysql();
+});
+
 export const obtenerResumen = createServerFn({ method: "GET" }).handler(
   async (): Promise<Resumen> => {
     try {

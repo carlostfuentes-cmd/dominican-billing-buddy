@@ -20,6 +20,8 @@ $USER     = 'usuario';
 $PASSWORD = 'contrasena';
 
 header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+@set_time_limit(25);
 
 function salir($codigo, $datos) {
     http_response_code($codigo);
@@ -49,9 +51,9 @@ if (!is_array($cuerpo)) {
     salir(400, array('error' => 'Petición inválida'));
 }
 
-// Comprobación de estado sin consultar nada.
+// Comprobación de estado sin consultar MariaDB (compatibilidad).
 if (isset($cuerpo['ping'])) {
-    salir(200, array('ok' => true));
+    salir(200, array('ok' => true, 'version' => 2));
 }
 
 // --- Envío de correo (SMTP) -------------------------------------------------
@@ -178,57 +180,81 @@ if (isset($cuerpo['mail']) && is_array($cuerpo['mail'])) {
     salir(400, array('error' => $resultado));
 }
 
-$sql    = isset($cuerpo['sql']) ? $cuerpo['sql'] : '';
-$params = isset($cuerpo['params']) && is_array($cuerpo['params']) ? $cuerpo['params'] : array();
-if (!is_string($sql) || $sql === '') {
-    salir(400, array('error' => 'Consulta vacía'));
-}
-
 // --- Conexión ---------------------------------------------------------------
 mysqli_report(MYSQLI_REPORT_OFF);
-$con = @new mysqli($HOST, $USER, $PASSWORD, $DATABASE, (int) $PORT);
+$con = mysqli_init();
+if (!$con) { salir(500, array('error' => 'No se pudo iniciar el conector de base de datos')); }
+$con->options(MYSQLI_OPT_CONNECT_TIMEOUT, 5);
+@$con->real_connect($HOST, $USER, $PASSWORD, $DATABASE, (int) $PORT);
 if ($con->connect_error) {
     salir(500, array('error' => 'Sin conexión a la base de datos'));
 }
 $con->set_charset('utf8mb4');
+@$con->query('SET SESSION max_statement_time=15');
+
+// Diagnóstico real: valida PHP, clave y MariaDB en una sola petición.
+if (isset($cuerpo['health'])) {
+    $inicio = microtime(true);
+    $resultado = @$con->query('SELECT 1 AS ok');
+    salir($resultado ? 200 : 500, array(
+        'ok' => $resultado ? true : false,
+        'database' => $resultado ? true : false,
+        'latencyMs' => (int) round((microtime(true) - $inicio) * 1000),
+        'version' => 2
+    ));
+}
 
 // --- Ejecución con parámetros ----------------------------------------------
-$stmt = $con->prepare($sql);
-if ($stmt === false) {
-    salir(400, array('error' => $con->error));
-}
-
-if (count($params) > 0) {
-    $tipos = '';
-    $valores = array();
-    foreach ($params as $p) {
-        if (is_int($p)) { $tipos .= 'i'; }
-        elseif (is_float($p)) { $tipos .= 'd'; }
-        elseif (is_null($p)) { $tipos .= 's'; $p = null; }
-        else { $tipos .= 's'; $p = (string) $p; }
-        $valores[] = $p;
+function ejecutar_consulta($con, $sql, $params) {
+    if (!is_string($sql) || trim($sql) === '') return array('error' => 'Consulta vacía');
+    $stmt = $con->prepare($sql);
+    if ($stmt === false) return array('error' => $con->error);
+    if (count($params) > 0) {
+        $tipos = '';
+        $valores = array();
+        foreach ($params as $p) {
+            if (is_int($p)) { $tipos .= 'i'; }
+            elseif (is_float($p)) { $tipos .= 'd'; }
+            elseif (is_null($p)) { $tipos .= 's'; $p = null; }
+            else { $tipos .= 's'; $p = (string) $p; }
+            $valores[] = $p;
+        }
+        $refs = array(&$tipos);
+        for ($i = 0; $i < count($valores); $i++) { $refs[] = &$valores[$i]; }
+        call_user_func_array(array($stmt, 'bind_param'), $refs);
     }
-    $refs = array();
-    $refs[] = &$tipos;
-    for ($i = 0; $i < count($valores); $i++) {
-        $refs[] = &$valores[$i];
+    if (!$stmt->execute()) return array('error' => $stmt->error);
+    $filas = array();
+    $res = $stmt->get_result();
+    if ($res instanceof mysqli_result) {
+        while ($f = $res->fetch_assoc()) { $filas[] = $f; }
+        $res->free();
     }
-    call_user_func_array(array($stmt, 'bind_param'), $refs);
+    return array(
+        'rows' => $filas,
+        'insertId' => (int) $stmt->insert_id,
+        'affectedRows' => (int) $stmt->affected_rows
+    );
 }
 
-if (!$stmt->execute()) {
-    salir(400, array('error' => $stmt->error));
+// Varias lecturas viajan juntas y reutilizan esta única conexión a MariaDB.
+if (isset($cuerpo['queries']) && is_array($cuerpo['queries'])) {
+    if (count($cuerpo['queries']) > 30) salir(400, array('error' => 'Demasiadas consultas en el lote'));
+    $resultados = array();
+    foreach ($cuerpo['queries'] as $q) {
+        $qSql = isset($q['sql']) ? $q['sql'] : '';
+        if (!preg_match('/^\s*(SELECT|SHOW|DESCRIBE|EXPLAIN|WITH)\b/i', $qSql)) {
+            $resultados[] = array('error' => 'El lote solo admite consultas de lectura');
+            continue;
+        }
+        $qParams = isset($q['params']) && is_array($q['params']) ? $q['params'] : array();
+        $resultados[] = ejecutar_consulta($con, $qSql, $qParams);
+    }
+    salir(200, array('results' => $resultados, 'version' => 2));
 }
 
-$filas = array();
-$res = $stmt->get_result();
-if ($res instanceof mysqli_result) {
-    while ($f = $res->fetch_assoc()) { $filas[] = $f; }
-    $res->free();
-}
-
-salir(200, array(
-    'rows'         => $filas,
-    'insertId'     => (int) $stmt->insert_id,
-    'affectedRows' => (int) $stmt->affected_rows,
-));
+$sql = isset($cuerpo['sql']) ? $cuerpo['sql'] : '';
+$params = isset($cuerpo['params']) && is_array($cuerpo['params']) ? $cuerpo['params'] : array();
+$resultado = ejecutar_consulta($con, $sql, $params);
+if (isset($resultado['error'])) salir(400, $resultado);
+salir(200, $resultado);

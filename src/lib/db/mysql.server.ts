@@ -35,6 +35,22 @@ let cache: { conexion: Conexion } | null = null;
 let conexionPendiente: Promise<Conexion | null> | null = null;
 let ultimoError: string | null = null;
 
+const TIEMPO_MAXIMO_MS = 20_000;
+const ESPERA_TRAS_FALLO_MS = 8_000;
+const ESPERA_AGRUPACION_MS = 8;
+const MAX_CONSULTAS_POR_LOTE = 30;
+let falloHasta = 0;
+
+type ConsultaPendiente = {
+  sql: string;
+  params: unknown[];
+  resolve: (resultado: [unknown, unknown]) => void;
+  reject: (error: unknown) => void;
+};
+
+let lotePendiente: ConsultaPendiente[] = [];
+let temporizadorLote: ReturnType<typeof setTimeout> | null = null;
+
 // Puente HTTPS opcional: un archivo alojado en el servidor del usuario
 // (db/puente-mysql.php) que ejecuta las consultas. Se usa cuando el entorno de
 // ejecución no permite conexiones directas al puerto de MySQL (sitio publicado).
@@ -45,53 +61,126 @@ function leerPuente(): { url: string; token: string } | null {
   return { url, token };
 }
 
-// Cada consulta tiene un tiempo máximo para que una pantalla nunca se quede
-// esperando indefinidamente. No se hace cola entre consultas: en el entorno de
-// ejecución publicado una espera compartida entre peticiones queda cancelada y
-// la pantalla se cuelga sin respuesta.
-const TIEMPO_MAXIMO_MS = 20_000;
+const esLectura = (consulta: string) =>
+  /^(SELECT|SHOW|DESCRIBE|EXPLAIN|WITH)\b/i.test(consulta.trim());
 
-function conexionPuente(url: string, token: string): Conexion {
+async function pedirPuente(
+  url: string,
+  token: string,
+  cuerpo: Record<string, unknown>,
+  reintentar: boolean,
+): Promise<Record<string, unknown>> {
+  let ultimo: unknown;
+  const intentos = reintentar ? 2 : 1;
+  for (let intento = 0; intento < intentos; intento += 1) {
+    try {
+      const respuesta = await fetch(url, {
+        method: "POST",
+        signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(cuerpo),
+      });
+      const texto = await respuesta.text();
+      let datos: Record<string, unknown>;
+      try {
+        datos = JSON.parse(texto) as Record<string, unknown>;
+      } catch {
+        throw new Error(`Respuesta inválida del puente (${respuesta.status})`);
+      }
+      if (!respuesta.ok || typeof datos["error"] === "string") {
+        throw new Error(typeof datos["error"] === "string" ? datos["error"] : `Puente respondió ${respuesta.status}`);
+      }
+      falloHasta = 0;
+      ultimoError = null;
+      return datos;
+    } catch (error) {
+      ultimo = error;
+      if (intento + 1 < intentos) await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+  const nombre = ultimo instanceof Error ? ultimo.name : "";
+  const mensaje = nombre === "TimeoutError" || nombre === "AbortError"
+    ? "El servidor de datos tardó demasiado en responder"
+    : ultimo instanceof Error ? ultimo.message : String(ultimo);
+  ultimoError = `Puente: ${mensaje}`;
+  falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
+  throw new Error(mensaje);
+}
+
+async function vaciarLote(url: string, token: string) {
+  temporizadorLote = null;
+  const lote = lotePendiente.splice(0, MAX_CONSULTAS_POR_LOTE);
+  if (lote.length === 0) return;
+  try {
+    const cuerpo = await pedirPuente(
+      url,
+      token,
+      { queries: lote.map((item) => ({ sql: item.sql, params: item.params })) },
+      true,
+    );
+    const resultados = Array.isArray(cuerpo["results"]) ? cuerpo["results"] as Array<Record<string, unknown>> : [];
+    if (resultados.length !== lote.length) throw new Error("El puente devolvió un lote incompleto");
+    lote.forEach((item, indice) => {
+      const resultado = resultados[indice] ?? {};
+      if (typeof resultado["error"] === "string") item.reject(new Error(resultado["error"]));
+      else {
+        const filas = Array.isArray(resultado["rows"]) ? resultado["rows"] : [];
+        item.resolve([Object.assign([...filas], {
+          insertId: Number(resultado["insertId"] ?? 0),
+          affectedRows: Number(resultado["affectedRows"] ?? 0),
+        }), undefined]);
+      }
+    });
+  } catch (error) {
+    // Compatibilidad durante el reemplazo del archivo PHP: la versión anterior
+    // no entiende lotes. En ese caso ejecutamos las lecturas una por una y la
+    // aplicación sigue operando hasta que se suba el puente nuevo.
+    const mensaje = error instanceof Error ? error.message : String(error);
+    if (/Consulta vacía|lote|queries/i.test(mensaje)) {
+      for (const item of lote) {
+        try {
+          const resultado = await pedirPuente(url, token, { sql: item.sql, params: item.params }, true);
+          const filas = Array.isArray(resultado["rows"]) ? resultado["rows"] : [];
+          item.resolve([Object.assign([...filas], {
+            insertId: Number(resultado["insertId"] ?? 0),
+            affectedRows: Number(resultado["affectedRows"] ?? 0),
+          }), undefined]);
+        } catch (fallo) {
+          item.reject(fallo);
+        }
+      }
+    } else {
+      lote.forEach((item) => item.reject(error));
+    }
+  } finally {
+    if (lotePendiente.length > 0 && !temporizadorLote) {
+      temporizadorLote = setTimeout(() => void vaciarLote(url, token), ESPERA_AGRUPACION_MS);
+    }
+  }
+}
+
+function conexionPuente(url: string, token: string, admiteLotes: boolean): Conexion {
   return {
     async query(sql: string, params: unknown[] = []) {
-        const respuesta = await fetch(url, {
-          method: "POST",
-          signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ sql, params }),
-        }).catch((error: unknown) => {
-          const nombre = error instanceof Error ? error.name : "";
-          if (nombre === "TimeoutError" || nombre === "AbortError") {
-            throw new Error("El servidor de datos tardó demasiado en responder");
+      if (Date.now() < falloHasta) throw new Error("Servidor de datos temporalmente no disponible");
+      if (admiteLotes && esLectura(sql)) {
+        return new Promise<[unknown, unknown]>((resolve, reject) => {
+          lotePendiente.push({ sql, params, resolve, reject });
+          if (lotePendiente.length >= MAX_CONSULTAS_POR_LOTE) void vaciarLote(url, token);
+          else if (!temporizadorLote) {
+            temporizadorLote = setTimeout(() => void vaciarLote(url, token), ESPERA_AGRUPACION_MS);
           }
-          throw error instanceof Error ? error : new Error(String(error));
         });
-        const texto = await respuesta.text();
-        let cuerpo: {
-          rows?: unknown[];
-          insertId?: number;
-          affectedRows?: number;
-          error?: string;
-          ok?: boolean;
-        };
-        try {
-          cuerpo = JSON.parse(texto) as typeof cuerpo;
-        } catch {
-          throw new Error(`Respuesta inválida del puente (${respuesta.status})`);
-        }
-        if (!respuesta.ok || cuerpo.error) {
-          throw new Error(cuerpo.error ?? `Puente respondió ${respuesta.status}`);
-        }
-        const filas = cuerpo.rows ?? [];
-        // El repositorio usa tanto filas como insertId/affectedRows.
-        const resultado = Object.assign([...filas], {
-          insertId: cuerpo.insertId ?? 0,
-          affectedRows: cuerpo.affectedRows ?? 0,
-        });
-        return [resultado, undefined] as [unknown, unknown];
+      }
+      const cuerpo = await pedirPuente(url, token, { sql, params }, false);
+      const filas = Array.isArray(cuerpo["rows"]) ? cuerpo["rows"] : [];
+      return [Object.assign([...filas], {
+        insertId: Number(cuerpo["insertId"] ?? 0),
+        affectedRows: Number(cuerpo["affectedRows"] ?? 0),
+      }), undefined] as [unknown, unknown];
     },
     async end() {},
   };
@@ -100,9 +189,6 @@ function conexionPuente(url: string, token: string): Conexion {
 // Cuando el servidor de datos no responde, no reintentar la comprobación en
 // cada consulta de la misma pantalla: se recuerda el fallo unos segundos para
 // contestar de inmediato en vez de sumar una espera de 20 s por consulta.
-const ESPERA_TRAS_FALLO_MS = 15_000;
-let falloHasta = 0;
-
 async function obtenerConexion(): Promise<Conexion | null> {
   if (cache) return cache.conexion;
   if (Date.now() < falloHasta) return null;
@@ -126,18 +212,15 @@ async function crearConexion(): Promise<Conexion | null> {
   const puente = leerPuente();
   if (puente) {
     try {
-      const conexion = conexionPuente(puente.url, puente.token);
-      await conexion.query("SELECT 1");
+      // El ping no abre MariaDB. Solo identifica en milisegundos si el archivo
+      // instalado admite lotes; así la versión anterior sigue funcionando sin
+      // esperar un timeout mientras el usuario reemplaza el archivo.
+      const capacidad = await pedirPuente(puente.url, puente.token, { ping: true }, false);
+      const conexion = conexionPuente(puente.url, puente.token, Number(capacidad["version"] ?? 1) >= 2);
       cache = { conexion };
-      ultimoError = null;
       return conexion;
     } catch (error) {
-      ultimoError = `Puente: ${error instanceof Error ? error.message : String(error)}`;
-      falloHasta = Date.now() + ESPERA_TRAS_FALLO_MS;
-      console.error("Puente MySQL no disponible:", ultimoError);
-      // Si hay puente configurado, es la conexión de producción. No intentar
-      // mysql2 desde el entorno publicado: no admite ese driver y solo demora
-      // todavía más la respuesta que ya falló.
+      console.error("Puente MySQL no disponible:", error instanceof Error ? error.message : String(error));
       return null;
     }
   }
@@ -180,6 +263,37 @@ export async function mysqlActivo(): Promise<boolean> {
 
 export function ultimoErrorMysql(): string | null {
   return ultimoError;
+}
+
+export async function diagnosticarMysql(): Promise<{
+  ok: boolean;
+  puente: boolean;
+  baseDatos: boolean;
+  latenciaMs: number;
+  mensaje: string;
+}> {
+  const puente = leerPuente();
+  if (!puente) return { ok: false, puente: false, baseDatos: false, latenciaMs: 0, mensaje: "Falta configurar el puente HTTPS" };
+  const inicio = Date.now();
+  try {
+    const cuerpo = await pedirPuente(puente.url, puente.token, { health: true }, false);
+    const baseDatos = cuerpo["database"] === true;
+    return {
+      ok: cuerpo["ok"] === true && baseDatos,
+      puente: true,
+      baseDatos,
+      latenciaMs: Date.now() - inicio,
+      mensaje: baseDatos ? "Conexión estable" : "El puente responde, pero MariaDB no está disponible",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      puente: false,
+      baseDatos: false,
+      latenciaMs: Date.now() - inicio,
+      mensaje: error instanceof Error ? error.message : "No se pudo comprobar la conexión",
+    };
+  }
 }
 
 export async function sql<T = Record<string, unknown>>(

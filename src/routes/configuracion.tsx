@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Activity, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -9,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { guardarEmpresa, obtenerEmpresa, obtenerEstadoConexion } from "@/lib/erp.functions";
+import {
+  diagnosticarConexion,
+  guardarEmpresa,
+  obtenerEmpresa,
+  obtenerEstadoConexion,
+} from "@/lib/erp.functions";
 import { PUENTE_PHP } from "@/lib/puente-php";
 import { rncValido, type Empresa } from "@/lib/erp-types";
 
@@ -53,6 +59,11 @@ function Configuracion() {
       void qc.invalidateQueries({ queryKey: ["empresa"] });
     },
     onError: (e: Error) => toast.error(e.message || "No se pudo guardar"),
+  });
+
+  const diagnostico = useMutation({
+    mutationFn: () => diagnosticarConexion(),
+    onError: (e: Error) => toast.error(e.message || "No se pudo comprobar la conexión"),
   });
 
   const enviar = () => {
@@ -139,6 +150,42 @@ function Configuracion() {
                 {conexion?.modo === "mysql" ? "Servidor conectado" : "Modo demostración"}
               </span>
             </p>
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-medium text-foreground">Prueba completa de conexión</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => diagnostico.mutate()}
+                  disabled={diagnostico.isPending}
+                >
+                  <Activity />
+                  {diagnostico.isPending ? "Comprobando…" : "Comprobar ahora"}
+                </Button>
+              </div>
+              {diagnostico.data ? (
+                <div className="space-y-1 text-xs">
+                  <p className="flex items-center gap-2 text-foreground">
+                    {diagnostico.data.ok ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-destructive" />
+                    )}
+                    {diagnostico.data.mensaje}
+                  </p>
+                  <p>
+                    Puente: {diagnostico.data.puente ? "responde" : "sin respuesta"} · MariaDB:{" "}
+                    {diagnostico.data.baseDatos ? "conectada" : "sin conexión"} · Tiempo:{" "}
+                    {diagnostico.data.latenciaMs} ms
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs">
+                  Comprueba en una sola operación la dirección, la clave y el acceso real a MariaDB.
+                </p>
+              )}
+            </div>
             {conexion?.modo === "mysql" ? (
               <>
                 <p>
