@@ -53,7 +53,7 @@ if (!is_array($cuerpo)) {
 
 // Comprobación de estado sin consultar MariaDB (compatibilidad).
 if (isset($cuerpo['ping'])) {
-    salir(200, array('ok' => true));
+    salir(200, array('ok' => true, 'version' => 2));
 }
 
 // --- Envío de correo (SMTP) -------------------------------------------------
