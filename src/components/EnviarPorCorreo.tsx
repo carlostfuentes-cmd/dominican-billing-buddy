@@ -22,7 +22,7 @@ async function pdfDelDocumento(): Promise<string> {
   const area = document.querySelector<HTMLElement>(".print-area");
   if (!area) throw new Error("No se encontró el documento para anexar");
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-    import("html2canvas"),
+    import("html2canvas-pro"),
     import("jspdf"),
   ]);
   const lienzo = await html2canvas(area, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
