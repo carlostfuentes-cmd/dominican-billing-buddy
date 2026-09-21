@@ -90,8 +90,8 @@ async function pedirPuente(
       } catch {
         throw new Error(`Respuesta inválida del puente (${respuesta.status})`);
       }
-      if (!respuesta.ok || typeof datos.error === "string") {
-        throw new Error(typeof datos.error === "string" ? datos.error : `Puente respondió ${respuesta.status}`);
+      if (!respuesta.ok || typeof datos["error"] === "string") {
+        throw new Error(typeof datos["error"] === "string" ? datos["error"] : `Puente respondió ${respuesta.status}`);
       }
       falloHasta = 0;
       ultimoError = null;
@@ -121,16 +121,16 @@ async function vaciarLote(url: string, token: string) {
       { queries: lote.map((item) => ({ sql: item.sql, params: item.params })) },
       true,
     );
-    const resultados = Array.isArray(cuerpo.results) ? cuerpo.results as Array<Record<string, unknown>> : [];
+    const resultados = Array.isArray(cuerpo["results"]) ? cuerpo["results"] as Array<Record<string, unknown>> : [];
     if (resultados.length !== lote.length) throw new Error("El puente devolvió un lote incompleto");
     lote.forEach((item, indice) => {
       const resultado = resultados[indice] ?? {};
-      if (typeof resultado.error === "string") item.reject(new Error(resultado.error));
+      if (typeof resultado["error"] === "string") item.reject(new Error(resultado["error"]));
       else {
-        const filas = Array.isArray(resultado.rows) ? resultado.rows : [];
+        const filas = Array.isArray(resultado["rows"]) ? resultado["rows"] : [];
         item.resolve([Object.assign([...filas], {
-          insertId: Number(resultado.insertId ?? 0),
-          affectedRows: Number(resultado.affectedRows ?? 0),
+          insertId: Number(resultado["insertId"] ?? 0),
+          affectedRows: Number(resultado["affectedRows"] ?? 0),
         }), undefined]);
       }
     });
@@ -143,10 +143,10 @@ async function vaciarLote(url: string, token: string) {
       for (const item of lote) {
         try {
           const resultado = await pedirPuente(url, token, { sql: item.sql, params: item.params }, true);
-          const filas = Array.isArray(resultado.rows) ? resultado.rows : [];
+          const filas = Array.isArray(resultado["rows"]) ? resultado["rows"] : [];
           item.resolve([Object.assign([...filas], {
-            insertId: Number(resultado.insertId ?? 0),
-            affectedRows: Number(resultado.affectedRows ?? 0),
+            insertId: Number(resultado["insertId"] ?? 0),
+            affectedRows: Number(resultado["affectedRows"] ?? 0),
           }), undefined]);
         } catch (fallo) {
           item.reject(fallo);
@@ -176,10 +176,10 @@ function conexionPuente(url: string, token: string): Conexion {
         });
       }
       const cuerpo = await pedirPuente(url, token, { sql, params }, false);
-      const filas = Array.isArray(cuerpo.rows) ? cuerpo.rows : [];
+      const filas = Array.isArray(cuerpo["rows"]) ? cuerpo["rows"] : [];
       return [Object.assign([...filas], {
-        insertId: Number(cuerpo.insertId ?? 0),
-        affectedRows: Number(cuerpo.affectedRows ?? 0),
+        insertId: Number(cuerpo["insertId"] ?? 0),
+        affectedRows: Number(cuerpo["affectedRows"] ?? 0),
       }), undefined] as [unknown, unknown];
     },
     async end() {},
@@ -270,9 +270,9 @@ export async function diagnosticarMysql(): Promise<{
   const inicio = Date.now();
   try {
     const cuerpo = await pedirPuente(puente.url, puente.token, { health: true }, false);
-    const baseDatos = cuerpo.database === true;
+    const baseDatos = cuerpo["database"] === true;
     return {
-      ok: cuerpo.ok === true && baseDatos,
+      ok: cuerpo["ok"] === true && baseDatos,
       puente: true,
       baseDatos,
       latenciaMs: Date.now() - inicio,
