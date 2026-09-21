@@ -154,7 +154,14 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
             maxLength={120}
             onChange={(e) => setForm({ ...form, clave: e.target.value })}
           />
+          {/gmail|googlemail/i.test(form.servidor) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Gmail requiere una contraseña de aplicación de 16 caracteres (no la clave normal de la
+              cuenta).
+            </p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="remitente">Remitente</Label>
           <Input
