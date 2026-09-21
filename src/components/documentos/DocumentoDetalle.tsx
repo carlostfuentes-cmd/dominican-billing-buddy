@@ -48,9 +48,12 @@ export function DocumentoDetalle({ tipo, id }: { tipo: TipoDocumento; id: string
     enabled: Number.isFinite(idNum) && idNum > 0,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
+  const empresaId = empresa?.id ?? "";
   const { data: formato } = useQuery({
-    queryKey: ["formato", "empresa"],
-    queryFn: () => obtenerFormatoImpresion({ data: {} }),
+    queryKey: ["formato", empresaId],
+    queryFn: () => obtenerFormatoImpresion({ data: { empresaId: String(empresaId) } }),
+    enabled: Boolean(empresaId),
+    retry: false,
   });
 
   const uso = usePlantillaDocumento(tipoPlantillaDocumento(tipo), empresa?.id);

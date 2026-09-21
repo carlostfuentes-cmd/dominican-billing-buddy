@@ -75,15 +75,18 @@ function DetalleFactura() {
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
   // Formato de impresión de la empresa (o el general si no tiene uno propio).
+  const empresaId = empresa?.id ?? "";
   const { data: formato } = useQuery({
-    queryKey: ["formato", "empresa"],
-    queryFn: () => obtenerFormatoImpresion({ data: {} }),
+    queryKey: ["formato", empresaId],
+    queryFn: () => obtenerFormatoImpresion({ data: { empresaId: String(empresaId) } }),
+    enabled: Boolean(empresaId),
+    retry: false,
   });
   // Plantilla del diseñador de documentos para la empresa activa.
-  const empresaId = empresa?.id ?? "*";
+  const empresaPlantillaId = empresa?.id ?? "*";
   const { data: plantilla } = useQuery({
-    queryKey: ["plantilla", empresaId, "factura"],
-    queryFn: () => obtenerPlantilla({ data: { empresaId, docTipo: "factura" } }),
+    queryKey: ["plantilla", empresaPlantillaId, "factura"],
+    queryFn: () => obtenerPlantilla({ data: { empresaId: empresaPlantillaId, docTipo: "factura" } }),
     enabled: Boolean(empresa),
   });
   // Por defecto se imprime con el formato diseñado; se puede volver al estándar.
