@@ -2086,10 +2086,12 @@ function mapearFormato(f: Record<string, unknown>): FormatoImpresion {
 /** Formato de la empresa; si no tiene, el general ("*"); si no, el de fábrica.
  *  Sin empresa indicada se usa la empresa activa. */
 export async function obtenerFormatoImpresion(empresaId?: string): Promise<FormatoImpresion> {
-  const id = empresaId && empresaId !== "" ? empresaId : await empresaActualId();
-  if (await usarMysql()) {
-    try {
-      await asegurarTablaFormatos();
+  try {
+    const id = empresaId && empresaId !== "" ? empresaId : await empresaActualId();
+    if (await usarMysql()) {
+      // Esta es una lectura frecuente (facturas/documentos). No ejecutar aquí
+      // CREATE TABLE ni SHOW COLUMNS: esas comprobaciones se reservan para la
+      // pantalla que administra los formatos y para las escrituras.
       const filas = await sql<Record<string, unknown>>(
         "SELECT * FROM print_formats WHERE company_id IN (?, '*')",
         [id],
@@ -2098,14 +2100,16 @@ export async function obtenerFormatoImpresion(empresaId?: string): Promise<Forma
       const general = filas.find((f) => String(f["company_id"]) === "*");
       const fila = propio ?? general;
       return fila ? mapearFormato(fila) : { ...FORMATO_IMPRESION_DEFECTO };
-    } catch {
-      return { ...FORMATO_IMPRESION_DEFECTO };
     }
+    return {
+      ...FORMATO_IMPRESION_DEFECTO,
+      ...(formatosDemo.get(id) ?? formatosDemo.get("*") ?? {}),
+    };
+  } catch {
+    // El formato es opcional: una demora del servidor nunca debe impedir ver,
+    // imprimir o enviar una factura.
+    return { ...FORMATO_IMPRESION_DEFECTO };
   }
-  return {
-    ...FORMATO_IMPRESION_DEFECTO,
-    ...(formatosDemo.get(id) ?? formatosDemo.get("*") ?? {}),
-  };
 }
 
 export async function listarFormatosImpresion(): Promise<FormatoImpresion[]> {
