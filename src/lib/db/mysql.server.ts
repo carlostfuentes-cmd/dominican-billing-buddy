@@ -135,7 +135,26 @@ async function vaciarLote(url: string, token: string) {
       }
     });
   } catch (error) {
-    lote.forEach((item) => item.reject(error));
+    // Compatibilidad durante el reemplazo del archivo PHP: la versión anterior
+    // no entiende lotes. En ese caso ejecutamos las lecturas una por una y la
+    // aplicación sigue operando hasta que se suba el puente nuevo.
+    const mensaje = error instanceof Error ? error.message : String(error);
+    if (/Consulta vacía|lote|queries/i.test(mensaje)) {
+      for (const item of lote) {
+        try {
+          const resultado = await pedirPuente(url, token, { sql: item.sql, params: item.params }, true);
+          const filas = Array.isArray(resultado.rows) ? resultado.rows : [];
+          item.resolve([Object.assign([...filas], {
+            insertId: Number(resultado.insertId ?? 0),
+            affectedRows: Number(resultado.affectedRows ?? 0),
+          }), undefined]);
+        } catch (fallo) {
+          item.reject(fallo);
+        }
+      }
+    } else {
+      lote.forEach((item) => item.reject(error));
+    }
   } finally {
     if (lotePendiente.length > 0 && !temporizadorLote) {
       temporizadorLote = setTimeout(() => void vaciarLote(url, token), ESPERA_AGRUPACION_MS);
