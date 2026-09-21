@@ -86,32 +86,60 @@ export async function leerConfigCorreo(empresaId: number): Promise<ConfigCorreo>
   };
 }
 
-async function guardarValor(nombre: string, valor: string, kind: "C" | "L" | "N") {
-  const existe = await sql<{ id: number }>("SELECT id FROM config WHERE name = ? LIMIT 1", [nombre]);
-  const fila = existe[0];
-  if (fila) {
-    await sql("UPDATE config SET value = ?, kind = ? WHERE id = ?", [valor, kind, fila.id]);
-    return;
-  }
-  await sql("INSERT INTO config (name, kind, value, section) VALUES (?, ?, ?, 'AppData')", [
-    nombre,
-    kind,
-    valor,
-  ]);
-}
-
 /** Guarda la configuración de correo de una empresa. */
 export async function guardarConfigCorreo(empresaId: number, cfg: ConfigCorreo): Promise<void> {
   const logico = (v: boolean) => (v ? ".T." : ".F.");
-  await guardarValor(nombreClave("servidor", empresaId), cfg.servidor.trim(), "C");
-  await guardarValor(nombreClave("puerto", empresaId), String(cfg.puerto), "N");
-  await guardarValor(nombreClave("usuario", empresaId), cfg.usuario.trim(), "C");
-  await guardarValor(nombreClave("clave", empresaId), cfg.clave, "C");
-  await guardarValor(nombreClave("remitente", empresaId), cfg.remitente.trim(), "C");
-  await guardarValor(nombreClave("remitenteNombre", empresaId), cfg.remitenteNombre.trim(), "C");
-  await guardarValor(nombreClave("copia", empresaId), cfg.copia.trim(), "C");
-  await guardarValor(nombreClave("autenticacion", empresaId), logico(cfg.autenticacion), "L");
-  await guardarValor(nombreClave("ssl", empresaId), logico(cfg.ssl), "L");
+  const valores: Array<{ nombre: string; valor: string; kind: "C" | "L" | "N" }> = [
+    { nombre: nombreClave("servidor", empresaId), valor: cfg.servidor.trim(), kind: "C" },
+    { nombre: nombreClave("puerto", empresaId), valor: String(cfg.puerto), kind: "N" },
+    { nombre: nombreClave("usuario", empresaId), valor: cfg.usuario.trim(), kind: "C" },
+    { nombre: nombreClave("clave", empresaId), valor: cfg.clave, kind: "C" },
+    { nombre: nombreClave("remitente", empresaId), valor: cfg.remitente.trim(), kind: "C" },
+    {
+      nombre: nombreClave("remitenteNombre", empresaId),
+      valor: cfg.remitenteNombre.trim(),
+      kind: "C",
+    },
+    { nombre: nombreClave("copia", empresaId), valor: cfg.copia.trim(), kind: "C" },
+    {
+      nombre: nombreClave("autenticacion", empresaId),
+      valor: logico(cfg.autenticacion),
+      kind: "L",
+    },
+    { nombre: nombreClave("ssl", empresaId), valor: logico(cfg.ssl), kind: "L" },
+  ];
+  const nombres = valores.map((v) => v.nombre);
+  const existentes = await sql<{ id: number; name: string }>(
+    `SELECT id, name FROM config WHERE name IN (${nombres.map(() => "?").join(",")})`,
+    nombres,
+  );
+  const porNombre = new Map(existentes.map((fila) => [fila.name, fila.id]));
+  const actualizar = valores.filter((v) => porNombre.has(v.nombre));
+  const insertar = valores.filter((v) => !porNombre.has(v.nombre));
+
+  if (actualizar.length > 0) {
+    const valueCase = actualizar.map(() => "WHEN ? THEN ?").join(" ");
+    const kindCase = actualizar.map(() => "WHEN ? THEN ?").join(" ");
+    await sql(
+      `UPDATE config
+       SET value = CASE name ${valueCase} ELSE value END,
+           kind = CASE name ${kindCase} ELSE kind END
+       WHERE name IN (${actualizar.map(() => "?").join(",")})`,
+      [
+        ...actualizar.flatMap((v) => [v.nombre, v.valor]),
+        ...actualizar.flatMap((v) => [v.nombre, v.kind]),
+        ...actualizar.map((v) => v.nombre),
+      ],
+    );
+  }
+  if (insertar.length > 0) {
+    await sql(
+      `INSERT INTO config (name, kind, value, section) VALUES ${insertar
+        .map(() => "(?, ?, ?, 'AppData')")
+        .join(",")}`,
+      insertar.flatMap((v) => [v.nombre, v.kind, v.valor]),
+    );
+  }
 }
 
 export interface Anexo {
@@ -130,6 +158,14 @@ export interface MensajeCorreo {
 /** Envía un mensaje por el servidor SMTP configurado en la empresa. */
 export async function enviarCorreo(empresaId: number, mensaje: MensajeCorreo): Promise<void> {
   const cfg = await leerConfigCorreo(empresaId);
+  return enviarCorreoConConfig(cfg, mensaje);
+}
+
+/** Envía usando una configuración ya capturada, sin volver a leerla de la base de datos. */
+export async function enviarCorreoConConfig(
+  cfg: ConfigCorreo,
+  mensaje: MensajeCorreo,
+): Promise<void> {
   if (!cfg.servidor || !cfg.remitente) {
     throw new Error(
       "Falta configurar el servidor de correos. Ve a Configuración → Datos servidor de correos.",
