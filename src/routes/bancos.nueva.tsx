@@ -101,6 +101,9 @@ function NuevaOperacionPage() {
   const [lineas, setLineas] = useState<LineaAsiento[]>([]);
   const [advertencias, setAdvertencias] = useState<string[]>([]);
   const [asientoCopiado, setAsientoCopiado] = useState(false);
+  // Monto con el que se copió el asiento: sirve para reflejar en las cuentas
+  // cualquier cambio posterior del monto de la operación.
+  const [montoBase, setMontoBase] = useState<number | null>(null);
 
   // Búsqueda de movimientos anteriores para copiarlos.
   const [buscarAbierto, setBuscarAbierto] = useState(false);
