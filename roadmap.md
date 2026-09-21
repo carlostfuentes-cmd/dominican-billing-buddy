@@ -11,3 +11,9 @@
 - [x] Añadir límites de conexión/consulta y diagnóstico real en el puente
 - [x] Añadir prueba visible de puente, clave y MariaDB en Configuración
 - [ ] El usuario debe reemplazar una vez `puente-mysql.php` por la nueva versión
+
+## Cotizaciones editables y scroll superior — sep 2026
+- [x] Editar cotizaciones desde la lista y el detalle (/cotizaciones/nueva?editar=ID)
+- [x] Guardado como edición con auditoría tipo "E" (UPDATE + líneas reemplazadas)
+- [x] Barra de desplazamiento horizontal superior en cotizaciones y clientes
+- [ ] Verificar en producción (el usuario debe probar con su sesión)
