@@ -48,7 +48,6 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
   const { data } = useQuery({
     queryKey: ["config-correo", id],
     queryFn: () => obtenerConfigCorreo({ data: { empresaId: id } }),
-    enabled: id > 0,
   });
 
   useEffect(() => {

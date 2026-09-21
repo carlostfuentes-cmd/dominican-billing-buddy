@@ -61,8 +61,7 @@ export function EnviarPorCorreo({ empresaId, archivo, asunto, mensaje, paraSuger
 
   const enviar = useMutation({
     mutationFn: async () => {
-      const idEmpresa = Number(empresaId);
-      if (!idEmpresa) throw new Error("No hay empresa activa");
+      const idEmpresa = Number(empresaId) || 0;
       const base64 = await pdfDelDocumento();
       return enviarDocumentoPorCorreo({
         data: {
