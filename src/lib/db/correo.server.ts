@@ -47,6 +47,20 @@ const CLAVES = {
 const nombreClave = (campo: keyof typeof CLAVES, empresaId: number) =>
   `${CLAVES[campo]}@${empresaId}`;
 
+/** Devuelve el id de empresa a usar; si no llega uno válido toma la primera empresa. */
+export async function empresaActual(empresaId?: number): Promise<number> {
+  if (empresaId && empresaId > 0) return empresaId;
+  try {
+    const filas = await sql<{ company_id: number | string }>(
+      "SELECT company_id FROM companies ORDER BY company_id LIMIT 1",
+    );
+    const id = Number(filas[0]?.company_id);
+    return Number.isFinite(id) && id > 0 ? id : 1;
+  } catch {
+    return 1;
+  }
+}
+
 /** Lee la configuración de correo de una empresa. */
 export async function leerConfigCorreo(empresaId: number): Promise<ConfigCorreo> {
   const claves = Object.keys(CLAVES).map((c) => nombreClave(c as keyof typeof CLAVES, empresaId));
