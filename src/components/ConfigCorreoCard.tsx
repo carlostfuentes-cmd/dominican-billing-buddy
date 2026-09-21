@@ -39,11 +39,9 @@ const vacio: Form = {
   ssl: false,
 };
 
-const completarServidor = (form: Form): Form => {
-  const correo = (form.usuario || form.remitente).trim().toLowerCase();
-  if (form.servidor.trim() || !correo.endsWith("@gmail.com")) return form;
-  return { ...form, servidor: "smtp.gmail.com", puerto: 587, autenticacion: true, ssl: true };
-};
+/** Usa los datos tal como se escribieron: nunca se sustituye el servidor del usuario. */
+const completarServidor = (form: Form): Form => form;
+
 
 const sinEspacios = (v: string) => v.replace(/\s+/g, "");
 
