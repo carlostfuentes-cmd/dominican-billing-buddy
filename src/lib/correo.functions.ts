@@ -49,18 +49,16 @@ export const guardarConfigCorreo = createServerFn({ method: "POST" })
 
 export const enviarCorreoPrueba = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
-    z
-      .object({
-        empresaId: empresaOpcional,
-        para: z.string().trim().email("Escribe un correo válido"),
-      })
+    configSchema
+      .extend({ para: z.string().trim().email("Escribe un correo válido") })
       .parse(d),
   )
   .handler(async ({ data }): Promise<Resultado> => {
     const mod = await correo();
     try {
-      await mod.enviarCorreo(await mod.empresaActual(data.empresaId), {
-        para: [data.para],
+      const { empresaId: _empresaId, para, ...config } = data;
+      await mod.enviarCorreoConConfig(config, {
+        para: [para],
         asunto: "Prueba de configuración de correo",
         html: "<p>Este es un mensaje de prueba enviado desde su ERP. Si lo recibió, la configuración del servidor de correos es correcta.</p>",
       });
