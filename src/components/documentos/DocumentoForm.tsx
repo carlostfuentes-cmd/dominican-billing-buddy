@@ -336,10 +336,28 @@ export function DocumentoForm({
     guardar.mutate();
   };
 
+  if (editando && cargandoDoc)
+    return (
+      <p className="text-sm text-muted-foreground">
+        Cargando los datos de la {cfg.singular.toLowerCase()} {idEditar}…
+      </p>
+    );
+  if (editando && (errorDoc || !docOriginal))
+    return (
+      <div>
+        <p className="text-sm text-muted-foreground">
+          No se pudieron cargar los datos de la {cfg.singular.toLowerCase()} {idEditar}.
+        </p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to={cfg.ruta}>Volver a {cfg.plural.toLowerCase()}</Link>
+        </Button>
+      </div>
+    );
+
   return (
     <div>
       <PageHeader
-        titulo={cfg.nuevo}
+        titulo={editando ? `Editar ${cfg.singular.toLowerCase()} ${idEditar}` : cfg.nuevo}
         descripcion={cfg.descripcion}
         acciones={
           <>
@@ -349,7 +367,8 @@ export function DocumentoForm({
               onCambiar={setCamposValores}
             />
             <Button onClick={enviar} disabled={guardar.isPending}>
-              <Save className="size-4" /> Guardar {cfg.singular.toLowerCase()}
+              <Save className="size-4" />{" "}
+              {editando ? "Guardar cambios" : `Guardar ${cfg.singular.toLowerCase()}`}
             </Button>
           </>
         }
