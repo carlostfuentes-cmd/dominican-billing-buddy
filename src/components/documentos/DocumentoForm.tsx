@@ -77,7 +77,7 @@ export function DocumentoForm({
   idEditar,
 }: {
   tipo: TipoDocumento;
-  idEditar?: number;
+  idEditar?: number | undefined;
 }) {
   const cfg = DOCUMENTOS[tipo];
   const navigate = useNavigate();

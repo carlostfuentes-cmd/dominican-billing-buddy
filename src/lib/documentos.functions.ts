@@ -4,6 +4,7 @@ import { z } from "zod";
 import type {
   Documento,
   LineaFactura,
+  NuevoDocumento,
   OpcionId,
   TipoDocumento,
 } from "@/lib/erp-types";
