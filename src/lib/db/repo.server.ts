@@ -1183,15 +1183,45 @@ const SQL_FACTURAS = `
     ) ri ON ri.invoice_id = o.invoice_id
   ) f`;
 
-// Para abrir un documento no se debe calcular el total de todo el histórico.
-// Limitar también la subconsulta de líneas evita que la edición agote el tiempo
-// de respuesta cuando orders_detail contiene muchos años de movimientos.
-const SQL_FACTURA_POR_ID = SQL_FACTURAS
-  .replace(
-    "FROM orders_detail GROUP BY order_id",
-    "FROM orders_detail WHERE order_id = ? GROUP BY order_id",
-  )
-  .replace("\n  ) f", "\n    WHERE o.order_id = ?\n  ) f");
+// Consulta deliberadamente plana para abrir un documento. Los totales se
+// calculan después desde sus líneas, evitando que MariaDB materialice o agrupe
+// el historial completo de orders_detail y reverse_invoices antes del filtro.
+const SQL_FACTURA_POR_ID = `
+  SELECT o.order_id AS id, COALESCE(i.ncf_doc, '') AS ncf,
+         COALESCE(LEFT(i.ncf_doc, 3), '') AS tipo_prefijo, i.ncf_id,
+         o.customer_id AS cliente_id,
+         COALESCE(NULLIF(c.name, ''), o.customer_name, '') AS cliente_nombre,
+         COALESCE(NULLIF(c.rnc, ''), NULLIF(o.rnc, ''), '') AS cliente_rnc,
+         DATE_FORMAT(o.date, '%Y-%m-%d') AS fecha,
+         DATE_FORMAT(DATE_ADD(o.date, INTERVAL o.credit_days DAY), '%Y-%m-%d') AS vencimiento,
+         0 AS subtotal, 0 AS descuento, 0 AS gravado, 0 AS exento, 0 AS itbis, 0 AS total,
+         CASE
+           WHEN EXISTS (SELECT 1 FROM reverse_invoices ri WHERE ri.invoice_id = o.invoice_id LIMIT 1)
+             THEN 'anulada'
+           WHEN o.invoice_id IS NULL THEN 'pedido'
+           ELSE 'emitida'
+         END AS estado,
+         o.invoice_id, COALESCE(o.notes, '') AS notas, o.credit_days AS dias_credito,
+         COALESCE(NULLIF(o.currency_id, ''), 'DOP') AS moneda,
+         COALESCE(o.currency_rate, 1) AS tasa_cambio,
+         o.salesman_id AS vendedor_id,
+         TRIM(CONCAT(COALESCE(sm.first_name, ''), ' ', COALESCE(sm.last_name, ''))) AS vendedor,
+         o.tech_id AS tecnico_id, o.warehouse_id AS almacen_id, w.name AS almacen,
+         o.branch_id AS sucursal_id, o.department_id AS departamento_id,
+         o.project_id AS proyecto_id, o.quotation_id AS cotizacion_id,
+         COALESCE(o.customer_order, '') AS orden_cliente,
+         COALESCE(o.salesman_order, '') AS orden_vendedor,
+         COALESCE(NULLIF(c.address1, ''), '') AS cliente_direccion,
+         COALESCE(NULLIF(c.phone1, ''), '') AS cliente_telefono,
+         COALESCE(NULLIF(c.main_email, ''), '') AS cliente_email,
+         o.efectivo, o.tarjeta, o.cheque, o.transferencia, o.cardnet
+  FROM orders o
+  LEFT JOIN invoices i ON i.invoice_id = o.invoice_id AND i.branch_id = o.branch_id
+  LEFT JOIN customers c ON c.customer_id = o.customer_id
+  LEFT JOIN salesmen sm ON sm.salesman_id = o.salesman_id
+  LEFT JOIN warehouse w ON w.warehouse_id = o.warehouse_id
+  WHERE o.order_id = ?
+  LIMIT 1`;
 
 interface FilaFactura {
   id: number;
@@ -1343,7 +1373,10 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
     // Abrir una factura es una lectura crítica e independiente. No se agrupa
     // con las consultas auxiliares de empresa/formato/plantilla de la pantalla:
     // si una de ellas es lenta, no debe consumir el tiempo de la factura.
-    const filas = await sql<FilaFactura>(SQL_FACTURA_POR_ID, [id, id], { agrupar: false });
+    const filas = await sql<FilaFactura>(SQL_FACTURA_POR_ID, [id], {
+      agrupar: false,
+      ignorarPausa: true,
+    });
     const f = filas[0];
     if (!f) return null;
     const lineas = await sql<{
@@ -1355,6 +1388,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       oferta: number;
       precio: number;
       descuento_pct: number;
+      descuento_monto: number;
       tasa_itbis: number;
       subtotal: number;
       itbis: number;
@@ -1364,7 +1398,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
               COALESCE(NULLIF(product_name, ''), NULLIF(name, ''), product_id) AS descripcion,
               notes AS observacion,
               quantity AS cantidad, bonus AS oferta, price AS precio,
-              discount_rate AS descuento_pct,
+               discount_rate AS descuento_pct, discount AS descuento_monto,
               CASE WHEN quantity * price - discount > 0
                    THEN ROUND((tax1 + tax2 + tax3) / (quantity * price - discount) * 100)
                    ELSE 0 END AS tasa_itbis,
@@ -1373,7 +1407,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
               ROUND(quantity * price - discount + tax1 + tax2 + tax3, 2) AS total
        FROM orders_detail WHERE order_id = ? ORDER BY orders_detail_id`,
       [id],
-      { agrupar: false },
+      { agrupar: false, ignorarPausa: true },
     );
     const factura = mapearFactura(f);
     factura.lineas = lineas.map((l) => ({
@@ -1390,6 +1424,22 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
       itbis: Number(l.itbis),
       total: Number(l.total),
     }));
+
+    factura.subtotal = round2(factura.lineas.reduce((s, l) => s + l.subtotal, 0));
+    factura.itbis = round2(factura.lineas.reduce((s, l) => s + l.itbis, 0));
+    factura.total = round2(factura.lineas.reduce((s, l) => s + l.total, 0));
+    factura.descuento = round2(
+      lineas.reduce((s, l) => s + Number(l.descuento_monto ?? 0), 0),
+    );
+    factura.gravado = round2(
+      factura.lineas.filter((l) => l.itbis !== 0).reduce((s, l) => s + l.subtotal, 0),
+    );
+    factura.exento = round2(factura.subtotal - factura.gravado);
+    const pagado = Number(f.efectivo ?? 0) + Number(f.tarjeta ?? 0) + Number(f.cheque ?? 0)
+      + Number(f.transferencia ?? 0) + Number(f.cardnet ?? 0);
+    if (factura.estado !== "anulada" && factura.facturado) {
+      factura.estado = factura.total > 0 && pagado >= factura.total - 0.01 ? "pagada" : "emitida";
+    }
 
     return factura;
   }
