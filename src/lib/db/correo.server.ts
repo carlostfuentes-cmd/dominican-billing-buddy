@@ -47,6 +47,13 @@ const CLAVES = {
 const nombreClave = (campo: keyof typeof CLAVES, empresaId: number) =>
   `${CLAVES[campo]}@${empresaId}`;
 
+/**
+ * Normaliza la clave del correo: las contraseñas de aplicación (Gmail, Outlook)
+ * se copian con espacios ("abcd efgh ijkl mnop") y el servidor SMTP las rechaza.
+ */
+export const normalizarClaveCorreo = (clave: string) => clave.replace(/\s+/g, "");
+
+
 /** Devuelve el id de empresa a usar; si no llega uno válido toma la primera empresa. */
 export async function empresaActual(empresaId?: number): Promise<number> {
   if (empresaId && empresaId > 0) return empresaId;
@@ -77,7 +84,7 @@ export async function leerConfigCorreo(empresaId: number): Promise<ConfigCorreo>
     servidor: leer("servidor"),
     puerto: Number.isFinite(puerto) && puerto > 0 ? puerto : 25,
     usuario: leer("usuario"),
-    clave: leer("clave"),
+    clave: normalizarClaveCorreo(leer("clave")),
     remitente: leer("remitente"),
     remitenteNombre: leer("remitenteNombre"),
     copia: leer("copia"),
@@ -93,7 +100,11 @@ export async function guardarConfigCorreo(empresaId: number, cfg: ConfigCorreo):
     { nombre: nombreClave("servidor", empresaId), valor: cfg.servidor.trim(), kind: "C" },
     { nombre: nombreClave("puerto", empresaId), valor: String(cfg.puerto), kind: "N" },
     { nombre: nombreClave("usuario", empresaId), valor: cfg.usuario.trim(), kind: "C" },
-    { nombre: nombreClave("clave", empresaId), valor: cfg.clave, kind: "C" },
+    {
+      nombre: nombreClave("clave", empresaId),
+      valor: normalizarClaveCorreo(cfg.clave),
+      kind: "C",
+    },
     { nombre: nombreClave("remitente", empresaId), valor: cfg.remitente.trim(), kind: "C" },
     {
       nombre: nombreClave("remitenteNombre", empresaId),
@@ -187,7 +198,7 @@ export async function enviarCorreoConConfig(
         host: cfg.servidor,
         port: cfg.puerto,
         user: cfg.usuario,
-        password: cfg.clave,
+        password: normalizarClaveCorreo(cfg.clave),
         from: cfg.remitente,
         fromName: cfg.remitenteNombre,
         to: destinos,
@@ -204,6 +215,18 @@ export async function enviarCorreoConConfig(
     | { ok?: boolean; error?: string }
     | null;
   if (!respuesta.ok || !cuerpo?.ok) {
-    throw new Error(cuerpo?.error || "El servidor de correos rechazó el mensaje");
+    const error = cuerpo?.error || "El servidor de correos rechazó el mensaje";
+    if (/usuario o clave/i.test(error)) {
+      const clave = normalizarClaveCorreo(cfg.clave);
+      const gmail = /gmail|googlemail/i.test(cfg.servidor);
+      const detalle = gmail
+        ? clave.length === 16
+          ? "Gmail rechazó la contraseña de aplicación guardada. Genera una nueva en tu cuenta de Google y guárdala en Configuración → Datos servidor de correos."
+          : `Gmail no acepta la contraseña normal de la cuenta: hay que usar una contraseña de aplicación de 16 caracteres (la guardada tiene ${clave.length}). Genérala en tu cuenta de Google y guárdala en Configuración → Datos servidor de correos.`
+        : `El servidor ${cfg.servidor} rechazó el usuario ${cfg.usuario}. Revisa la clave guardada en Configuración → Datos servidor de correos.`;
+      throw new Error(detalle);
+    }
+    throw new Error(error);
   }
 }
+

@@ -45,14 +45,24 @@ const completarServidor = (form: Form): Form => {
   return { ...form, servidor: "smtp.gmail.com", puerto: 587, autenticacion: true, ssl: true };
 };
 
+const sinEspacios = (v: string) => v.replace(/\s+/g, "");
+
 const validar = (form: Form): string | null => {
   if (!form.servidor.trim()) return "Escriba el servidor SMTP";
   if (form.puerto < 1) return "Escriba un puerto válido";
   if (form.autenticacion && !form.usuario.trim()) return "Escriba el usuario del correo";
   if (form.autenticacion && !form.clave) return "Escriba la clave del correo";
+  if (
+    /gmail|googlemail/i.test(form.servidor) &&
+    form.autenticacion &&
+    sinEspacios(form.clave).length !== 16
+  ) {
+    return "Gmail solo acepta una contraseña de aplicación de 16 caracteres, no la clave normal de la cuenta. Genérala en tu cuenta de Google y pégala aquí.";
+  }
   if (!form.remitente.includes("@")) return "Escriba un remitente válido";
   return null;
 };
+
 
 export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | undefined }) {
   const qc = useQueryClient();
@@ -144,7 +154,14 @@ export function ConfigCorreoCard({ empresaId }: { empresaId: number | string | u
             maxLength={120}
             onChange={(e) => setForm({ ...form, clave: e.target.value })}
           />
+          {/gmail|googlemail/i.test(form.servidor) && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Gmail requiere una contraseña de aplicación de 16 caracteres (no la clave normal de la
+              cuenta).
+            </p>
+          )}
         </div>
+
         <div>
           <Label htmlFor="remitente">Remitente</Label>
           <Input
