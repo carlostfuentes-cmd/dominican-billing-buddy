@@ -1340,7 +1340,10 @@ export async function listarFacturas(filtro: FiltroFacturas = {}): Promise<Factu
 
 export async function obtenerFactura(id: number): Promise<Factura | null> {
   if (await usarMysql()) {
-    const filas = await sql<FilaFactura>(SQL_FACTURA_POR_ID, [id, id]);
+    // Abrir una factura es una lectura crítica e independiente. No se agrupa
+    // con las consultas auxiliares de empresa/formato/plantilla de la pantalla:
+    // si una de ellas es lenta, no debe consumir el tiempo de la factura.
+    const filas = await sql<FilaFactura>(SQL_FACTURA_POR_ID, [id, id], { agrupar: false });
     const f = filas[0];
     if (!f) return null;
     const lineas = await sql<{
@@ -1370,6 +1373,7 @@ export async function obtenerFactura(id: number): Promise<Factura | null> {
               ROUND(quantity * price - discount + tax1 + tax2 + tax3, 2) AS total
        FROM orders_detail WHERE order_id = ? ORDER BY orders_detail_id`,
       [id],
+      { agrupar: false },
     );
     const factura = mapearFactura(f);
     factura.lineas = lineas.map((l) => ({

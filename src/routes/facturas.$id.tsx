@@ -68,10 +68,18 @@ function DetalleFactura() {
   const qc = useQueryClient();
   const idNum = Number(id);
 
-  const { data: factura, isLoading } = useQuery({
+  const {
+    data: factura,
+    isLoading,
+    isError: facturaError,
+    error: errorFactura,
+    refetch: recargarFactura,
+    isFetching: recargandoFactura,
+  } = useQuery({
     queryKey: ["factura", idNum],
     queryFn: () => obtenerFactura({ data: { id: idNum } }),
     enabled: Number.isFinite(idNum) && idNum > 0,
+    retry: 1,
   });
   const { data: empresa } = useQuery({ queryKey: ["empresa"], queryFn: () => obtenerEmpresa() });
   // Formato de impresión de la empresa (o el general si no tiene uno propio).
@@ -131,6 +139,26 @@ function DetalleFactura() {
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Cargando factura…</p>;
+  if (facturaError)
+    return (
+      <div className="mx-auto max-w-md py-12 text-center">
+        <h1 className="text-lg font-semibold">No pudimos cargar la factura</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {errorFactura instanceof Error
+            ? errorFactura.message
+            : "El servidor de datos no respondió a tiempo."}
+        </p>
+        <div className="mt-5 flex justify-center gap-2">
+          <Button onClick={() => void recargarFactura()} disabled={recargandoFactura}>
+            <RotateCcw className={recargandoFactura ? "animate-spin" : ""} />
+            {recargandoFactura ? "Reintentando…" : "Reintentar"}
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/facturas">Volver a facturas</Link>
+          </Button>
+        </div>
+      </div>
+    );
   if (!factura)
     return (
       <div>

@@ -27,7 +27,11 @@ export function leerCredenciales(): Credenciales | null {
 }
 
 type Conexion = {
-  query: (sql: string, params?: unknown[]) => Promise<[unknown, unknown]>;
+  query: (
+    sql: string,
+    params?: unknown[],
+    opciones?: { agrupar?: boolean },
+  ) => Promise<[unknown, unknown]>;
   end: () => Promise<void>;
 };
 
@@ -167,9 +171,9 @@ async function vaciarLote(url: string, token: string) {
 
 function conexionPuente(url: string, token: string, admiteLotes: boolean): Conexion {
   return {
-    async query(sql: string, params: unknown[] = []) {
+    async query(sql: string, params: unknown[] = [], opciones = {}) {
       if (Date.now() < falloHasta) throw new Error("Servidor de datos temporalmente no disponible");
-      if (admiteLotes && esLectura(sql)) {
+      if (admiteLotes && esLectura(sql) && opciones.agrupar !== false) {
         return new Promise<[unknown, unknown]>((resolve, reject) => {
           lotePendiente.push({ sql, params, resolve, reject });
           if (lotePendiente.length >= MAX_CONSULTAS_POR_LOTE) void vaciarLote(url, token);
@@ -302,10 +306,11 @@ export async function diagnosticarMysql(): Promise<{
 export async function sql<T = Record<string, unknown>>(
   consulta: string,
   params: unknown[] = [],
+  opciones: { agrupar?: boolean } = {},
 ): Promise<T[]> {
   const conexion = await obtenerConexion();
   if (!conexion) throw new Error("Sin conexión MySQL");
-  const [filas] = await conexion.query(consulta, params);
+  const [filas] = await conexion.query(consulta, params, opciones);
   return filas as T[];
 }
 
