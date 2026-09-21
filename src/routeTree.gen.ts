@@ -26,6 +26,7 @@ import { Route as BancosIdRouteImport } from './routes/bancos.$id'
 import { Route as BancosCuentasRouteImport } from './routes/bancos.cuentas'
 import { Route as BancosNuevaRouteImport } from './routes/bancos.nueva'
 import { Route as CajaChicaIndexRouteImport } from './routes/caja-chica.index'
+import { Route as CajaChicaNuevoRouteImport } from './routes/caja-chica.nuevo'
 import { Route as ComprasIndexRouteImport } from './routes/compras.index'
 import { Route as ComprasNuevaRouteImport } from './routes/compras.nueva'
 import { Route as ConducesIndexRouteImport } from './routes/conduces.index'
@@ -140,6 +141,11 @@ const BancosNuevaRoute = BancosNuevaRouteImport.update({
 const CajaChicaIndexRoute = CajaChicaIndexRouteImport.update({
   id: '/caja-chica/',
   path: '/caja-chica/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CajaChicaNuevoRoute = CajaChicaNuevoRouteImport.update({
+  id: '/caja-chica/nuevo',
+  path: '/caja-chica/nuevo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComprasIndexRoute = ComprasIndexRouteImport.update({
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/bancos/$id': typeof BancosIdRoute
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
+  '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/bancos/$id': typeof BancosIdRoute
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
+  '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -408,6 +416,7 @@ export interface FileRoutesById {
   '/bancos/$id': typeof BancosIdRoute
   '/bancos/cuentas': typeof BancosCuentasRoute
   '/bancos/nueva': typeof BancosNuevaRoute
+  '/caja-chica/nuevo': typeof CajaChicaNuevoRoute
   '/compras/nueva': typeof ComprasNuevaRoute
   '/conduces/$id': typeof ConducesIdRoute
   '/conduces/nueva': typeof ConducesNuevaRoute
@@ -459,6 +468,7 @@ export interface FileRouteTypes {
     | '/bancos/$id'
     | '/bancos/cuentas'
     | '/bancos/nueva'
+    | '/caja-chica/nuevo'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/bancos/$id'
     | '/bancos/cuentas'
     | '/bancos/nueva'
+    | '/caja-chica/nuevo'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -557,6 +568,7 @@ export interface FileRouteTypes {
     | '/bancos/$id'
     | '/bancos/cuentas'
     | '/bancos/nueva'
+    | '/caja-chica/nuevo'
     | '/compras/nueva'
     | '/conduces/$id'
     | '/conduces/nueva'
@@ -607,6 +619,7 @@ export interface RootRouteChildren {
   BancosIdRoute: typeof BancosIdRoute
   BancosCuentasRoute: typeof BancosCuentasRoute
   BancosNuevaRoute: typeof BancosNuevaRoute
+  CajaChicaNuevoRoute: typeof CajaChicaNuevoRoute
   ComprasNuevaRoute: typeof ComprasNuevaRoute
   ConducesIdRoute: typeof ConducesIdRoute
   ConducesNuevaRoute: typeof ConducesNuevaRoute
@@ -760,6 +773,13 @@ declare module '@tanstack/react-router' {
       path: '/caja-chica'
       fullPath: '/caja-chica/'
       preLoaderRoute: typeof CajaChicaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/caja-chica/nuevo': {
+      id: '/caja-chica/nuevo'
+      path: '/caja-chica/nuevo'
+      fullPath: '/caja-chica/nuevo'
+      preLoaderRoute: typeof CajaChicaNuevoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/compras/': {
@@ -991,6 +1011,7 @@ const rootRouteChildren: RootRouteChildren = {
   BancosIdRoute: BancosIdRoute,
   BancosCuentasRoute: BancosCuentasRoute,
   BancosNuevaRoute: BancosNuevaRoute,
+  CajaChicaNuevoRoute: CajaChicaNuevoRoute,
   ComprasNuevaRoute: ComprasNuevaRoute,
   ConducesIdRoute: ConducesIdRoute,
   ConducesNuevaRoute: ConducesNuevaRoute,
