@@ -40,8 +40,8 @@ export type Licencia = {
 };
 
 export type NuevaLicencia = {
-  id?: number;
-  clave?: string;
+  id?: number | undefined;
+  clave?: string | undefined;
   cliente: string;
   rnc: string;
   contacto: string;
