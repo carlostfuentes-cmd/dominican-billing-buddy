@@ -108,6 +108,40 @@ function EstadoDatos() {
   );
 }
 
+function AvisoLicencia() {
+  const { data } = useQuery({
+    queryKey: ["licencia"],
+    queryFn: () => obtenerEstadoLicencia(),
+    staleTime: 10 * 60_000,
+  });
+  if (!data || !data.configurada) return null;
+  const porVencer = data.dias_restantes !== null && data.dias_restantes <= 30;
+  if (!data.solo_lectura && !porVencer) return null;
+  return (
+    <div
+      className={cn(
+        "no-print mb-5 flex items-start gap-3 rounded-md border p-4 text-sm",
+        data.solo_lectura
+          ? "border-destructive/30 bg-destructive/10"
+          : "border-warning/30 bg-warning/10",
+      )}
+    >
+      <BadgeCheck className="mt-0.5 size-4 shrink-0" />
+      <div>
+        <p className="font-semibold">
+          {data.solo_lectura ? "Sistema en solo lectura" : "Licencia por vencer"}
+        </p>
+        <p className="mt-1 text-muted-foreground">{data.mensaje}</p>
+        <Link to="/licencia" className="mt-1 inline-block font-medium underline">
+          Ver la licencia
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+
+
 function Contenido({ children }: { children: ReactNode }) {
   const { sesion, permite, salir } = useSesion();
   const ruta = useRouterState({ select: (s) => s.location.pathname });
