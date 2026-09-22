@@ -1,8 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  BadgeCheck,
   Banknote,
   BarChart3,
+  KeyRound,
   BookOpen,
   Boxes,
   Building2,
@@ -63,6 +65,8 @@ const NAV = [
   { to: "/usuarios", label: "Usuarios", icon: UserCog, grupo: "sistema" },
   { to: "/perfiles", label: "Perfiles y permisos", icon: ShieldCheck, grupo: "sistema" },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, grupo: "sistema" },
+  { to: "/licencia", label: "Licencia del sistema", icon: BadgeCheck, grupo: "sistema" },
+  { to: "/licencias", label: "Licenciamiento de clientes", icon: KeyRound, grupo: "sistema" },
   { to: "/configuracion", label: "Configuración", icon: Settings, grupo: "sistema" },
 ] as const;
 

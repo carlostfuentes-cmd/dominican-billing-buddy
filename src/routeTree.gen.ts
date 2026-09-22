@@ -16,6 +16,8 @@ import { Route as ClientesRouteImport } from './routes/clientes'
 import { Route as ConfiguracionRouteImport } from './routes/configuracion'
 import { Route as FormatosRouteImport } from './routes/formatos'
 import { Route as ItemsRouteImport } from './routes/items'
+import { Route as LicenciaRouteImport } from './routes/licencia'
+import { Route as LicenciasRouteImport } from './routes/licencias'
 import { Route as NcfRouteImport } from './routes/ncf'
 import { Route as PerfilesRouteImport } from './routes/perfiles'
 import { Route as PlantillasRouteImport } from './routes/plantillas'
@@ -93,6 +95,16 @@ const FormatosRoute = FormatosRouteImport.update({
 const ItemsRoute = ItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LicenciaRoute = LicenciaRouteImport.update({
+  id: '/licencia',
+  path: '/licencia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LicenciasRoute = LicenciasRouteImport.update({
+  id: '/licencias',
+  path: '/licencias',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NcfRoute = NcfRouteImport.update({
@@ -319,6 +331,8 @@ export interface FileRoutesByFullPath {
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
+  '/licencia': typeof LicenciaRoute
+  '/licencias': typeof LicenciasRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
   '/plantillas': typeof PlantillasRoute
@@ -371,6 +385,8 @@ export interface FileRoutesByTo {
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
+  '/licencia': typeof LicenciaRoute
+  '/licencias': typeof LicenciasRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
   '/plantillas': typeof PlantillasRoute
@@ -424,6 +440,8 @@ export interface FileRoutesById {
   '/configuracion': typeof ConfiguracionRoute
   '/formatos': typeof FormatosRoute
   '/items': typeof ItemsRoute
+  '/licencia': typeof LicenciaRoute
+  '/licencias': typeof LicenciasRoute
   '/ncf': typeof NcfRoute
   '/perfiles': typeof PerfilesRoute
   '/plantillas': typeof PlantillasRoute
@@ -478,6 +496,8 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/formatos'
     | '/items'
+    | '/licencia'
+    | '/licencias'
     | '/ncf'
     | '/perfiles'
     | '/plantillas'
@@ -530,6 +550,8 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/formatos'
     | '/items'
+    | '/licencia'
+    | '/licencias'
     | '/ncf'
     | '/perfiles'
     | '/plantillas'
@@ -582,6 +604,8 @@ export interface FileRouteTypes {
     | '/configuracion'
     | '/formatos'
     | '/items'
+    | '/licencia'
+    | '/licencias'
     | '/ncf'
     | '/perfiles'
     | '/plantillas'
@@ -635,6 +659,8 @@ export interface RootRouteChildren {
   ConfiguracionRoute: typeof ConfiguracionRoute
   FormatosRoute: typeof FormatosRoute
   ItemsRoute: typeof ItemsRoute
+  LicenciaRoute: typeof LicenciaRoute
+  LicenciasRoute: typeof LicenciasRoute
   NcfRoute: typeof NcfRoute
   PerfilesRoute: typeof PerfilesRoute
   PlantillasRoute: typeof PlantillasRoute
@@ -729,6 +755,20 @@ declare module '@tanstack/react-router' {
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof ItemsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/licencia': {
+      id: '/licencia'
+      path: '/licencia'
+      fullPath: '/licencia'
+      preLoaderRoute: typeof LicenciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/licencias': {
+      id: '/licencias'
+      path: '/licencias'
+      fullPath: '/licencias'
+      preLoaderRoute: typeof LicenciasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ncf': {
@@ -1043,6 +1083,8 @@ const rootRouteChildren: RootRouteChildren = {
   ConfiguracionRoute: ConfiguracionRoute,
   FormatosRoute: FormatosRoute,
   ItemsRoute: ItemsRoute,
+  LicenciaRoute: LicenciaRoute,
+  LicenciasRoute: LicenciasRoute,
   NcfRoute: NcfRoute,
   PerfilesRoute: PerfilesRoute,
   PlantillasRoute: PlantillasRoute,
