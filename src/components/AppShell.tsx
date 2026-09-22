@@ -36,6 +36,7 @@ import type { ReactNode } from "react";
 import { SesionProvider, useSesion } from "@/components/Sesion";
 import { Button } from "@/components/ui/button";
 import { obtenerEstadoConexion } from "@/lib/erp.functions";
+import { obtenerEstadoLicencia } from "@/lib/licencias.functions";
 import { pantallaDeRuta } from "@/lib/pantallas";
 import { cn } from "@/lib/utils";
 
@@ -241,6 +242,7 @@ function Contenido({ children }: { children: ReactNode }) {
             </button>
           </header>
           <main className="flex-1 px-4 py-6 sm:px-6 md:px-8 md:py-7 xl:px-10">
+            <AvisoLicencia />
             {conAcceso ? (
               children
             ) : (
