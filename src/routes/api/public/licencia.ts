@@ -28,15 +28,24 @@ export const Route = createFileRoute("/api/public/licencia")({
         }
 
         const repo = await import("@/lib/db/licencias.server");
-        const licencia = await repo.licenciaPorClave(entrada.clave);
+        let licencia: Awaited<ReturnType<typeof repo.licenciaPorClave>>;
+        try {
+          licencia = await repo.licenciaPorClave(entrada.clave);
+          if (licencia)
+            await repo.registrarContacto(
+              entrada.clave,
+              entrada.version ?? "",
+              entrada.usuarios ?? 0,
+              request.headers.get("cf-connecting-ip") ?? "",
+            );
+        } catch (error) {
+          console.error(
+            "Servidor de licencias sin acceso a la base de control:",
+            error instanceof Error ? error.message : String(error),
+          );
+          return json({ error: "Servidor de licencias no disponible" }, 503);
+        }
         if (!licencia) return json({ error: "Licencia no registrada" }, 404);
-
-        await repo.registrarContacto(
-          entrada.clave,
-          entrada.version ?? "",
-          entrada.usuarios ?? 0,
-          request.headers.get("cf-connecting-ip") ?? "",
-        );
 
         const payload = JSON.stringify({
           clave: licencia.clave,
