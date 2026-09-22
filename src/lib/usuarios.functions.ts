@@ -131,6 +131,11 @@ export const guardarUsuarioSistema = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ id: number }> => {
     await exigirAdministrador();
+    if (!data.id && data.activo) {
+      const { puedeAgregarUsuario } = await import("@/lib/db/licencias.server");
+      const permitido = await puedeAgregarUsuario();
+      if (permitido !== true) throw new Error(permitido);
+    }
     const r = await (await repo()).guardarUsuario(data);
     const { clave: _clave, ...sinClave } = data;
     await auditar({

@@ -1,8 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
+  BadgeCheck,
   Banknote,
   BarChart3,
+  KeyRound,
   BookOpen,
   Boxes,
   Building2,
@@ -34,6 +36,7 @@ import type { ReactNode } from "react";
 import { SesionProvider, useSesion } from "@/components/Sesion";
 import { Button } from "@/components/ui/button";
 import { obtenerEstadoConexion } from "@/lib/erp.functions";
+import { obtenerEstadoLicencia } from "@/lib/licencias.functions";
 import { pantallaDeRuta } from "@/lib/pantallas";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +66,8 @@ const NAV = [
   { to: "/usuarios", label: "Usuarios", icon: UserCog, grupo: "sistema" },
   { to: "/perfiles", label: "Perfiles y permisos", icon: ShieldCheck, grupo: "sistema" },
   { to: "/auditoria", label: "Auditoría", icon: ScrollText, grupo: "sistema" },
+  { to: "/licencia", label: "Licencia del sistema", icon: BadgeCheck, grupo: "sistema" },
+  { to: "/licencias", label: "Licenciamiento de clientes", icon: KeyRound, grupo: "sistema" },
   { to: "/configuracion", label: "Configuración", icon: Settings, grupo: "sistema" },
 ] as const;
 
@@ -103,6 +108,40 @@ function EstadoDatos() {
     </div>
   );
 }
+
+function AvisoLicencia() {
+  const { data } = useQuery({
+    queryKey: ["licencia"],
+    queryFn: () => obtenerEstadoLicencia(),
+    staleTime: 10 * 60_000,
+  });
+  if (!data || !data.configurada) return null;
+  const porVencer = data.dias_restantes !== null && data.dias_restantes <= 30;
+  if (!data.solo_lectura && !porVencer) return null;
+  return (
+    <div
+      className={cn(
+        "no-print mb-5 flex items-start gap-3 rounded-md border p-4 text-sm",
+        data.solo_lectura
+          ? "border-destructive/30 bg-destructive/10"
+          : "border-warning/30 bg-warning/10",
+      )}
+    >
+      <BadgeCheck className="mt-0.5 size-4 shrink-0" />
+      <div>
+        <p className="font-semibold">
+          {data.solo_lectura ? "Sistema en solo lectura" : "Licencia por vencer"}
+        </p>
+        <p className="mt-1 text-muted-foreground">{data.mensaje}</p>
+        <Link to="/licencia" className="mt-1 inline-block font-medium underline">
+          Ver la licencia
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+
 
 function Contenido({ children }: { children: ReactNode }) {
   const { sesion, permite, salir } = useSesion();
@@ -203,6 +242,7 @@ function Contenido({ children }: { children: ReactNode }) {
             </button>
           </header>
           <main className="flex-1 px-4 py-6 sm:px-6 md:px-8 md:py-7 xl:px-10">
+            <AvisoLicencia />
             {conAcceso ? (
               children
             ) : (

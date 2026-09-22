@@ -320,6 +320,12 @@ export async function ejecutar(
   consulta: string,
   params: unknown[] = [],
 ): Promise<{ insertId: number; affectedRows: number }> {
+  // Puerta central del licenciamiento: con la licencia vencida o suspendida el
+  // sistema queda en solo lectura (las consultas siguen funcionando).
+  const { permiteEscritura } = await import("./licencias.server");
+  const permitido = await permiteEscritura(consulta);
+  if (permitido !== true) throw new Error(permitido);
+
   const conexion = await obtenerConexion();
   if (!conexion) throw new Error("Sin conexión MySQL");
   const [resultado] = await conexion.query(consulta, params);
