@@ -17,3 +17,14 @@
 - [x] Guardado como edición con auditoría tipo "E" (UPDATE + líneas reemplazadas)
 - [x] Barra de desplazamiento horizontal superior en cotizaciones y clientes
 - [ ] Verificar en producción (el usuario debe probar con su sesión)
+
+## Licenciamiento y multi-tenant — sep 2026
+- [x] Tablas de control `licencias`, `licencia_eventos`, `licencia_instalaciones` (db/licencias-schema.sql)
+- [x] Panel interno del proveedor en /licencias (alta, editar, renovar, suspender, historial, último contacto)
+- [x] Endpoint firmado /api/public/licencia para que cada instalación valide su licencia
+- [x] Validación con caché de 10 minutos y período de gracia de 7 días
+- [x] Modo solo lectura centralizado en la capa de escritura (ejecutar)
+- [x] Tope de usuarios del plan al crear un usuario
+- [x] Pantalla /licencia para el administrador del cliente y avisos de vencimiento en todas las pantallas
+- [ ] Definir claves Ed25519 (LICENSE_PRIVATE_KEY en el proveedor, LICENSE_PUBLIC_KEY + LICENSE_KEY + LICENSE_SERVER_URL en cada instalación)
+- [ ] Fase 5: empaquetado para instalación local del cliente (solo si se vende)
