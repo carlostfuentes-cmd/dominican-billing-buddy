@@ -56,6 +56,7 @@ import { Route as NotasCreditoNuevaRouteImport } from './routes/notas-credito.nu
 import { Route as RecurrentesIndexRouteImport } from './routes/recurrentes.index'
 import { Route as RecurrentesIdRouteImport } from './routes/recurrentes.$id'
 import { Route as RecurrentesNuevaRouteImport } from './routes/recurrentes.nueva'
+import { Route as ApiPublicLicenciaRouteImport } from './routes/api/public/licencia'
 import { Route as ComprasIdIndexRouteImport } from './routes/compras.$id.index'
 import { Route as ComprasIdRecepcionRouteImport } from './routes/compras.$id.recepcion'
 
@@ -294,6 +295,11 @@ const RecurrentesNuevaRoute = RecurrentesNuevaRouteImport.update({
   path: '/recurrentes/nueva',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLicenciaRoute = ApiPublicLicenciaRouteImport.update({
+  id: '/api/public/licencia',
+  path: '/api/public/licencia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ComprasIdIndexRoute = ComprasIdIndexRouteImport.update({
   id: '/compras/$id/',
   path: '/compras/$id/',
@@ -353,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/api/public/licencia': typeof ApiPublicLicenciaRoute
   '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
   '/compras/$id/': typeof ComprasIdIndexRoute
 }
@@ -404,6 +411,7 @@ export interface FileRoutesByTo {
   '/inventario': typeof InventarioIndexRoute
   '/notas-credito': typeof NotasCreditoIndexRoute
   '/recurrentes': typeof RecurrentesIndexRoute
+  '/api/public/licencia': typeof ApiPublicLicenciaRoute
   '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
   '/compras/$id': typeof ComprasIdIndexRoute
 }
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/inventario/': typeof InventarioIndexRoute
   '/notas-credito/': typeof NotasCreditoIndexRoute
   '/recurrentes/': typeof RecurrentesIndexRoute
+  '/api/public/licencia': typeof ApiPublicLicenciaRoute
   '/compras/$id/recepcion': typeof ComprasIdRecepcionRoute
   '/compras/$id/': typeof ComprasIdIndexRoute
 }
@@ -509,6 +518,7 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/api/public/licencia'
     | '/compras/$id/recepcion'
     | '/compras/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -560,6 +570,7 @@ export interface FileRouteTypes {
     | '/inventario'
     | '/notas-credito'
     | '/recurrentes'
+    | '/api/public/licencia'
     | '/compras/$id/recepcion'
     | '/compras/$id'
   id:
@@ -611,6 +622,7 @@ export interface FileRouteTypes {
     | '/inventario/'
     | '/notas-credito/'
     | '/recurrentes/'
+    | '/api/public/licencia'
     | '/compras/$id/recepcion'
     | '/compras/$id/'
   fileRoutesById: FileRoutesById
@@ -663,6 +675,7 @@ export interface RootRouteChildren {
   InventarioIndexRoute: typeof InventarioIndexRoute
   NotasCreditoIndexRoute: typeof NotasCreditoIndexRoute
   RecurrentesIndexRoute: typeof RecurrentesIndexRoute
+  ApiPublicLicenciaRoute: typeof ApiPublicLicenciaRoute
   ComprasIdRecepcionRoute: typeof ComprasIdRecepcionRoute
   ComprasIdIndexRoute: typeof ComprasIdIndexRoute
 }
@@ -998,6 +1011,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecurrentesNuevaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/licencia': {
+      id: '/api/public/licencia'
+      path: '/api/public/licencia'
+      fullPath: '/api/public/licencia'
+      preLoaderRoute: typeof ApiPublicLicenciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/compras/$id/': {
       id: '/compras/$id/'
       path: '/compras/$id'
@@ -1063,6 +1083,7 @@ const rootRouteChildren: RootRouteChildren = {
   InventarioIndexRoute: InventarioIndexRoute,
   NotasCreditoIndexRoute: NotasCreditoIndexRoute,
   RecurrentesIndexRoute: RecurrentesIndexRoute,
+  ApiPublicLicenciaRoute: ApiPublicLicenciaRoute,
   ComprasIdRecepcionRoute: ComprasIdRecepcionRoute,
   ComprasIdIndexRoute: ComprasIdIndexRoute,
 }
