@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Loader2, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { AsientoContable } from "@/components/AsientoContable";
@@ -25,6 +25,7 @@ import {
   obtenerComprobanteCaja,
   obtenerListasCajaChica,
   proponerAsientoCaja,
+  sugerirCuentaCaja,
 } from "@/lib/cajachica.functions";
 import {
   hoyISO,
@@ -257,6 +258,34 @@ function NuevoComprobantePage() {
     if (!propuesta || asientoTocado) return;
     setAsiento(propuesta.lineas);
   }, [propuesta, asientoTocado]);
+
+  // Sugerencia de cuenta del gasto según el concepto (historial o IA).
+  const [sugerencia, setSugerencia] = useState("");
+  const sugerir = useMutation({
+    mutationFn: (concepto: string) => sugerirCuentaCaja({ data: { concepto } }),
+    onSuccess: (s) => {
+      if (!s.cuenta) {
+        setSugerencia(s.motivo || "No se encontró una cuenta relacionada; elíjala en Cuentas contables.");
+        return;
+      }
+      const anterior = cuentaGasto;
+      setCuentaGasto(s.cuenta);
+      if (s.gasto_id && !gastoId) setGastoId(s.gasto_id);
+      if (asientoTocado) {
+        setAsiento((ls) =>
+          ls.map((l) =>
+            l.cuenta !== cuentaCaja && l.debito > 0 && (!l.cuenta || l.cuenta === anterior)
+              ? { ...l, cuenta: s.cuenta, cuenta_nombre: s.cuenta_nombre }
+              : l,
+          ),
+        );
+      }
+      setSugerencia(
+        `${s.origen === "ia" ? "Sugerida por IA" : "Según comprobantes anteriores"}: ${s.cuenta} ${s.cuenta_nombre}. ${s.motivo}`,
+      );
+    },
+    onError: () => setSugerencia("No se pudo sugerir la cuenta en este momento."),
+  });
 
   const retencionSugerida = useMemo(() => {
     const r = (listas?.retenciones ?? []).find((x) => x.id === isrId);
@@ -529,14 +558,39 @@ function NuevoComprobantePage() {
               </Badge>
             </div>
             <div className="md:col-span-4">
-              <Label>Concepto del gasto</Label>
+              <div className="flex items-center justify-between gap-2">
+                <Label>Concepto del gasto</Label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={sugerir.isPending || descripcion.trim().length < 3}
+                  onClick={() => sugerir.mutate(descripcion)}
+                >
+                  {sugerir.isPending ? (
+                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-1 h-4 w-4" />
+                  )}
+                  Sugerir cuenta
+                </Button>
+              </div>
               <Textarea
                 value={descripcion}
                 maxLength={500}
                 rows={2}
                 onChange={(e) => setDescripcion(e.target.value)}
+                onBlur={() => {
+                  if (!idEditar && !cuentaGasto && descripcion.trim().length >= 3 && !sugerir.isPending)
+                    sugerir.mutate(descripcion);
+                }}
                 placeholder="Detalle claro del gasto efectuado"
               />
+              {sugerencia && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {sugerencia}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
