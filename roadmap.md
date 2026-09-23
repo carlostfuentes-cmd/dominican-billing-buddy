@@ -26,5 +26,7 @@
 - [x] Modo solo lectura centralizado en la capa de escritura (ejecutar)
 - [x] Tope de usuarios del plan al crear un usuario
 - [x] Pantalla /licencia para el administrador del cliente y avisos de vencimiento en todas las pantallas
-- [ ] Definir claves Ed25519 (LICENSE_PRIVATE_KEY en el proveedor, LICENSE_PUBLIC_KEY + LICENSE_KEY + LICENSE_SERVER_URL en cada instalación)
-- [ ] Fase 5: empaquetado para instalación local del cliente (solo si se vende)
+- [x] Claves Ed25519 generadas y guardadas (LICENSE_PRIVATE_KEY y LICENSE_PUBLIC_KEY); firma verificada
+- [x] Fase 5: paquete de instalación local (db/instalacion-local/README.md y .env.ejemplo, descargables desde /licencias)
+- [ ] Al vender on-premise: entregar a cada cliente su LICENSE_KEY y confirmar el primer contacto
+
