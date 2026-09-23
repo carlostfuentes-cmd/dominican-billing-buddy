@@ -109,6 +109,12 @@ export const obtenerResumenCajaChica = createServerFn({ method: "GET" })
     (await repo()).resumenCajaChica(data.cajaId, data.desde, data.hasta),
   );
 
+export const sugerirCuentaCaja = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) => z.object({ concepto: texto(500) }).parse(d))
+  .handler(async ({ data }) =>
+    (await import("@/lib/db/sugerencia-cuenta.server")).sugerirCuentaGasto(data.concepto),
+  );
+
 export const proponerAsientoCaja = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => comprobanteSchema.parse(d))
   .handler(async ({ data }): Promise<PropuestaAsiento> =>
