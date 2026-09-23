@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { BotonAyuda } from "@/components/CentroAyuda";
+import { TourGuiado } from "@/components/TourGuiado";
 import { SesionProvider, useSesion } from "@/components/Sesion";
 import { Button } from "@/components/ui/button";
 import { obtenerEstadoConexion } from "@/lib/erp.functions";
@@ -170,7 +172,7 @@ function Contenido({ children }: { children: ReactNode }) {
                 <span className="block text-[11px] font-medium text-sidebar-foreground/50">República Dominicana</span>
               </span>
             </Link>
-            <nav className="mt-7 space-y-5">
+            <nav data-tour="menu" className="mt-7 space-y-5">
               {GRUPOS.map((grupo) => {
                 const items = visibles.filter((item) => item.grupo === grupo.id);
                 if (items.length === 0) return null;
@@ -201,6 +203,7 @@ function Contenido({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="mt-4 space-y-3">
+            <BotonAyuda className="w-full text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" />
             <EstadoDatos />
             <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/40 px-3 py-2.5 text-xs">
               <p className="truncate font-semibold text-sidebar-foreground">{sesion.nombre}</p>
@@ -237,11 +240,12 @@ function Contenido({ children }: { children: ReactNode }) {
                 {label}
               </Link>
             ))}
+            <BotonAyuda className="shrink-0 px-2 text-muted-foreground" />
             <button onClick={salir} className="ml-auto shrink-0 text-sm text-muted-foreground">
               Salir
             </button>
           </header>
-          <main className="flex-1 px-4 py-6 sm:px-6 md:px-8 md:py-7 xl:px-10">
+          <main data-tour="contenido" className="flex-1 px-4 py-6 sm:px-6 md:px-8 md:py-7 xl:px-10">
             <AvisoLicencia />
             {conAcceso ? (
               children
@@ -256,6 +260,7 @@ function Contenido({ children }: { children: ReactNode }) {
               </div>
             )}
           </main>
+          <TourGuiado />
         </div>
       </div>
     </div>
@@ -279,10 +284,10 @@ export function PageHeader({
   return (
     <div className="no-print mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-border/70 pb-5">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-foreground md:text-3xl">{titulo}</h1>
+        <h1 data-tour="titulo" className="font-display text-2xl font-semibold text-foreground md:text-3xl">{titulo}</h1>
         {descripcion ? <p className="mt-1.5 text-sm text-muted-foreground">{descripcion}</p> : null}
       </div>
-      {acciones ? <div className="flex gap-2">{acciones}</div> : null}
+      {acciones ? <div data-tour="acciones" className="flex gap-2">{acciones}</div> : null}
     </div>
   );
 }
