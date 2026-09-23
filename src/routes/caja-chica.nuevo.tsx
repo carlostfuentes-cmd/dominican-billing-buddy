@@ -77,7 +77,10 @@ function NuevoComprobantePage() {
 
   const { data: existente, isLoading: cargandoExistente } = useQuery({
     queryKey: ["comprobante-caja", idEditar],
-    queryFn: () => obtenerComprobanteCaja({ data: { id: idEditar! } }),
+    queryFn: () => {
+      if (!idEditar) throw new Error("Comprobante inválido");
+      return obtenerComprobanteCaja({ data: { id: idEditar } });
+    },
     enabled: Boolean(idEditar),
     retry: 1,
   });
@@ -267,11 +270,16 @@ function NuevoComprobantePage() {
 
   const guardar = useMutation({
     mutationFn: () => guardarComprobanteCaja({ data: { ...entrada, asiento } }),
-    onSuccess: async () => {
+    onSuccess: async (resultado) => {
       toast.success(idEditar ? "Comprobante actualizado" : "Comprobante registrado");
       await qc.invalidateQueries({ queryKey: ["comprobantes-caja"] });
       await qc.invalidateQueries({ queryKey: ["resumen-caja-chica"] });
-      await navigate({ to: "/caja-chica", search: {} });
+      await qc.invalidateQueries({ queryKey: ["comprobante-caja", resultado.id] });
+      await navigate({
+        to: "/caja-chica/$id",
+        params: { id: String(resultado.id) },
+        search: { imprimir: !idEditar },
+      });
     },
     onError: (e) =>
       toast.error(e instanceof Error ? e.message : "No se pudo guardar el comprobante"),

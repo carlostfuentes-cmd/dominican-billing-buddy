@@ -155,9 +155,13 @@ export const SECCIONES_AYUDA: SeccionAyuda[] = [
           "Pulse Nuevo comprobante y elija la caja.",
           "Indique proveedor, tipo de comprobante y NCF.",
           "Escriba montos, ITBIS y retenciones; revise el asiento.",
+           "Guarde el comprobante; se abrirá listo para imprimir y firmar.",
           "Cuando haga falta, use Reponer fondo con los comprobantes pendientes.",
         ],
-        notas: [{ tipo: "aviso", texto: "Los comprobantes ya repuestos no se pueden editar ni eliminar." }],
+         notas: [
+           { tipo: "tip", texto: "Puede reimprimir cualquier comprobante con el ícono de impresora del listado." },
+           { tipo: "aviso", texto: "Los comprobantes ya repuestos no se pueden editar ni eliminar." },
+         ],
         palabras: ["606", "gastos menores", "b13"],
       },
       {

@@ -32,6 +32,7 @@
 
 
 ## Impresión de caja chica — sep 2026
-- [ ] Vista imprimible con empresa, detalle contable y usuario
-- [ ] Impresión automática al crear y reimpresión desde el listado
-- [ ] Actualizar guía y verificar visualmente
+- [x] Vista imprimible con empresa, detalle contable y usuario
+- [x] Impresión automática al crear y reimpresión desde el listado
+- [x] Actualizar guía
+- [ ] Verificar visualmente con una sesión activa
