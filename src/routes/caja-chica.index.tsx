@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Download, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Download, Pencil, Plus, Printer, Trash2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/caja-chica/")({
 const TODOS = "todos";
 
 function CajaChicaPage() {
-  const { puedeAgregar, puedeEditar, puedeEliminar } = usePermisoPantalla();
+  const { puedeAgregar, puedeEditar, puedeEliminar, puedeImprimir } = usePermisoPantalla();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const inicioAno = `${hoyISO().slice(0, 4)}-01-01`;
@@ -386,6 +386,17 @@ function CajaChicaPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          {puedeImprimir ? (
+                            <Button variant="ghost" size="icon" asChild aria-label="Imprimir">
+                              <Link
+                                to="/caja-chica/$id"
+                                params={{ id: String(c.id) }}
+                                search={{ imprimir: false }}
+                              >
+                                <Printer className="size-4" />
+                              </Link>
+                            </Button>
+                          ) : null}
                           {c.editable && puedeEditar ? (
                             <Button variant="ghost" size="icon" asChild aria-label="Editar">
                               <Link to="/caja-chica/nuevo" search={{ caja: c.caja_id, id: c.id }}>

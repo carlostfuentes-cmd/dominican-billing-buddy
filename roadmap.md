@@ -30,3 +30,9 @@
 - [x] Fase 5: paquete de instalación local (db/instalacion-local/README.md y .env.ejemplo, descargables desde /licencias)
 - [ ] Al vender on-premise: entregar a cada cliente su LICENSE_KEY y confirmar el primer contacto
 
+
+## Impresión de caja chica — sep 2026
+- [x] Vista imprimible con empresa, detalle contable y usuario
+- [x] Impresión automática al crear y reimpresión desde el listado
+- [x] Actualizar guía
+- [ ] Verificar visualmente con una sesión activa
