@@ -25,7 +25,7 @@ function coincide(g: GuiaAyuda, q: string) {
   return normal(texto).includes(normal(q));
 }
 
-function Guia({ g, alNavegar }: { g: GuiaAyuda; alNavegar?: () => void }) {
+function Guia({ g, alNavegar }: { g: GuiaAyuda; alNavegar?: (() => void) | undefined }) {
   return (
     <AccordionItem value={g.id}>
       <AccordionTrigger className="text-left">{g.titulo}</AccordionTrigger>
@@ -53,7 +53,7 @@ function Guia({ g, alNavegar }: { g: GuiaAyuda; alNavegar?: () => void }) {
   );
 }
 
-export function PanelAyuda({ alNavegar }: { alNavegar?: () => void }) {
+export function PanelAyuda({ alNavegar }: { alNavegar?: (() => void) | undefined }) {
   const [q, setQ] = useState("");
   const ruta = useRouterState({ select: (s) => s.location.pathname });
   const actual = useMemo(
