@@ -160,11 +160,12 @@ export const SECCIONES_AYUDA: SeccionAyuda[] = [
            "Guarde el comprobante; se abrirá listo para imprimir y firmar.",
           "Cuando haga falta, use Reponer fondo con los comprobantes pendientes.",
         ],
-         notas: [
-           { tipo: "tip", texto: "Puede reimprimir cualquier comprobante con el ícono de impresora del listado." },
-           { tipo: "tip", texto: "Al distribuir, la línea se divide en varias líneas con la misma cuenta, una por centro de costo." },
-           { tipo: "aviso", texto: "Los comprobantes ya repuestos no se pueden editar ni eliminar." },
-         ],
+           notas: [
+            { tipo: "tip", texto: "Puede reimprimir cualquier comprobante con el ícono de impresora del listado." },
+            { tipo: "tip", texto: "Al distribuir, la línea se divide en varias líneas con la misma cuenta, una por centro de costo." },
+            { tipo: "aviso", texto: "La línea de crédito de la caja chica es fija: aparece con un candado y no se puede cambiar, borrar ni distribuir." },
+            { tipo: "aviso", texto: "Los comprobantes ya repuestos no se pueden editar ni eliminar." },
+          ],
         palabras: ["606", "gastos menores", "b13"],
       },
       {

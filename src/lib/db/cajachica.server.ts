@@ -499,6 +499,16 @@ export async function guardarComprobanteCaja(
       throw new Error(
         `El asiento no está cuadrado: débito ${debito.toFixed(2)} vs crédito ${credito.toFixed(2)}`,
       );
+    // La cuenta del fondo es fija: el asiento siempre debe acreditar la caja chica.
+    const cajas = await sql<Record<string, unknown>>(
+      "SELECT catalog_account AS cuenta FROM petty_cash WHERE cash_id = ? LIMIT 1",
+      [entrada.caja_id],
+    );
+    const cuentaCaja = txt(cajas[0]?.["cuenta"]);
+    if (cuentaCaja && !asiento.some((l) => l.cuenta === cuentaCaja && Math.abs(l.credito) > 0))
+      throw new Error(
+        "El asiento debe incluir el crédito a la cuenta de la caja chica; esa línea no se puede quitar ni cambiar.",
+      );
   }
 
   const valores = [

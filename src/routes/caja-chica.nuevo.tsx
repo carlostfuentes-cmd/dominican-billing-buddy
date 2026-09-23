@@ -117,6 +117,9 @@ function NuevoComprobantePage() {
 
   const cajas = listas?.cajas ?? [];
   const cajaId = caja || cajas[0]?.id || "";
+  // Cuenta contable del fondo: es el crédito fijo del asiento, no se puede
+  // cambiar ni borrar.
+  const cuentaCaja = cajas.find((c) => c.id === cajaId)?.cuenta_contable ?? "";
 
   // Datos del comprobante que se está modificando.
   useEffect(() => {
@@ -290,6 +293,8 @@ function NuevoComprobantePage() {
     const credito = round2(asiento.reduce((s, l) => s + Math.abs(l.credito), 0));
     if (Math.abs(debito - credito) > 0.01) f.push("cuadrar el asiento contable");
     if (asiento.some((l) => !l.cuenta)) f.push("la cuenta de todas las líneas del asiento");
+    if (cuentaCaja && !asiento.some((l) => l.cuenta === cuentaCaja && l.credito > 0))
+      f.push("la línea de crédito de la caja chica en el asiento");
     return f;
   };
 
@@ -594,7 +599,8 @@ function NuevoComprobantePage() {
           advertencias={propuesta?.advertencias ?? []}
           cargando={calculando && !asiento.length}
           distribuir
-          nota="Se debita el gasto y el ITBIS adelantado y se acredita la caja chica. Elige la cuenta del gasto, cambia cualquier cuenta o usa «Distribuir» para repartir una línea entre varios centros de costo."
+          cuentasBloqueadas={cuentaCaja ? [cuentaCaja] : []}
+          nota="Se debita el gasto y el ITBIS adelantado y se acredita la caja chica. La cuenta de la caja es fija y no se puede cambiar ni borrar; las demás cuentas sí puedes cambiarlas o repartirlas con «Distribuir» entre varios centros de costo."
         />
 
         <Card>
