@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Split, Trash2 } from "lucide-react";
+import { Lock, Plus, Split, Trash2 } from "lucide-react";
 
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
@@ -170,19 +170,30 @@ export function AsientoContable({
             Sin cuentas para esta operación. Agrega las líneas del documento.
           </p>
         ) : (
-          lineas.map((l, i) => (
+          lineas.map((l, i) => {
+            const bloqueada = cuentasBloqueadas.includes(l.cuenta);
+            return (
             <div
               key={i}
               className={`grid gap-3 rounded-md border p-3 ${distribuir ? "lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_88px]" : "lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_44px]"}`}
             >
               <div className="min-w-0">
-                <SelectorBuscable
-                  opciones={opcionesCuentas}
-                  valor={l.cuenta}
-                  onSeleccionar={(v) => elegirCuenta(i, v)}
-                  placeholder="Cuenta contable"
-                  placeholderBusqueda="Escribe número o nombre…"
-                />
+                {bloqueada ? (
+                  <div className="flex h-9 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+                    <Lock className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">
+                      {l.cuenta} — {l.cuenta_nombre}
+                    </span>
+                  </div>
+                ) : (
+                  <SelectorBuscable
+                    opciones={opcionesCuentas}
+                    valor={l.cuenta}
+                    onSeleccionar={(v) => elegirCuenta(i, v)}
+                    placeholder="Cuenta contable"
+                    placeholderBusqueda="Escribe número o nombre…"
+                  />
+                )}
               </div>
               <div className="min-w-0">
                 <Input
