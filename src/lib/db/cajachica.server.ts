@@ -501,7 +501,7 @@ export async function guardarComprobanteCaja(
       );
     // La cuenta del fondo es fija: el asiento siempre debe acreditar la caja chica.
     const cajas = await sql<Record<string, unknown>>(
-      "SELECT gl_account AS cuenta FROM petty_cash WHERE petty_cash_id = ? LIMIT 1",
+      "SELECT catalog_account AS cuenta FROM petty_cash WHERE cash_id = ? LIMIT 1",
       [entrada.caja_id],
     );
     const cuentaCaja = txt(cajas[0]?.["cuenta"]);
