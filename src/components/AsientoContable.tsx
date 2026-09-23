@@ -250,29 +250,39 @@ export function AsientoContable({
                 />
               </div>
               <div className="flex items-center justify-end">
-                {distribuir ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Distribuir en centros de costo"
-                    title="Distribuir en varios centros de costo"
-                    disabled={!(l.debito || l.credito)}
-                    onClick={() => abrirReparto(i)}
-                  >
-                    <Split className="size-4" />
-                  </Button>
-                ) : null}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Quitar cuenta"
-                  onClick={() => onCambiar(lineas.filter((_, idx) => idx !== i))}
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                {bloqueada ? (
+                  <Lock
+                    className="size-4 text-muted-foreground"
+                    aria-label="Cuenta fija de la caja chica"
+                  />
+                ) : (
+                  <>
+                    {distribuir ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Distribuir en centros de costo"
+                        title="Distribuir en varios centros de costo"
+                        disabled={!(l.debito || l.credito)}
+                        onClick={() => abrirReparto(i)}
+                      >
+                        <Split className="size-4" />
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Quitar cuenta"
+                      onClick={() => onCambiar(lineas.filter((_, idx) => idx !== i))}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
-          ))
+            );
+          })
         )}
 
         {lineas.length ? (
