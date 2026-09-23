@@ -35,6 +35,8 @@ type Props = {
   nota?: string;
   /** Permite repartir una línea entre varios centros de costo. */
   distribuir?: boolean;
+  /** Cuentas fijas: no se pueden cambiar, borrar ni distribuir (p. ej. la caja chica). */
+  cuentasBloqueadas?: string[];
 };
 
 type Reparto = { departamento_id: string; monto: number };
@@ -56,6 +58,7 @@ export function AsientoContable({
   titulo = "Cuentas contables",
   nota = "Propuestas según la clasificación del producto. Puedes cambiarlas antes de guardar.",
   distribuir = false,
+  cuentasBloqueadas = [],
 }: Props) {
   const [repartiendo, setRepartiendo] = useState<number | null>(null);
   const [reparto, setReparto] = useState<Reparto[]>([]);
