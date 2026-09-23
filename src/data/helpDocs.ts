@@ -154,12 +154,15 @@ export const SECCIONES_AYUDA: SeccionAyuda[] = [
         pasos: [
           "Pulse Nuevo comprobante y elija la caja.",
           "Indique proveedor, tipo de comprobante y NCF.",
-          "Escriba montos, ITBIS y retenciones; revise el asiento.",
+          "Escriba montos, ITBIS y retenciones.",
+          "En Cuentas contables elija la cuenta del gasto y el centro de costo de cada línea.",
+          "Para repartir un gasto entre varios centros de costo, pulse el ícono Distribuir de esa línea, indique cada centro con su monto y aplique (la suma debe ser igual al monto de la línea).",
            "Guarde el comprobante; se abrirá listo para imprimir y firmar.",
           "Cuando haga falta, use Reponer fondo con los comprobantes pendientes.",
         ],
          notas: [
            { tipo: "tip", texto: "Puede reimprimir cualquier comprobante con el ícono de impresora del listado." },
+           { tipo: "tip", texto: "Al distribuir, la línea se divide en varias líneas con la misma cuenta, una por centro de costo." },
            { tipo: "aviso", texto: "Los comprobantes ya repuestos no se pueden editar ni eliminar." },
          ],
         palabras: ["606", "gastos menores", "b13"],
