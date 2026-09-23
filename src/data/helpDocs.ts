@@ -157,6 +157,7 @@ export const SECCIONES_AYUDA: SeccionAyuda[] = [
           "Escriba montos, ITBIS y retenciones.",
           "En Cuentas contables elija la cuenta del gasto y el centro de costo de cada línea.",
           "Para repartir un gasto entre varios centros de costo, pulse el ícono Distribuir de esa línea, indique cada centro con su monto y aplique (la suma debe ser igual al monto de la línea).",
+          "Al escribir el concepto (o pulsar Sugerir cuenta), el sistema propone la cuenta del gasto: primero busca comprobantes anteriores con conceptos parecidos y, si no hay, la IA elige la cuenta relacionada (por ejemplo, \"Pago de Uber\" → Transporte). Siempre puede cambiarla.",
            "Guarde el comprobante; se abrirá listo para imprimir y firmar.",
           "Cuando haga falta, use Reponer fondo con los comprobantes pendientes.",
         ],
