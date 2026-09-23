@@ -1,10 +1,18 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Split, Trash2 } from "lucide-react";
 
 import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -25,7 +33,11 @@ type Props = {
   cargando?: boolean;
   titulo?: string;
   nota?: string;
+  /** Permite repartir una línea entre varios centros de costo. */
+  distribuir?: boolean;
 };
+
+type Reparto = { departamento_id: string; monto: number };
 
 const nf = new Intl.NumberFormat("es-DO", {
   minimumFractionDigits: 2,
@@ -43,7 +55,10 @@ export function AsientoContable({
   cargando,
   titulo = "Cuentas contables",
   nota = "Propuestas según la clasificación del producto. Puedes cambiarlas antes de guardar.",
+  distribuir = false,
 }: Props) {
+  const [repartiendo, setRepartiendo] = useState<number | null>(null);
+  const [reparto, setReparto] = useState<Reparto[]>([]);
   const { data: listas } = useQuery({
     queryKey: ["listas-contabilidad"],
     queryFn: () => obtenerListasContabilidad(),
@@ -71,6 +86,53 @@ export function AsientoContable({
     const info = (listas?.cuentas ?? []).find((c) => c.cuenta === cuenta);
     actualizar(indice, { cuenta, cuenta_nombre: info?.nombre ?? "" });
   };
+
+  const lineaReparto = repartiendo !== null ? lineas[repartiendo] : undefined;
+  const montoLinea = lineaReparto ? round2(lineaReparto.debito || lineaReparto.credito) : 0;
+  const sumaReparto = round2(reparto.reduce((s, r) => s + (r.monto || 0), 0));
+  const faltaReparto = round2(montoLinea - sumaReparto);
+
+  const abrirReparto = (indice: number) => {
+    const l = lineas[indice];
+    if (!l) return;
+    const m = round2(l.debito || l.credito);
+    const deps = listas?.departamentos ?? [];
+    setReparto([
+      { departamento_id: l.departamento_id || deps[0]?.id || "", monto: m },
+      { departamento_id: "", monto: 0 },
+    ]);
+    setRepartiendo(indice);
+  };
+
+  const aplicarReparto = () => {
+    if (repartiendo === null || !lineaReparto) return;
+    const esDebito = (lineaReparto.debito || 0) > 0;
+    const partes = reparto.filter((r) => r.monto > 0);
+    const nuevas = partes.map((r) => ({
+      ...lineaReparto,
+      departamento_id: r.departamento_id || undefined,
+      debito: esDebito ? round2(r.monto) : 0,
+      credito: esDebito ? 0 : round2(r.monto),
+    }));
+    onCambiar([
+      ...lineas.slice(0, repartiendo),
+      ...nuevas,
+      ...lineas.slice(repartiendo + 1),
+    ]);
+    setRepartiendo(null);
+  };
+
+  const errorReparto =
+    reparto.filter((r) => r.monto > 0).length < 2
+      ? "Indica al menos dos centros de costo con monto."
+      : reparto.some((r) => r.monto > 0 && !r.departamento_id)
+        ? "Elige el centro de costo de cada parte."
+        : new Set(reparto.filter((r) => r.monto > 0).map((r) => r.departamento_id)).size !==
+            reparto.filter((r) => r.monto > 0).length
+          ? "No repitas el mismo centro de costo."
+          : Math.abs(faltaReparto) > 0.009
+            ? `La suma debe ser igual a ${nf.format(montoLinea)}.`
+            : "";
 
   return (
     <Card>
@@ -108,7 +170,7 @@ export function AsientoContable({
           lineas.map((l, i) => (
             <div
               key={i}
-              className="grid gap-3 rounded-md border p-3 lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_44px]"
+              className={`grid gap-3 rounded-md border p-3 ${distribuir ? "lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_88px]" : "lg:grid-cols-[minmax(220px,3fr)_minmax(170px,2fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_minmax(150px,1.5fr)_44px]"}`}
             >
               <div className="min-w-0">
                 <SelectorBuscable
@@ -174,6 +236,18 @@ export function AsientoContable({
                 />
               </div>
               <div className="flex items-center justify-end">
+                {distribuir ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Distribuir en centros de costo"
+                    title="Distribuir en varios centros de costo"
+                    disabled={!(l.debito || l.credito)}
+                    onClick={() => abrirReparto(i)}
+                  >
+                    <Split className="size-4" />
+                  </Button>
+                ) : null}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -201,6 +275,95 @@ export function AsientoContable({
           </div>
         ) : null}
       </CardContent>
+
+      <Dialog open={repartiendo !== null} onOpenChange={(o) => !o && setRepartiendo(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Distribuir en centros de costo</DialogTitle>
+            <DialogDescription>
+              {lineaReparto?.cuenta} {lineaReparto?.cuenta_nombre} · Monto a repartir{" "}
+              <strong>{nf.format(montoLinea)}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {reparto.map((r, k) => (
+              <div key={k} className="grid grid-cols-[1fr_130px_40px] gap-2">
+                <Select
+                  value={r.departamento_id || SIN}
+                  onValueChange={(v) =>
+                    setReparto((rs) =>
+                      rs.map((x, j) => (j === k ? { ...x, departamento_id: v === SIN ? "" : v } : x)),
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Centro de costo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SIN}>Elige el centro de costo</SelectItem>
+                    {(listas?.departamentos ?? []).map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={r.monto}
+                  onChange={(e) =>
+                    setReparto((rs) =>
+                      rs.map((x, j) =>
+                        j === k ? { ...x, monto: Math.abs(Number(e.target.value) || 0) } : x,
+                      ),
+                    )
+                  }
+                  className="text-right tabular-nums"
+                  aria-label="Monto"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Quitar"
+                  onClick={() => setReparto((rs) => rs.filter((_, j) => j !== k))}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setReparto((rs) => [
+                    ...rs,
+                    { departamento_id: "", monto: Math.max(0, faltaReparto) },
+                  ])
+                }
+              >
+                <Plus className="size-4" /> Agregar centro de costo
+              </Button>
+              <span
+                className={`text-sm tabular-nums ${Math.abs(faltaReparto) > 0.009 ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                Asignado {nf.format(sumaReparto)} · Falta {nf.format(faltaReparto)}
+              </span>
+            </div>
+            {errorReparto ? <p className="text-xs text-destructive">{errorReparto}</p> : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRepartiendo(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={aplicarReparto} disabled={Boolean(errorReparto)}>
+              Aplicar distribución
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
