@@ -254,13 +254,8 @@ function NuevoComprobantePage() {
 
   useEffect(() => {
     if (!propuesta || asientoTocado) return;
-    setAsiento(
-      propuesta.lineas.map((l) => ({
-        ...l,
-        departamento_id: l.departamento_id ?? (departamento || undefined),
-      })),
-    );
-  }, [propuesta, asientoTocado, departamento]);
+    setAsiento(propuesta.lineas);
+  }, [propuesta, asientoTocado]);
 
   const retencionSugerida = useMemo(() => {
     const r = (listas?.retenciones ?? []).find((x) => x.id === isrId);
@@ -594,104 +589,43 @@ function NuevoComprobantePage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Cuentas y centro de costo</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-3 md:grid-cols-2">
-            <div>
-              <Label>Cuenta contable del gasto</Label>
-              <SelectorBuscable
-                opciones={opcionesCuentas}
-                valor={cuentaGasto}
-                onSeleccionar={(v) => {
-                  setCuentaGasto(v);
-                  setAsientoTocado(false);
-                }}
-                placeholder="Cuenta del gasto"
-              />
-            </div>
-            <div>
-              <Label>Centro de costo</Label>
-              <Select
-                value={departamento || SIN}
-                onValueChange={(v) => {
-                  const dep = v === SIN ? "" : v;
-                  setDepartamento(dep);
-                  setAsiento((ls) =>
-                    ls.map((l) => ({ ...l, departamento_id: dep || undefined })),
-                  );
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin centro de costo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SIN}>Sin centro de costo</SelectItem>
-                  {(listas?.departamentos ?? []).map((d) => (
-                    <SelectItem key={d.id} value={d.id}>
-                      {d.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Cuenta de retención de ITBIS</Label>
-              <SelectorBuscable
-                opciones={opcionesCuentas}
-                valor={cuentaItbis}
-                onSeleccionar={(v) => {
-                  setCuentaItbis(v);
-                  setAsientoTocado(false);
-                }}
-                placeholder="Solo si hay retención"
-              />
-            </div>
-            <div>
-              <Label>Cuenta de retención de ISR</Label>
-              <SelectorBuscable
-                opciones={opcionesCuentas}
-                valor={cuentaIsr}
-                onSeleccionar={(v) => {
-                  setCuentaIsr(v);
-                  setAsientoTocado(false);
-                }}
-                placeholder="Solo si hay retención"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label>Proyecto contable</Label>
-              <Select
-                value={proyectoId || SIN}
-                onValueChange={(v) => setProyectoId(v === SIN ? "" : v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin proyecto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={SIN}>Sin proyecto</SelectItem>
-                  {(listas?.proyectos ?? []).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
         <AsientoContable
           lineas={asiento}
           onCambiar={(ls) => {
             setAsientoTocado(true);
             setAsiento(ls);
+            const principal = ls
+              .filter((l) => l.cuenta && l.debito > 0)
+              .sort((a, b) => b.debito - a.debito)[0];
+            if (principal && principal.cuenta !== cuentaGasto) setCuentaGasto(principal.cuenta);
           }}
           advertencias={propuesta?.advertencias ?? []}
           cargando={calculando && !asiento.length}
-          nota="Se debita el gasto y el ITBIS adelantado y se acredita la caja chica. Puedes cambiar cualquier cuenta antes de guardar."
+          distribuir
+          nota="Se debita el gasto y el ITBIS adelantado y se acredita la caja chica. Elige la cuenta del gasto, cambia cualquier cuenta o usa «Distribuir» para repartir una línea entre varios centros de costo."
         />
+
+        <Card>
+          <CardContent className="pt-6">
+            <Label>Proyecto contable</Label>
+            <Select
+              value={proyectoId || SIN}
+              onValueChange={(v) => setProyectoId(v === SIN ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sin proyecto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SIN}>Sin proyecto</SelectItem>
+                {(listas?.proyectos ?? []).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
       </div>
     </>
   );
