@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/AppShell";
 import { usePermisoPantalla, useSesion } from "@/components/Sesion";
 import { Button } from "@/components/ui/button";
 import { obtenerComprobanteCaja } from "@/lib/cajachica.functions";
-import { fechaCorta, money } from "@/lib/erp-types";
+import { fechaCorta, money, type LineaAsiento } from "@/lib/erp-types";
 import { obtenerEmpresa } from "@/lib/erp.functions";
 import { montoEnLetras } from "@/lib/plantillas-datos";
 
@@ -103,7 +103,7 @@ function ComprobanteCajaImprimible() {
 
   const receptor = comprobante.beneficiario || empresa?.nombre || "RECIBIDO CONFORME";
   const identificacion = comprobante.rnc || comprobante.cedula;
-  const lineas = comprobante.asiento.length
+  const lineas: LineaAsiento[] = comprobante.asiento.length
     ? comprobante.asiento
     : [
         {
