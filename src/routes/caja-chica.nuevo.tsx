@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { AsientoContable } from "@/components/AsientoContable";
 import { PageHeader } from "@/components/AppShell";
-import { SelectorBuscable } from "@/components/SelectorBuscable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,7 +112,6 @@ function NuevoComprobantePage() {
   const [cuentaGasto, setCuentaGasto] = useState("");
   const [cuentaItbis, setCuentaItbis] = useState("");
   const [cuentaIsr, setCuentaIsr] = useState("");
-  const [departamento, setDepartamento] = useState("");
   const [asiento, setAsiento] = useState<LineaAsiento[]>([]);
   const [asientoTocado, setAsientoTocado] = useState(false);
 
@@ -287,7 +285,7 @@ function NuevoComprobantePage() {
     if (total <= 0) f.push("el monto del gasto");
     if (tipo === "E" && !beneficiario.trim()) f.push("el beneficiario");
     if (tipo === "E" && !gastoId) f.push("la categoría de gasto de la DGII");
-    if (!cuentaGasto) f.push("la cuenta contable del gasto");
+    if (!cuentaGasto) f.push("la cuenta contable del gasto (en Cuentas contables)");
     const debito = round2(asiento.reduce((s, l) => s + Math.abs(l.debito), 0));
     const credito = round2(asiento.reduce((s, l) => s + Math.abs(l.credito), 0));
     if (Math.abs(debito - credito) > 0.01) f.push("cuadrar el asiento contable");
@@ -303,12 +301,6 @@ function NuevoComprobantePage() {
     }
     guardar.mutate();
   };
-
-  const opcionesCuentas = (listas?.cuentas ?? []).map((c) => ({
-    valor: c.cuenta,
-    etiqueta: `${c.cuenta} — ${c.nombre}`,
-    detalle: c.clasificacion ?? "",
-  }));
 
   const en606 = tipo === "E" && NCF_EN_606.includes(ncfId) && Boolean(ncf.trim());
 
