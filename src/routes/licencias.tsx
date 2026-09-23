@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { KeyRound, Pencil, Plus } from "lucide-react";
+import { Download, KeyRound, Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/AppShell";
@@ -151,16 +151,31 @@ function PanelLicencias() {
         titulo="Licenciamiento de clientes"
         descripcion="Control central de BP Dominicana: planes, usuarios y vencimientos"
         acciones={
-          <Button
-            onClick={() => {
-              setForm(vacio());
-              setAbierto((v) => !v);
-            }}
-          >
-            <Plus className="size-4" />
-            Nueva licencia
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <a href="/descargas/instalacion-local-README.md" download>
+                <Download className="size-4" />
+                Guía de instalación local
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a href="/descargas/instalacion-local.env.txt" download>
+                <Download className="size-4" />
+                Archivo de configuración
+              </a>
+            </Button>
+            <Button
+              onClick={() => {
+                setForm(vacio());
+                setAbierto((v) => !v);
+              }}
+            >
+              <Plus className="size-4" />
+              Nueva licencia
+            </Button>
+          </div>
         }
+
       />
 
       {abierto ? (
