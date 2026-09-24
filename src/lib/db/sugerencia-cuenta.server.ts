@@ -66,7 +66,7 @@ async function porHistorial(concepto: string): Promise<SugerenciaCuenta | null> 
   if (!nombre.length) return null;
   return {
     cuenta: mejor[0],
-    cuenta_nombre: String(nombre[0]["nombre"] ?? ""),
+    cuenta_nombre: String(nombre[0]?.["nombre"] ?? ""),
     gasto_id: mejor[1].gasto,
     origen: "historial",
     motivo: "Usada antes en comprobantes con un concepto parecido.",
