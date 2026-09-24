@@ -31,12 +31,42 @@ function config() {
   };
 }
 
+// TEMPORAL: inicio de sesión desactivado mientras avanzamos en el desarrollo.
+// Para volver a exigir usuario y clave, cambie a `true`.
+const EXIGIR_LOGIN = false;
+
 export async function leerSesion(): Promise<Sesion | null> {
   const sesion = await useSession<Datos>(config());
   if (sesion.data.demo) return sesionDemo();
   const id = sesion.data.usuario_id;
-  if (!id) return null;
-  return recargarSesion(id);
+  if (id) {
+    const actual = await recargarSesion(id);
+    if (actual || EXIGIR_LOGIN) return actual;
+  }
+  if (EXIGIR_LOGIN) return null;
+  return sesionSinLogin();
+}
+
+/** TEMPORAL: entra como el primer administrador activo (o modo demostración). */
+async function sesionSinLogin(): Promise<Sesion> {
+  try {
+    const { sql } = await import("./mysql.server");
+    const filas = await sql<{ user_id: number }>(
+      `SELECT u.user_id FROM users u
+         JOIN profiles p ON p.profile_id = u.profile_id
+        WHERE u.status = 'A' AND p.administrator = 1
+        ORDER BY u.user_id LIMIT 1`,
+      [],
+    );
+    const id = filas[0]?.user_id;
+    if (id) {
+      const s = await recargarSesion(Number(id));
+      if (s) return s;
+    }
+  } catch {
+    // sin base de datos: se usa la sesión de demostración
+  }
+  return sesionDemo();
 }
 
 export async function escribirSesion(datos: Sesion): Promise<void> {
