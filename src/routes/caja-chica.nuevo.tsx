@@ -271,15 +271,32 @@ function NuevoComprobantePage() {
       const anterior = cuentaGasto;
       setCuentaGasto(s.cuenta);
       if (s.gasto_id && !gastoId) setGastoId(s.gasto_id);
-      if (asientoTocado) {
-        setAsiento((ls) =>
-          ls.map((l) =>
-            l.cuenta !== cuentaCaja && l.debito > 0 && (!l.cuenta || l.cuenta === anterior)
-              ? { ...l, cuenta: s.cuenta, cuenta_nombre: s.cuenta_nombre }
-              : l,
-          ),
-        );
-      }
+      // Se coloca la cuenta en el asiento de inmediato, sin esperar al servidor.
+      setAsiento((ls) => {
+        let cambio = false;
+        const nuevas = ls.map((l) => {
+          if (l.cuenta !== cuentaCaja && l.debito > 0 && (!l.cuenta || l.cuenta === anterior)) {
+            cambio = true;
+            return { ...l, cuenta: s.cuenta, cuenta_nombre: s.cuenta_nombre };
+          }
+          return l;
+        });
+        const hayDebito = ls.some((l) => l.cuenta !== cuentaCaja && l.debito > 0);
+        if (!hayDebito) {
+          const credito = round2(ls.reduce((t, l) => t + Math.abs(l.credito), 0)) || total;
+          if (credito > 0) {
+            cambio = true;
+            nuevas.push({
+              cuenta: s.cuenta,
+              cuenta_nombre: s.cuenta_nombre,
+              descripcion: descripcion,
+              debito: credito,
+              credito: 0,
+            });
+          }
+        }
+        return cambio ? nuevas : ls;
+      });
       setSugerencia(
         `${s.origen === "ia" ? "Sugerida por IA" : "Según comprobantes anteriores"}: ${s.cuenta} ${s.cuenta_nombre}. ${s.motivo}`,
       );
