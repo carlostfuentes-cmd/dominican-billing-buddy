@@ -32,24 +32,25 @@ async function porHistorial(concepto: string): Promise<SugerenciaCuenta | null> 
   const claves = palabras(concepto);
   if (!claves.length) return null;
   const cond = claves.map(() => "d.description LIKE ?").join(" OR ");
+  // Consulta sencilla (sin JOIN ni cálculos) para que MariaDB responda rápido.
   const filas = await sql<Record<string, unknown>>(
-    `SELECT d.description AS descripcion, d.catalog_account AS cuenta, d.expense_id AS gasto_id,
-            g.name AS cuenta_nombre
+    `SELECT d.description AS descripcion, d.catalog_account AS cuenta, d.expense_id AS gasto_id
        FROM petty_cash_detail d
-       JOIN gl_accounts g ON g.account = d.catalog_account AND g.is_detail = 1 AND g.status = 'A'
       WHERE d.kind = 'E' AND (${cond})
-      ORDER BY d.ID DESC LIMIT 200`,
+      LIMIT 100`,
     claves.map((w) => `%${w}%`),
+    { agrupar: false },
   );
   const puntos = new Map<string, { p: number; nombre: string; gasto: string }>();
   for (const r of filas) {
     const desc = new Set(palabras(String(r["descripcion"] ?? "")));
     const coincide = claves.filter((w) => desc.has(w)).length;
     if (!coincide) continue;
-    const cuenta = String(r["cuenta"] ?? "");
+    const cuenta = String(r["cuenta"] ?? "").trim();
+    if (!cuenta) continue;
     const actual = puntos.get(cuenta) ?? {
       p: 0,
-      nombre: String(r["cuenta_nombre"] ?? ""),
+      nombre: "",
       gasto: r["gasto_id"] == null ? "" : String(Number(r["gasto_id"])),
     };
     actual.p += coincide / claves.length;
@@ -57,9 +58,15 @@ async function porHistorial(concepto: string): Promise<SugerenciaCuenta | null> 
   }
   const mejor = [...puntos.entries()].sort((a, b) => b[1].p - a[1].p)[0];
   if (!mejor) return null;
+  const nombre = await sql<Record<string, unknown>>(
+    "SELECT name AS nombre FROM gl_accounts WHERE account = ? AND is_detail = 1 AND status = 'A' LIMIT 1",
+    [mejor[0]],
+    { agrupar: false },
+  );
+  if (!nombre.length) return null;
   return {
     cuenta: mejor[0],
-    cuenta_nombre: mejor[1].nombre,
+    cuenta_nombre: String(nombre[0]["nombre"] ?? ""),
     gasto_id: mejor[1].gasto,
     origen: "historial",
     motivo: "Usada antes en comprobantes con un concepto parecido.",
@@ -117,7 +124,12 @@ async function porIA(concepto: string): Promise<SugerenciaCuenta | null> {
 export async function sugerirCuentaGasto(concepto: string): Promise<SugerenciaCuenta> {
   const nada: SugerenciaCuenta = { cuenta: "", cuenta_nombre: "", gasto_id: "", origen: "ninguna", motivo: "" };
   if (!(await usarMysql()) || concepto.trim().length < 3) return nada;
-  const historial = await porHistorial(concepto);
+  let historial: SugerenciaCuenta | null = null;
+  try {
+    historial = await porHistorial(concepto);
+  } catch (e) {
+    console.error("Sugerencia por historial:", e instanceof Error ? e.message : String(e));
+  }
   if (historial) return historial;
   try {
     return (await porIA(concepto)) ?? nada;
